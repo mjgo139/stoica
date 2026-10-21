@@ -2,7 +2,7 @@
    Guarda la app para que abra sin conexión. Los datos del usuario NO pasan por acá:
    viven en localStorage (clave "stoica.db.v1").
    Al publicar una versión nueva, cambiá VERSION para que los teléfonos la descarguen. */
-const VERSION = 'stoica-v1';
+const VERSION = 'stoica-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', event => {

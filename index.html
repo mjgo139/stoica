@@ -60,6 +60,7 @@ button:disabled{cursor:default}
 input,textarea,select{font:inherit;color:var(--tx)}
 #app{max-width:480px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));padding-block:28px 120px;min-height:100%}
 #app.full{padding-bottom:40px}
+#app.nonav{padding-bottom:40px}
 .serif{font-family:var(--f-display);font-weight:600}
 .num{font-family:var(--f-display);font-weight:600;font-variant-numeric:lining-nums tabular-nums}
 .cap{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
@@ -203,6 +204,73 @@ nav.tab svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;
 .vrow.on .dm{background:var(--vc)}
 textarea.json{width:100%;height:220px;border:1px solid var(--ln3);border-radius:10px;background:transparent;padding:10px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical}
 .ticks line{stroke:var(--ln3)}.ticks line.mj{stroke:var(--ln4)}.ticks line.lit{stroke:var(--gold)}
+
+/* ---------- Movimiento ---------- */
+:root{--ease:cubic-bezier(.2,.75,.25,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+button,a,.chip,.ghost,.btn,.pill,.plus,.row,.card{transition:background-color .18s var(--ease),color .18s var(--ease),border-color .18s var(--ease),box-shadow .18s var(--ease),opacity .18s var(--ease),transform .12s var(--ease)}
+button:active:not(:disabled){transform:scale(.97)}
+.item-main:active:not(:disabled),.row:active:not(:disabled){transform:none;opacity:.75}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes fadeout{to{opacity:0}}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes down{from{transform:none}to{transform:translateY(100%)}}
+@keyframes popin{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes popout{to{opacity:0;transform:translateY(8px) scale(.97)}}
+@keyframes pop{0%{transform:scale(.72)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes toast{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+#app.enter{animation:enter .32s var(--ease) both}
+.fadein{animation:fade .26s var(--ease) both}
+.overlay.anim{animation:fade .22s var(--ease) both}
+.overlay.anim .sheet{animation:up .34s var(--ease) both}
+.overlay.anim .dialog{animation:popin .34s var(--spring) both}
+.overlay.closing{animation:fadeout .2s var(--ease) forwards}
+.overlay.closing .sheet{animation:down .22s var(--ease) forwards}
+.overlay.closing .dialog{animation:popout .18s var(--ease) forwards}
+.pop{animation:pop .38s var(--spring)}
+.toast{animation:toast .28s var(--ease) both}
+.item{transition:opacity .2s var(--ease)}
+.desk{display:none!important}
+
+/* ---------- Tablet ---------- */
+@media (min-width:600px){
+  #app{max-width:640px;padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px))}
+  nav.tab>div{max-width:640px}
+}
+/* ---------- Hojas como diálogo en pantallas grandes ---------- */
+@media (min-width:700px){
+  .overlay{align-items:center;padding:24px}
+  .sheet{max-width:480px;border-radius:16px;border:1px solid var(--ln3);padding:22px 26px 26px;max-height:calc(100vh - 48px)}
+  .sheet .grab{display:none}
+  .overlay.anim .sheet{animation:popin .3s var(--spring) both}
+  .overlay.closing .sheet{animation:popout .18s var(--ease) forwards}
+  .toast{bottom:32px}
+}
+/* ---------- Escritorio: barra lateral ---------- */
+@media (min-width:960px){
+  body{padding-left:248px}
+  #app{max-width:1000px;padding-block:48px 64px;padding-left:48px;padding-right:48px}
+  #app.narrow{max-width:720px}
+  .desk{display:block!important}
+  nav.tab .brand.desk{display:flex!important}
+  .mob{display:none!important}
+  nav.tab{top:0;bottom:0;right:auto;width:248px;border-top:0;border-right:1px solid var(--ln);padding:28px 16px 20px;display:flex;flex-direction:column}
+  nav.tab>div{display:flex;flex-direction:column;gap:2px;max-width:none;margin:0;padding:0}
+  nav.tab button{flex-direction:row;justify-content:flex-start;gap:14px;min-height:46px;padding:0 14px;border-radius:10px;font-size:14.5px;color:var(--mu)}
+  nav.tab button:hover{background:var(--hover);color:var(--tx)}
+  nav.tab button.on{background:var(--goldbg);color:var(--goldtx)}
+  nav.tab button.on::before{display:none}
+  nav.tab .brand{display:flex;flex-direction:row;align-items:center;gap:10px;padding:0 10px 26px}
+  nav.tab .me{margin-top:auto;border-top:1px solid var(--ln);padding-top:14px}
+  nav.tab .me button{width:100%}
+  .today-grid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:48px;align-items:start;margin-top:8px}
+  .today-grid>aside{position:sticky;top:32px}
+  .hgrid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .item-main:hover .nm{color:var(--gold)}
+  .card[data-a]:hover,.row:hover{background:var(--hover)}
+  .auth{padding-top:8vh}
+}
+@media (min-width:960px) and (max-width:1180px){ .today-grid{grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:36px} }
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -211,6 +279,7 @@ textarea.json{width:100%;height:220px;border:1px solid var(--ln3);border-radius:
 <div id="app" aria-live="polite"></div>
 <div id="nav"></div>
 <div id="layer"></div>
+<div id="toastBox" aria-live="polite"></div>
 
 <script>
 (function () {
@@ -525,7 +594,7 @@ function setMeasures(h, k, valsByMetric) {
   if (any) upsertLog(h, k, { status: 'done', value: null, completed_at: nowIso() }); else removeLog(h, k);
   afterChange(h, k, was);
 }
-function dayAction(h, k) { if (h.type === 'check') { toggleCheck(h, k); render(); } else openLog(h.id, k); }
+function dayAction(h, k) { if (h.type === 'check') { toggleCheck(h, k); state.flash = h.id + k; render(); } else openLog(h.id, k); }
 
 /* =========================================================
    8. Estado de interfaz
@@ -569,7 +638,7 @@ function installBanner() {
 }
 function newHabitDraft() { return { name: '', type: 'check', symbol: 'run', virtue: 'coraje', target: '', unit: '', metrics: [], remind: true, remindAt: '07:00', tpl: '', err: '' }; }
 function go(screen, extra) { state.prev = state.screen; state.screen = screen; state.sheet = null; Object.assign(state, extra || {}); render(); window.scrollTo(0, 0); }
-let toastT; function toast(msg) { state.toast = msg; renderLayer(); clearTimeout(toastT); toastT = setTimeout(() => { state.toast = ''; renderLayer(); }, 2200); }
+let toastT; function toast(msg) { const b = document.getElementById('toastBox'); b.innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toastT); toastT = setTimeout(() => { const t = b.firstElementChild; if (!t) return; t.style.transition = 'opacity .25s'; t.style.opacity = '0'; setTimeout(() => { b.innerHTML = ''; }, 260); }, 2200); }
 
 function applyTheme() {
   const s = settings(); const t = s ? s.theme : 'system';
@@ -609,14 +678,14 @@ function viewToday() {
   const title = sel === 0 ? 'Hoy' : sel === -1 ? 'Ayer' : sel === 1 ? 'Mañana' : WDL[selD.getDay()];
   let h = `<div class="top"><div><div class="cap gold">${longDay(selK)}</div><h1 class="title">${title}</h1></div>
     <div style="display:flex;gap:8px"><button class="ico ring" data-a="sheet" data-v="choose" aria-label="Agregar hábito o tarea">${ui('plus', 18)}</button>
-    <button class="avatar" data-a="go" data-v="profile" aria-label="Perfil">${esc((idx.u.display_name || 'S').trim().charAt(0).toUpperCase())}</button></div></div>`;
+    <button class="avatar mob" data-a="go" data-v="profile" aria-label="Perfil">${esc((idx.u.display_name || 'S').trim().charAt(0).toUpperCase())}</button></div></div>`;
   if (s && s.memento_mori_enabled) h += `<div class="lead" style="font-size:13px;font-weight:600">Memento mori · quedan ${daysLeft} días de ${now.getFullYear()}</div>`;
-  h += `<div class="strip">${[-3,-2,-1,0,1,2,3].map(off => { const d = dayOff(off), k = key(d); const all = idx.habits.length && idx.habits.every(x => isDone(x, k));
+  let aside = `<div class="strip">${[-3,-2,-1,0,1,2,3].map(off => { const d = dayOff(off), k = key(d); const all = idx.habits.length && idx.habits.every(x => isDone(x, k));
     return `<button class="${off === sel ? 'on' : ''} ${off > 0 ? 'fut' : ''}" data-a="sel" data-v="${off}" aria-pressed="${off === sel}" aria-label="${WDL[d.getDay()]} ${d.getDate()}"><span class="cap" style="font-size:10.5px;letter-spacing:.1em">${WD[d.getDay()]}</span><span class="num" style="font-size:21px">${d.getDate()}</span><span class="dot ${all ? 'ok' : ''}"></span></button>`; }).join('')}</div>`;
 
-  h += installBanner();
+  let main = installBanner();
   if (!idx.habits.length && !idx.tasks.length) {
-    return h + `<div class="card empty">${hIcon('med', 'sabiduria', true)}<div class="serif" style="font-size:22px;margin-top:12px">Empezá por una práctica</div><p>Elegí un hábito: algo que marcás, una cantidad que vas sumando o una medida como tu peso.</p><button class="btn" data-a="newHabit">Crear mi primer hábito</button></div>`;
+    return h + `<div class="today-grid"><aside>${aside}</aside><section class="${state.anim === 'list' ? 'fadein' : ''}">${main}<div class="card empty" style="margin-top:20px">${hIcon('med', 'sabiduria', true)}<div class="serif" style="font-size:22px;margin-top:12px">Empezá por una práctica</div><p>Elegí un hábito: algo que marcás, una cantidad que vas sumando o una medida como tu peso.</p><button class="btn" data-a="newHabit">Crear mi primer hábito</button></div></section></div>`;
   }
   const buckets = [[], [], []];
   const slot = r => { if (!r) return 1; const hr = parseInt(r.slice(0, 2), 10); return hr < 12 ? 0 : hr >= 19 ? 2 : 1; };
@@ -628,12 +697,12 @@ function viewToday() {
     let html;
     if (x.type === 'check') {
       html = `<div class="item ${done ? 'is-done' : ''}">${main}<span class="sub v-${x.virtue} vt">${v.n}${r ? ' · ' + r : ''}</span></span></button>
-        <button class="dia ${done ? 'ok' : miss ? 'bad' : ''}" data-a="check" data-id="${x.id}" data-k="${selK}" ${can ? '' : 'disabled'} aria-label="${done ? 'Desmarcar' : 'Cumplir'} ${esc(x.name)}"><span><svg width="12" height="12" viewBox="0 0 24 24">${UI.check}</svg></span></button></div>`;
+        <button class="dia ${done ? 'ok' : miss ? 'bad' : ''} ${state.flash === x.id + selK ? 'pop' : ''}" data-a="check" data-id="${x.id}" data-k="${selK}" ${can ? '' : 'disabled'} aria-label="${done ? 'Desmarcar' : 'Cumplir'} ${esc(x.name)}"><span><svg width="12" height="12" viewBox="0 0 24 24">${UI.check}</svg></span></button></div>`;
     } else if (x.type === 'count') {
       const val = valOf(x, selK), bad = sel < 0 && val < x.target_value && selK >= (x.start_date || '0000');
       html = `<div class="item">${main}<span class="sub v-${x.virtue} vt">${v.n} · ${esc(x.unit)}${r ? ' · ' + r : ''}</span>${segs(val, x.target_value, done, bad)}</span></button>
-        <div class="counter"><button class="val" data-a="openLog" data-id="${x.id}" data-k="${selK}" ${can ? '' : 'disabled'} aria-label="Corregir cantidad de ${esc(x.name)}"><span class="num" style="font-size:20px;color:${done ? 'var(--ok)' : bad ? 'var(--miss)' : 'var(--tx)'}">${fmt(val)}</span><span class="mu" style="font-size:13px;font-weight:700"> / ${fmt(x.target_value)}</span></button>
-        <button class="plus ${done ? 'ok' : can ? '' : 'off'}" data-a="inc" data-id="${x.id}" data-k="${selK}" data-d="1" ${can ? '' : 'disabled'} aria-label="Sumar 1 ${esc(x.unit)} a ${esc(x.name)}">${ui('plus', 20)}</button></div></div>`;
+        <div class="counter"><button class="val" data-a="openLog" data-id="${x.id}" data-k="${selK}" ${can ? '' : 'disabled'} aria-label="Corregir cantidad de ${esc(x.name)}"><span class="num ${state.flash === x.id + selK ? 'pop' : ''}" style="display:inline-block;font-size:20px;color:${done ? 'var(--ok)' : bad ? 'var(--miss)' : 'var(--tx)'}">${fmt(val)}</span><span class="mu" style="font-size:13px;font-weight:700"> / ${fmt(x.target_value)}</span></button>
+        <button class="plus ${done ? 'ok' : can ? '' : 'off'} ${state.flash === x.id + selK ? 'pop' : ''}" data-a="inc" data-id="${x.id}" data-k="${selK}" data-d="1" ${can ? '' : 'disabled'} aria-label="Sumar 1 ${esc(x.unit)} a ${esc(x.name)}">${ui('plus', 20)}</button></div></div>`;
     } else {
       const m = metricsOf(x)[0], l = m ? series(m).find(p => p.k === selK) : null;
       html = `<div class="item ${done ? 'is-done' : ''}">${main}<span class="sub v-${x.virtue} vt">${v.n}${m && m.goal_value != null ? ' · meta ' + fmt(m.goal_value) + ' ' + esc(m.unit) : ''}</span></span></button>
@@ -644,19 +713,19 @@ function viewToday() {
   if (sel === 0) idx.tasks.filter(t => t.kind === 'one_off').forEach(t => {
     const done = taskDone(t, tk);
     buckets[1].push({ done, html: `<div class="item ${done ? 'is-done strike' : ''}"><button class="item-main" data-a="go" data-v="tasks">${hIcon('task', 'justicia')}<span style="min-width:0"><span class="nm">${esc(t.title)}</span><span class="sub mu">Tarea${t.in_my_control === 'partly' ? ' · fuera de tu control' : ''}</span></span></button>
-      <button class="dia ${done ? 'ok' : ''}" data-a="task" data-id="${t.id}" aria-label="${done ? 'Desmarcar' : 'Cumplir'} ${esc(t.title)}"><span><svg width="12" height="12" viewBox="0 0 24 24">${UI.check}</svg></span></button></div>` });
+      <button class="dia ${done ? 'ok' : ''} ${state.flash === t.id ? 'pop' : ''}" data-a="task" data-id="${t.id}" aria-label="${done ? 'Desmarcar' : 'Cumplir'} ${esc(t.title)}"><span><svg width="12" height="12" viewBox="0 0 24 24">${UI.check}</svg></span></button></div>` });
   });
   const all = buckets.flat(); const doneN = all.filter(x => x.done).length;
   const q = QUOTES[(now.getDate() + sel + 90) % QUOTES.length];
-  h += `<div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:18px"><span class="cap mu">Cumplido</span><span><span class="num" style="font-size:22px;color:var(--ok)">${doneN}</span><span class="num mu" style="font-size:15px"> / ${all.length}</span></span></div>
+  aside += `<div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:18px"><span class="cap mu">Cumplido</span><span><span class="num" style="font-size:22px;color:var(--ok)">${doneN}</span><span class="num mu" style="font-size:15px"> / ${all.length}</span></span></div>
     <div class="bar"><i style="width:${all.length ? Math.round(doneN / all.length * 100) : 0}%"></i></div>
     <div class="dbl"><div><div class="quote">“${q.q}”</div><div class="cap gold" style="margin-top:10px;font-size:11px">${q.a}</div></div></div>`;
   const GT = [['I', 'Al amanecer'], ['II', 'Durante el día'], ['III', 'Al anochecer']];
   buckets.forEach((b, i) => { if (!b.length) return; b.sort((x, y) => (x.done ? 1 : 0) - (y.done ? 1 : 0));
-    h += `<div class="grp"><span class="serif" style="font-size:16px;font-weight:700">${GT[i][0]}</span><span class="cap" style="font-size:11px">${GT[i][1]}</span></div>` + b.map(x => x.html).join(''); });
-  h += `<button class="card" data-a="go" data-v="journal" style="width:100%;margin-top:26px;padding:18px;display:flex;align-items:center;gap:14px;text-align:left">
+    main += `<div class="grp" style="${main ? '' : 'margin-top:4px'}"><span class="serif" style="font-size:16px;font-weight:700">${GT[i][0]}</span><span class="cap" style="font-size:11px">${GT[i][1]}</span></div>` + b.map(x => x.html).join(''); });
+  main += `<button class="card" data-a="go" data-v="journal" style="width:100%;margin-top:26px;padding:18px;display:flex;align-items:center;gap:14px;text-align:left">
     <span class="gold">${ui('moon', 26)}</span><span style="flex:1"><span class="serif" style="display:block;font-size:18px;font-weight:700">Examen de la noche</span><span class="mu" style="display:block;font-size:13px;font-weight:500;margin-top:3px">Tres preguntas antes de dormir · ${esc(s ? s.journal_reminder_at : '')}</span></span><span class="mu">${ui('next', 16)}</span></button>`;
-  return h;
+  return h + `<div class="today-grid"><aside>${aside}</aside><section class="${state.anim === 'list' ? 'fadein' : ''}">${main}</section></div>`;
 }
 function segs(v, target, done, bad) {
   const n = target <= 12 ? Math.max(1, Math.round(target)) : 10, per = target / n; let out = '';
@@ -665,12 +734,12 @@ function segs(v, target, done, bad) {
 }
 
 function viewHabits() {
-  let h = `<div class="top"><div><div class="cap gold">${roman(idx.habits.length)} · ${idx.habits.length} prácticas</div><h1 class="title">Hábitos</h1></div>
+  let h = `<div class="top"><div><div class="cap gold">${idx.habits.length ? roman(idx.habits.length) + ' · ' + idx.habits.length + (idx.habits.length === 1 ? ' práctica' : ' prácticas') : 'Sin prácticas todavía'}</div><h1 class="title">Hábitos</h1></div>
     <button class="ico ring" data-a="newHabit" aria-label="Nuevo hábito">${ui('plus', 18)}</button></div>
     <div class="lead" style="font-family:var(--f-display);font-weight:600">Somos lo que hacemos repetidamente.</div>`;
-  if (!idx.habits.length) return h + `<div class="card empty"><p>Todavía no tenés hábitos.</p><button class="btn" data-a="newHabit">Crear hábito</button></div>`;
+  if (!idx.habits.length) return h + `<div class="card empty" style="max-width:520px">${hIcon('med', 'sabiduria', true)}<div class="serif" style="font-size:22px;margin-top:12px">Tu primera práctica</div><p>Puede ser algo que marcás cada día, una cantidad que vas sumando o una medida como tu peso.</p><button class="btn" data-a="newHabit">Crear hábito</button></div>`;
   const tk = todayK();
-  h += `<div style="display:flex;flex-direction:column;gap:14px;margin-top:22px">`;
+  h += `<div class="hgrid" style="display:flex;flex-direction:column;gap:14px;margin-top:22px">`;
   idx.habits.forEach(x => {
     const s = streakOf(x), v = VIRTUES[x.virtue];
     h += `<div class="card" style="padding:18px 16px 4px"><div style="display:flex;align-items:center;gap:14px">${hIcon(x.symbol, x.virtue, true)}
@@ -691,12 +760,12 @@ function viewHabits() {
     } else {
       h += `<div class="week">${[-6,-5,-4,-3,-2,-1,0].map(off => { const d = dayOff(off), k = key(d), done = isDone(x, k), miss = missed(x, k), isT = off === 0;
         const val = x.type === 'count' ? valOf(x, k) : null; const mk = x.type === 'count' ? (val ? fmt(val) : miss ? '×' : '') : (done ? '✓' : miss ? '×' : '');
-        return `<button class="${done ? 'ok' : miss ? 'bad' : isT ? 't' : ''}" data-a="day" data-id="${x.id}" data-k="${k}" aria-label="${esc(x.name)}, ${WDL[d.getDay()]} ${d.getDate()}${done ? ', cumplido' : miss ? ', no cumplido' : ''}"><span class="cp"></span><span class="bx" style="${val ? 'font-size:13px' : ''}${isT && val && !done ? ';color:var(--gold)' : ''}">${mk}</span><span class="cp"></span><span class="lb">${WD[d.getDay()].charAt(0)} ${d.getDate()}</span></button>`; }).join('')}</div>`;
+        return `<button class="${done ? 'ok' : miss ? 'bad' : isT ? 't' : ''} ${state.flash === x.id + k ? 'pop' : ''}" data-a="day" data-id="${x.id}" data-k="${k}" aria-label="${esc(x.name)}, ${WDL[d.getDay()]} ${d.getDate()}${done ? ', cumplido' : miss ? ', no cumplido' : ''}"><span class="cp"></span><span class="bx" style="${val ? 'font-size:13px' : ''}${isT && val && !done ? ';color:var(--gold)' : ''}">${mk}</span><span class="cp"></span><span class="lb">${WD[d.getDay()].charAt(0)} ${d.getDate()}</span></button>`; }).join('')}</div>`;
       if (x.type === 'count') {
         const tv = valOf(x, tk), td = isDone(x, tk);
         h += `<div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px 12px;border-radius:10px;background:${td ? 'var(--okbg)' : 'var(--hover)'}"><span class="cap mu" style="font-size:11px">Hoy</span>
           <span style="flex:1"><span class="num" style="font-size:22px;color:${td ? 'var(--ok)' : 'var(--tx)'}">${fmt(tv)}</span><span class="mu" style="font-size:13px;font-weight:700"> / ${fmt(x.target_value)} ${esc(x.unit)}</span></span>
-          <button class="plus ${td ? 'ok' : ''}" data-a="inc" data-id="${x.id}" data-k="${tk}" data-d="1" aria-label="Sumar 1 ${esc(x.unit)} a ${esc(x.name)}">${ui('plus', 20)}</button></div>`;
+          <button class="plus ${td ? 'ok' : ''} ${state.flash === x.id + tk ? 'pop' : ''}" data-a="inc" data-id="${x.id}" data-k="${tk}" data-d="1" aria-label="Sumar 1 ${esc(x.unit)} a ${esc(x.name)}">${ui('plus', 20)}</button></div>`;
       }
     }
     h += `<div class="foot"><span class="cap mu" style="flex:1">${foot}</span><button class="cap link" style="font-size:11px" data-a="openHabit" data-id="${x.id}" data-tab="cal">Calendario</button><button class="cap link" style="font-size:11px;padding-right:0" data-a="openHabit" data-id="${x.id}" data-tab="stats">Estadísticas</button></div></div>`;
@@ -719,20 +788,21 @@ function viewDetail() {
   if (x.type === 'count') {
     const tv = valOf(x, tk), td = tv >= x.target_value, left = Math.round((x.target_value - tv) * 10) / 10;
     h += `<div class="card today-box ${td ? 'ok' : ''}"><div class="cap mu" style="font-size:11px">Hoy</div>
-      <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:6px;flex-wrap:wrap"><span class="num" style="font-size:64px;line-height:1;color:${td ? 'var(--ok)' : 'var(--tx)'}">${fmt(tv)}</span><span class="num mu" style="font-size:24px">/ ${fmt(x.target_value)}</span><span class="mu" style="font-size:16px;font-weight:700">${esc(x.unit)}</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:6px;flex-wrap:wrap"><span class="num ${state.flash === x.id + tk ? 'pop' : ''}" style="display:inline-block;font-size:64px;line-height:1;color:${td ? 'var(--ok)' : 'var(--tx)'}">${fmt(tv)}</span><span class="num mu" style="font-size:24px">/ ${fmt(x.target_value)}</span><span class="mu" style="font-size:16px;font-weight:700">${esc(x.unit)}</span></div>
       <div style="font-size:17px;font-weight:700;margin-top:10px;color:${td ? 'var(--ok)' : 'var(--gold)'}">${td ? (tv > x.target_value ? 'Meta cumplida · ' + fmt(tv - x.target_value) + ' de más' : 'Meta cumplida') : (tv === 0 ? 'Empezá: faltan ' : 'Te faltan ') + fmt(left) + ' ' + esc(x.unit)}</div>
       <div class="segs ${td ? 'ok' : ''}" style="max-width:none;gap:4px;margin-top:16px">${(() => { const n = x.target_value <= 12 ? Math.max(1, Math.round(x.target_value)) : 10, per = x.target_value / n; let o = ''; for (let i = 0; i < n; i++) o += `<i class="${tv >= (i + 1) * per - 1e-9 ? 'f' : ''}" style="height:10px;border-radius:3px"></i>`; return o; })()}</div>
       <div class="mu" style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;font-weight:700"><span>0</span><span>${Math.min(100, Math.round(tv / x.target_value * 100))}%</span><span>${fmt(x.target_value)}</span></div>
       <div style="display:flex;align-items:center;justify-content:center;gap:26px;margin-top:18px"><button class="minus" data-a="inc" data-id="${x.id}" data-k="${tk}" data-d="-1" ${tv > 0 ? '' : 'disabled'} aria-label="Restar 1 ${esc(x.unit)}"><svg width="20" height="20" viewBox="0 0 24 24">${UI.minus}</svg></button>
-      <button class="bigplus" data-a="inc" data-id="${x.id}" data-k="${tk}" data-d="1" aria-label="Sumar 1 ${esc(x.unit)}"><svg width="30" height="30" viewBox="0 0 24 24">${UI.plus}</svg></button><span style="width:52px"></span></div>
+      <button class="bigplus ${state.flash === x.id + tk ? 'pop' : ''}" data-a="inc" data-id="${x.id}" data-k="${tk}" data-d="1" aria-label="Sumar 1 ${esc(x.unit)}"><svg width="30" height="30" viewBox="0 0 24 24">${UI.plus}</svg></button><span style="width:52px"></span></div>
       <div class="mu" style="font-size:13px;font-weight:600;margin-top:12px">Cada toque suma 1 ${esc(x.unit)}</div></div>`;
   }
   if (x.type === 'measure') h += `<button class="btn" data-a="openLog" data-id="${x.id}" data-k="${tk}" style="margin-top:16px;height:46px">${isDone(x, tk) ? 'Editar registro de hoy' : 'Registrar hoy'}</button>`;
   h += `<div class="tabs" role="tablist">${[['cal','Calendario'],['stats','Estadísticas'],['edit','Editar']].map(([id, l]) => `<button class="cap ${state.detTab === id ? 'on' : ''}" data-a="detTab" data-v="${id}" role="tab" aria-selected="${state.detTab === id}">${l}</button>`).join('')}</div>`;
+  h += `<div class="${state.anim === 'tab' ? 'fadein' : ''}">`;
   if (state.detTab === 'cal') h += viewCalendar(x);
   if (state.detTab === 'stats') h += x.type === 'check' ? statsCheck(x) : x.type === 'count' ? statsCount(x) : statsMeasure(x);
   if (state.detTab === 'edit') h += viewEdit(x);
-  return h;
+  return h + '</div>';
 }
 function viewCalendar(x) {
   const base = dayOff(0); base.setDate(1); base.setMonth(base.getMonth() + state.monthOff);
@@ -851,13 +921,14 @@ function viewTasks() {
   let h = `<div class="top"><div><div class="cap gold">${pending} pendientes</div><h1 class="title">Tareas</h1></div><button class="ico ring" data-a="sheet" data-v="task" aria-label="Nueva tarea">${ui('plus', 18)}</button></div>
     <div class="lead" style="font-family:var(--f-display);font-weight:600">Haz lo que debes; que suceda lo que pueda.</div>
     <div class="tabs" role="tablist">${[['one_off','Puntuales'],['recurring','Recurrentes']].map(([id, l]) => `<button class="cap ${state.taskTab === id ? 'on' : ''}" data-a="taskTab" data-v="${id}" role="tab" aria-selected="${state.taskTab === id}">${l}</button>`).join('')}</div>`;
+  h += `<div class="${state.anim === 'tab' ? 'fadein' : ''}">`;
   if (!list.length) h += `<div class="mu" style="padding:22px 0;font-weight:500">No hay tareas ${state.taskTab === 'one_off' ? 'puntuales' : 'recurrentes'}. Agregá una con el +.</div>`;
   list.forEach(t => { const done = taskDone(t, tk);
     h += `<div class="item ${done ? 'is-done strike' : ''}">${hIcon('task', 'justicia')}<div style="flex:1;min-width:0"><span class="nm">${esc(t.title)}</span><span class="sub" style="color:${t.in_my_control === 'yes' ? 'var(--tem)' : 'var(--mu)'}">${t.recurrence_label ? esc(t.recurrence_label) + ' · ' : ''}${t.in_my_control === 'yes' ? 'Depende de ti' : 'Fuera de tu control'}</span></div>
     <button class="ico" data-a="delTask" data-id="${t.id}" aria-label="Borrar ${esc(t.title)}" style="color:var(--mu2)">${ui('trash', 18)}</button>
-    <button class="dia ${done ? 'ok' : ''}" data-a="task" data-id="${t.id}" aria-label="${done ? 'Desmarcar' : 'Cumplir'} ${esc(t.title)}"><span><svg width="12" height="12" viewBox="0 0 24 24">${UI.check}</svg></span></button></div>`; });
+    <button class="dia ${done ? 'ok' : ''} ${state.flash === t.id ? 'pop' : ''}" data-a="task" data-id="${t.id}" aria-label="${done ? 'Desmarcar' : 'Cumplir'} ${esc(t.title)}"><span><svg width="12" height="12" viewBox="0 0 24 24">${UI.check}</svg></span></button></div>`; });
   if (list.some(t => t.in_my_control === 'partly')) h += `<div style="margin-top:22px;padding:16px;border:1px dashed var(--ln3);border-radius:10px"><div class="cap mu" style="font-size:11px">Fuera de tu control</div><div style="font-size:14px;font-weight:500;color:var(--tx2);margin-top:6px;line-height:1.5">Hacé tu parte en lo que no depende de ti. El resultado ya no es asunto tuyo.</div></div>`;
-  return h;
+  return h + '</div>';
 }
 
 const FOCUS_MODES = { focus: ['Concentración', 'Una sola cosa a la vez', 'focus_minutes'], break: ['Pausa', 'Respira. Vuelve sereno.', 'break_minutes'], meditation: ['Meditación', 'Observa, no juzgues', 'meditation_minutes'] };
@@ -910,7 +981,7 @@ function viewProfile() {
   const vMax = Math.max(1, ...Object.values(vCount)), weakest = Object.keys(vCount).sort((a, b) => vCount[a] - vCount[b])[0];
   const best = Math.max(0, ...idx.habits.map(bestOf));
   const since = new Date(u.created_at);
-  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-left:-12px"><button class="ico" data-a="back" aria-label="Volver">${ui('back', 22)}</button><button class="ghost" data-a="editP">${state.editP ? 'Listo' : 'Editar'}</button></div>
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-left:-12px"><button class="ico mob" data-a="back" aria-label="Volver">${ui('back', 22)}</button><span class="desk"></span><button class="ghost" data-a="editP">${state.editP ? 'Listo' : 'Editar'}</button></div>
     <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:8px">
     <div style="position:relative;width:112px;height:104px;display:flex;align-items:center;justify-content:center"><span style="position:absolute;inset:0">${LAUREL(112, 104)}</span><span class="serif" style="position:relative;width:64px;height:64px;border-radius:50%;background:var(--goldbg);color:var(--goldtx);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin-top:-6px">${esc((u.display_name || 'S').charAt(0).toUpperCase())}</span></div>
     ${state.editP ? `<div style="width:100%;text-align:left"><label class="lbl cap" for="pName" style="font-size:11px">Nombre</label><input id="pName" class="inp" maxlength="40" data-ch="uField" data-f="display_name" value="${esc(u.display_name)}"><label class="lbl cap" for="pMotto" style="font-size:11px">Lema</label><input id="pMotto" class="inp" maxlength="80" data-ch="uField" data-f="motto" value="${esc(u.motto)}" placeholder="Ej. Disciplina hoy, libertad mañana"></div>`
@@ -1021,40 +1092,64 @@ function sheetHtml() {
     <div class="err" role="alert">${esc(sd.err || '')}</div><button class="btn" data-a="doImport">Importar</button>`;
   return '';
 }
+let shownSheet = null, shownAward = null;
+const reduced = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function closeOverlay(id, after) {
+  const ov = document.getElementById(id);
+  const finish = () => { after(); renderLayer(); };
+  if (!ov || reduced()) { finish(); return; }
+  ov.classList.remove('anim'); ov.classList.add('closing');
+  setTimeout(finish, 200);
+}
+const closeSheet = after => closeOverlay('sheetOv', () => { state.sheet = null; if (after) after(); });
+const closeAwardOv = () => closeOverlay('awardOv', () => { state.award = null; });
 function renderLayer() {
   let h = '';
-  if (state.sheet) h += `<div class="overlay" role="dialog" aria-modal="true"><button class="scrim" data-a="close" aria-label="Cerrar"></button><div class="sheet"><div class="grab"></div>${sheetHtml()}</div></div>`;
+  const sheetAnim = state.sheet && state.sheet !== shownSheet, awardAnim = state.award && state.award !== shownAward;
+  shownSheet = state.sheet; shownAward = state.award;
+  if (state.sheet) h += `<div id="sheetOv" class="overlay ${sheetAnim ? 'anim' : ''}" role="dialog" aria-modal="true"><button class="scrim" data-a="close" aria-label="Cerrar"></button><div class="sheet"><div class="grab"></div>${sheetHtml()}</div></div>`;
   if (state.award) { const a = state.award;
-    h += `<div class="overlay center" role="dialog" aria-modal="true" aria-label="Victoria"><div class="dialog"><div class="cap gold" style="font-size:11px">Victoria sobre ti mismo</div>
+    h += `<div id="awardOv" class="overlay center ${awardAnim ? 'anim' : ''}" role="dialog" aria-modal="true" aria-label="Victoria"><div class="dialog"><div class="cap gold" style="font-size:11px">Victoria sobre ti mismo</div>
       <div style="position:relative;width:180px;height:164px;margin:18px auto 0">${LAUREL(180, 164)}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:10px"><div class="num" style="font-size:44px;line-height:1">${roman(a.streak)}</div><div class="cap mu" style="font-size:10.5px;margin-top:6px">${a.streak} ${a.streak === 1 ? 'día' : 'días'}</div></div></div>
       <div class="serif" style="font-size:24px;font-weight:700;margin-top:8px;overflow-wrap:anywhere">${esc(a.name)}</div><div class="mu" style="font-size:14px;font-weight:600;margin-top:4px">${a.best ? 'Tu mejor racha hasta hoy' : 'Racha en curso'}</div>
       ${a.note ? `<div style="display:inline-block;margin-top:12px;padding:6px 12px;border-radius:14px;background:var(--okbg);color:var(--oktx);font-size:13px;font-weight:700">${esc(a.note)}</div>` : ''}
       <div class="quote" style="font-size:15px;margin-top:16px">“Ningún gran logro surge de repente.”</div><div class="cap gold" style="font-size:10.5px">Epicteto</div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:18px"><div class="bar" style="flex:1;margin:0;height:3px"><i style="width:${Math.round(a.streak / a.next * 100)}%"></i></div><span class="cap" style="font-size:10.5px;color:var(--mu2)">Próximo hito · ${roman(a.next)} días</span></div>
       <button class="btn" data-a="closeAward" style="margin-top:22px;height:46px">Continuar</button></div></div>`; }
-  if (state.toast) h += `<div class="toast" role="status">${esc(state.toast)}</div>`;
-  document.getElementById('layer').innerHTML = h;
+  const layer = document.getElementById('layer');
+  const keepScroll = layer.querySelector('.sheet'); const st = keepScroll ? keepScroll.scrollTop : 0;
+  layer.innerHTML = h;
+  const ns = layer.querySelector('.sheet'); if (ns && !sheetAnim) ns.scrollTop = st;
+  if (sheetAnim) { const f = layer.querySelector('.sheet input:not([type=hidden]):not([type=file]), .sheet textarea'); if (f && window.matchMedia && matchMedia('(min-width:700px)').matches) setTimeout(() => f.focus({ preventScroll: true }), 60); }
 }
 function renderNav() {
-  const on = { today: 'today', habits: 'habits', detail: 'habits', tasks: 'tasks', focus: 'focus', journal: 'journal' }[state.screen];
-  if (!on || state.screen === 'auth') { document.getElementById('nav').innerHTML = ''; return; }
+  const on = { today: 'today', habits: 'habits', detail: 'habits', new: 'habits', tasks: 'tasks', focus: 'focus', journal: 'journal', profile: 'profile' }[state.screen];
+  if (!on || state.screen === 'auth' || !idx) { document.getElementById('nav').innerHTML = ''; return; }
   const b = (id, label, icon) => `<button class="${on === id ? 'on' : ''}" data-a="go" data-v="${id}" aria-current="${on === id ? 'page' : 'false'}"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>${label}</button>`;
-  document.getElementById('nav').innerHTML = `<nav class="tab" aria-label="Principal"><div>
+  const u = idx.u;
+  document.getElementById('nav').innerHTML = `<nav class="tab" aria-label="Principal"><div class="brand desk"><svg width="34" height="31" viewBox="0 0 132 120" aria-hidden="true"><g fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round"><path d="M58 108C26 98 12 66 20 24"/><path d="M74 108c32-10 46-42 38-84"/></g><g fill="var(--gold)"><ellipse cx="13" cy="34" rx="5" ry="10" transform="rotate(-25 13 34)"/><ellipse cx="12" cy="54" rx="5" ry="10" transform="rotate(-50 12 54)"/><ellipse cx="17" cy="73" rx="5" ry="10" transform="rotate(-65 17 73)"/><ellipse cx="119" cy="34" rx="5" ry="10" transform="rotate(25 119 34)"/><ellipse cx="120" cy="54" rx="5" ry="10" transform="rotate(50 120 54)"/><ellipse cx="115" cy="73" rx="5" ry="10" transform="rotate(65 115 73)"/></g></svg><span class="serif" style="font-size:20px;font-weight:700;letter-spacing:.18em">STOICA</span></div><div>
     ${b('today', 'Hoy', '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>')}
     ${b('habits', 'Hábitos', '<path d="M4 21h16M5 4h14M6 4v17M10 4v17M14 4v17M18 4v17M3 4l9-2 9 2"/>')}
     ${b('tasks', 'Tareas', '<path d="M7 3h10v18H7zM10 8h4M10 12h4M10 16h2M5 5v14M19 5v14"/>')}
     ${b('focus', 'Enfoque', '<path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/>')}
-    ${b('journal', 'Examen', UI.moon)}</div></nav>`;
+    ${b('journal', 'Examen', UI.moon)}</div>
+    <div class="me desk"><button class="${on === 'profile' ? 'on' : ''}" data-a="go" data-v="profile" aria-current="${on === 'profile' ? 'page' : 'false'}"><span class="avatar" style="width:30px;height:30px;font-size:14px;display:inline-flex;align-items:center;justify-content:center">${esc((u.display_name || 'S').charAt(0).toUpperCase())}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.display_name)}</span></button></div></nav>`;
 }
+let lastScreen = null;
 function render() {
   if (!me() && state.screen !== 'auth') state.screen = 'auth';
   buildIndex(); applyTheme();
   const app = document.getElementById('app');
   const V = { auth: viewAuth, today: viewToday, habits: viewHabits, detail: viewDetail, tasks: viewTasks, focus: viewFocus, journal: viewJournal, profile: viewProfile, new: viewNew };
-  app.className = ['auth', 'profile', 'new', 'detail'].includes(state.screen) ? 'full' : '';
-  if (state.screen === 'detail') app.className = '';
+  const changed = state.screen !== lastScreen; lastScreen = state.screen;
+  const cls = [];
+  if (state.screen === 'auth') cls.push('full');
+  if (['detail', 'tasks', 'focus', 'journal', 'profile', 'new'].includes(state.screen)) cls.push('narrow');
   app.innerHTML = (V[state.screen] || viewToday)();
+  if (changed && !reduced()) { app.className = cls.join(' '); void app.offsetWidth; cls.push('enter'); }
+  app.className = cls.join(' ');
   renderNav(); renderLayer();
+  state.flash = null; state.anim = null;
 }
 
 /* =========================================================
@@ -1092,10 +1187,10 @@ function openLog(hid, k) {
 }
 function saveLog(clear) {
   const sd = state.sd, x = habitById(sd.hid); if (!x) return;
-  state.sheet = null;
   if (x.type === 'count') setCount(x, sd.k, clear ? 0 : (num(sd.vals.v) || 0));
   else { const o = {}; metricsOf(x).forEach(m => { o[m.id] = clear ? NaN : num(sd.vals[m.id]); }); setMeasures(x, sd.k, o); }
-  render();
+  const award = state.award; state.award = null;
+  closeSheet(() => { state.flash = x.id + sd.k; render(); if (award) { state.award = award; renderLayer(); } });
 }
 const CONFIRMS = {
   archive: { title: '¿Abandonar este hábito?', text: 'Deja de aparecer en Hoy y en Hábitos. Su historial queda guardado en tus datos.', ok: 'Abandonar', run: () => { update('habits', state.detailId, { archived_at: nowIso() }); go('habits'); toast('Hábito archivado'); } },
@@ -1109,27 +1204,27 @@ const A = {
   dismissInstall: () => { const s = settings(); if (s) update('user_settings', s.id, { install_banner_dismissed: true }); render(); },
   go: d => { if (d.v === 'focus') ensureFocus(); go(d.v); },
   back: () => go(state.prev && state.prev !== 'profile' ? state.prev : 'today'),
-  sel: d => { state.sel = +d.v; render(); },
+  sel: d => { if (state.sel === +d.v) return; state.sel = +d.v; state.anim = 'list'; render(); },
   sheet: d => { state.sheet = d.v; state.sd = d.v === 'task' ? { ctrl: 'yes', rec: state.taskTab === 'recurring' ? 'weekly' : 'once' } : {}; renderLayer(); },
-  close: () => { state.sheet = null; renderLayer(); },
-  closeAward: () => { state.award = null; renderLayer(); },
+  close: () => closeSheet(),
+  closeAward: () => closeAwardOv(),
   newHabit: () => { state.newH = newHabitDraft(); go('new'); },
   openHabit: d => { const x = habitById(d.id); if (!x) return; const ms = metricsOf(x); go('detail', { detailId: d.id, detTab: d.tab || (x.type === 'measure' ? 'stats' : 'cal'), detMetric: ms[0] ? ms[0].id : null, monthOff: 0, noteDraft: '' }); },
-  check: d => { const x = habitById(d.id); if (x) { toggleCheck(x, d.k); render(); } },
-  inc: d => { const x = habitById(d.id); if (x) { setCount(x, d.k, valOf(x, d.k) + (+d.d) * stepOf(x.unit, 'count')); render(); } },
+  check: d => { const x = habitById(d.id); if (x) { toggleCheck(x, d.k); state.flash = d.id + d.k; render(); } },
+  inc: d => { const x = habitById(d.id); if (x) { setCount(x, d.k, valOf(x, d.k) + (+d.d) * stepOf(x.unit, 'count')); state.flash = d.id + d.k; render(); } },
   day: d => { const x = habitById(d.id); if (x && d.k <= todayK()) dayAction(x, d.k); },
   openLog: d => openLog(d.id, d.k),
   logStep: d => { const x = habitById(state.sd.hid); const m = x.type === 'measure' ? metricsOf(x).find(y => y.id === d.key) : null; const st = stepOf(m ? m.unit : x.unit, x.type); const inp = document.getElementById('lg-' + d.key); let cur = num(state.sd.vals[d.key]); if (isNaN(cur)) cur = num(inp && inp.placeholder) || 0; const v = Math.max(0, Math.round((cur + (+d.d) * st) * 10) / 10); state.sd.vals[d.key] = toInput(v); if (inp) inp.value = state.sd.vals[d.key]; },
   logClear: () => saveLog(true),
-  detTab: d => { state.detTab = d.v; render(); },
+  detTab: d => { if (state.detTab === d.v) return; state.detTab = d.v; state.anim = 'tab'; render(); },
   detMetric: d => { state.detMetric = d.v; render(); },
   detRange: d => { state.detRange = d.v; render(); },
   month: d => { state.monthOff = Math.min(0, state.monthOff + (+d.v)); render(); },
   delNote: d => { softDelete('habit_notes', d.id); render(); },
   task: d => { const t = idx.tasks.find(x => x.id === d.id); if (!t) return; const k = t.kind === 'one_off' ? (Object.keys(idx.comp[t.id] || {})[0] || todayK()) : todayK();
-    if (taskDone(t, todayK())) hardDelete('task_completions', c => c.task_id === t.id && (t.kind === 'one_off' || c.occurrence_date === k)); else insert('task_completions', { task_id: t.id, user_id: idx.u.id, occurrence_date: todayK(), completed_at: nowIso() }); render(); },
+    state.flash = t.id; if (taskDone(t, todayK())) hardDelete('task_completions', c => c.task_id === t.id && (t.kind === 'one_off' || c.occurrence_date === k)); else insert('task_completions', { task_id: t.id, user_id: idx.u.id, occurrence_date: todayK(), completed_at: nowIso() }); render(); },
   delTask: d => { softDelete('tasks', d.id); render(); toast('Tarea borrada'); },
-  taskTab: d => { state.taskTab = d.v; render(); },
+  taskTab: d => { if (state.taskTab === d.v) return; state.taskTab = d.v; state.anim = 'tab'; render(); },
   sdSet: d => { state.sd[d.f] = d.v; renderLayer(); },
   focusMode: d => { const f = ensureFocus(); if (f.running || f.elapsed) endFocus('abandoned'); const s = settings(); f.mode = d.v; f.total = f.secs = s[FOCUS_MODES[d.v][2]] * 60; render(); },
   focusToggle: () => { const f = ensureFocus(); f.running = !f.running; if (f.running && !f.startedAt) f.startedAt = nowIso(); render(); },
@@ -1141,14 +1236,14 @@ const A = {
   setTheme: d => { update('user_settings', settings().id, { theme: d.v }); render(); },
   toggleSet: d => { const s = settings(); update('user_settings', s.id, { [d.f]: !s[d.f] }); render(); },
   confirm: d => { const c = CONFIRMS[d.v]; state.sheet = 'confirm'; state.sd = { title: c.title, text: c.text, ok: c.ok, act: d.v }; renderLayer(); },
-  confirmOk: () => { const c = CONFIRMS[state.sd.act]; state.sheet = null; c.run(); },
+  confirmOk: () => { const c = CONFIRMS[state.sd.act]; closeSheet(() => c.run()); },
   copyJson: () => { const ta = document.getElementById('jsonOut'); const txt = ta.value; const done = () => toast('JSON copiado'); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => { ta.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('Seleccionado: copialo a mano'); } }); else { ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} } },
   downloadJson: async () => {
     const txt = JSON.stringify(exportData(), null, 2), name = 'stoica-' + todayK() + '.json';
     const dl = (window.claude && window.claude.use) ? await window.claude.use('downloads').catch(() => null) : null;
     if (dl) { try { await dl.save({ filename: name, data: txt }); toast('Copia descargada'); } catch (e) { if (e && e.code !== 'declined') toast('No se pudo descargar. Usá Copiar.'); } return; }
     try { const blob = new Blob([txt], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); } catch (e) { toast('No se pudo descargar. Usá Copiar.'); } },
-  doImport: () => { try { importData(JSON.parse(state.sd.text || '')); state.sheet = null; render(); toast('Copia importada'); } catch (e) { state.sd.err = e instanceof SyntaxError ? 'El texto no es un JSON válido.' : e.message; renderLayer(); } },
+  doImport: () => { try { importData(JSON.parse(state.sd.text || '')); closeSheet(() => { render(); toast('Copia importada'); }); } catch (e) { state.sd.err = e instanceof SyntaxError ? 'El texto no es un JSON válido.' : e.message; renderLayer(); } },
   // nuevo hábito
   tpl: d => { const t = TEMPLATES[+d.i], n = state.newH; Object.assign(n, { tpl: t.k, name: t.l, symbol: t.symbol, virtue: t.virtue, type: t.type, target: t.target ? String(t.target) : '', unit: t.unit || '', metrics: (t.metrics || []).map(m => ({ name: m[0], unit: m[1], direction: m[2], start_value: '', goal_value: '' })), err: '' }); render(); },
   nType: d => { const n = state.newH; n.type = d.v; if (d.v === 'measure' && !n.metrics.length) n.metrics = [{ name: '', unit: '', direction: 'down', start_value: '', goal_value: '' }]; render(); },
@@ -1189,7 +1284,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('input', e => { const el = e.target.closest('[data-in]'); if (el && IN[el.dataset.in]) IN[el.dataset.in](el.value, el.dataset, el); });
 document.addEventListener('change', e => { const el = e.target.closest('[data-ch]'); if (el && CH[el.dataset.ch]) CH[el.dataset.ch](el.value, el.dataset, el); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && (state.sheet || state.award)) { state.sheet = null; state.award = null; renderLayer(); } });
+document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (state.award) closeAwardOv(); else if (state.sheet) closeSheet(); });
 document.addEventListener('submit', async e => {
   e.preventDefault();
   const id = e.target.id;
@@ -1207,7 +1302,7 @@ document.addEventListener('submit', async e => {
     insert('tasks', { user_id: idx.u.id, title: sd.title.trim(), kind: rec === 'once' ? 'one_off' : 'recurring', in_my_control: sd.ctrl || 'yes', due_date: rec === 'once' ? todayK() : null, due_time: null,
       recurrence_rule: rec === 'weekly' ? 'FREQ=WEEKLY;BYDAY=' + ['SU','MO','TU','WE','TH','FR','SA'][d0.getDay()] : rec === 'monthly' ? 'FREQ=MONTHLY;BYMONTHDAY=' + d0.getDate() : null,
       recurrence_label: rec === 'weekly' ? 'Cada ' + WDL[d0.getDay()].toLowerCase() : rec === 'monthly' ? 'Día ' + d0.getDate() + ' de cada mes' : null, sort_order: idx.tasks.length });
-    state.sheet = null; state.taskTab = rec === 'once' ? 'one_off' : 'recurring'; render(); toast('Tarea agregada');
+    state.taskTab = rec === 'once' ? 'one_off' : 'recurring'; closeSheet(() => { render(); toast('Tarea agregada'); });
   }
   if (id === 'newForm') {
     const n = state.newH;
