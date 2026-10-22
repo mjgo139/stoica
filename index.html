@@ -109,7 +109,8 @@ input,textarea,select{font:inherit;color:var(--tx)}
 .hero .wm{position:absolute;right:-30px;bottom:-40px;opacity:.13;pointer-events:none}
 .hero .title{font-size:32px}
 .hero .hq{position:relative;border-top:1px solid color-mix(in srgb,var(--gold) 30%,transparent);padding-top:14px}
-.hero .actions{position:absolute;top:18px;right:18px;display:flex;gap:8px}
+.hero .actions{position:absolute;top:18px;right:18px;display:flex;gap:8px;z-index:3}
+.today-grid{margin-top:18px}
 .chip-date{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 12px;border-radius:16px;background:var(--sf);border:1px solid var(--ln2);font-size:12.5px;font-weight:700;color:var(--tx2)}
 .dbl{border-top:1px solid var(--ln3);border-bottom:1px solid var(--ln3);padding:3px 0;margin-top:24px}
 .dbl>div{border-top:1px solid var(--ln);border-bottom:1px solid var(--ln);padding:18px 8px;text-align:center}
@@ -725,7 +726,7 @@ function viewToday() {
     <div class="actions"><button class="ico ring" style="background:var(--sf)" data-a="sheet" data-v="choose" aria-label="Agregar hábito o tarea">${ui('plus', 18)}</button>
     <button class="avatar mob" data-a="go" data-v="profile" aria-label="Perfil">${esc((idx.u.display_name || 'S').trim().charAt(0).toUpperCase())}</button></div>
     <div style="position:relative;min-width:0;padding-right:100px"><div class="cap gold">${sel === 0 ? 'Panel del día' : 'Viendo otro día'}</div><h1 class="title">${sel === 0 ? greet : title}</h1>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px"><span class="chip-date">${ui('sun', 15)}${longDay(selK)}</span>${s && s.memento_mori_enabled ? `<span class="chip-date">Memento mori · quedan ${daysLeft} días</span>` : ''}</div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px"><span class="chip-date">${ui('sun', 15)}${longDay(selK)}</span>${s && s.memento_mori_enabled ? `<span class="chip-date">Memento mori · ${daysLeft} días</span>` : ''}</div></div>
     <div class="hq"><div class="quote" style="text-align:left;font-size:18px">“${q.q}”</div><div class="cap gold" style="margin-top:8px;font-size:11px">${q.a}</div></div></div>`;
   let aside = `<div class="strip">${[-3,-2,-1,0,1,2,3].map(off => { const d = dayOff(off), k = key(d); const all = idx.habits.length && idx.habits.every(x => isDone(x, k));
     return `<button class="${off === sel ? 'on' : ''} ${off > 0 ? 'fut' : ''}" data-a="sel" data-v="${off}" aria-pressed="${off === sel}" aria-label="${WDL[d.getDay()]} ${d.getDate()}"><span class="cap" style="font-size:10.5px;letter-spacing:.1em">${WD[d.getDay()]}</span><span class="num" style="font-size:21px">${d.getDate()}</span><span class="dot ${all ? 'ok' : ''}"></span></button>`; }).join('')}</div>`;
