@@ -29,7 +29,7 @@ test.describe('v0.1 · base', () => {
     await page.goto('/');
     await page.getByRole('tab', { name: 'Crear cuenta' }).click();
     await page.getByLabel('Nombre').fill('Epicteto de Hierápolis');
-    await page.getByLabel('Correo').fill('epicteto@ejemplo.com');
+    await page.getByLabel('Correo').fill('epicteto.nuevo@ejemplo.com');
     await page.getByLabel('Contraseña').fill('123');
     await page.locator('form').getByRole('button', { name: 'Crear cuenta' }).click();
     await expect(page.getByRole('alert')).toContainText('al menos 6');

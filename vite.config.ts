@@ -23,6 +23,10 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: { globPatterns: ['**/*.{js,css,html,png,svg,woff2,webmanifest}'], maximumFileSizeToCacheInBytes: 3_000_000 },
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
         name: 'Stoica',
@@ -39,21 +43,6 @@ export default defineConfig(({ mode }) => ({
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
-      workbox: {
-        // Nunca dejar versiones viejas: se borran los cachés anteriores y el HTML siempre se pide a la red primero.
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/__\//],
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2,webmanifest}'],
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'fuentes', expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 } },
-          },
         ],
       },
       devOptions: { enabled: false },

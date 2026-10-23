@@ -11,16 +11,21 @@ export interface Perfil {
   tema: Tema;
   mementoMori: boolean;
   zonaHoraria: string;
+  /** Notificaciones push (v0.5). */
+  notificaciones: boolean;
+  examenHora: string | null; // "HH:MM" para el aviso del examen nocturno
+  examenSlot: number | null; // franja UTC de 15 min
+  notifReacciones: boolean;
   creado: number;
   actualizado: number;
   actualizadoPor: string;
   rol?: Rol;
 }
 
-export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria'>>;
+export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria' | 'notificaciones' | 'examenHora' | 'examenSlot' | 'notifReacciones'>>;
 
 /** Campos que la app puede escribir en users/{uid}. Debe coincidir con firestore.rules. */
-export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor'] as const;
+export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'notifReacciones', 'creado', 'actualizado', 'actualizadoPor'] as const;
 
 export function perfilInicial(uid: string, nombre: string, correo: string, zona: string, ahora: number): Perfil {
   return {
@@ -29,6 +34,10 @@ export function perfilInicial(uid: string, nombre: string, correo: string, zona:
     tema: 'sistema',
     mementoMori: true,
     zonaHoraria: zonaValida(zona) ? zona : ZONA_POR_DEFECTO,
+    notificaciones: false,
+    examenHora: '22:00',
+    examenSlot: null,
+    notifReacciones: true,
     creado: ahora,
     actualizado: ahora,
     actualizadoPor: uid,
@@ -48,4 +57,23 @@ export function plataformaDe(ua: string, instalada: boolean): string {
   const s = ua.toLowerCase();
   const so = /iphone|ipad|ipod/.test(s) ? 'iOS' : /android/.test(s) ? 'Android' : /windows/.test(s) ? 'Windows' : /mac os/.test(s) ? 'macOS' : /linux/.test(s) ? 'Linux' : 'Otro';
   return `${so} · ${instalada ? 'app' : 'web'}`;
+}
+
+/** Completa con valores por defecto los campos que no existían en versiones anteriores. */
+export function completarPerfil(p: Partial<Perfil>): Perfil {
+  return {
+    nombre: p.nombre ?? 'Estoico',
+    correo: p.correo ?? '',
+    tema: p.tema ?? 'sistema',
+    mementoMori: p.mementoMori ?? true,
+    zonaHoraria: p.zonaHoraria ?? ZONA_POR_DEFECTO,
+    notificaciones: p.notificaciones ?? false,
+    examenHora: p.examenHora === undefined ? '22:00' : p.examenHora,
+    examenSlot: p.examenSlot ?? null,
+    notifReacciones: p.notifReacciones ?? true,
+    creado: p.creado ?? 0,
+    actualizado: p.actualizado ?? 0,
+    actualizadoPor: p.actualizadoPor ?? '',
+    ...(p.rol ? { rol: p.rol } : {}),
+  };
 }

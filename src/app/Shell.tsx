@@ -5,6 +5,9 @@ import { useSesion } from './sesion';
 import { Laurel } from '@/ui/Laurel';
 import { Icono, type NombreIcono } from '@/ui/Iconos';
 import { useEnLinea } from '@/pwa/conexion';
+import { Sincronizar } from './datos';
+import { SincronizarComunidad } from './comunidad';
+import { Celebracion } from '@/screens/habitos/Celebracion';
 
 const SECCIONES: Array<{ ruta: string; nombre: string; icono: NombreIcono }> = [
   { ruta: '/', nombre: 'Hoy', icono: 'hoy' },
@@ -41,6 +44,18 @@ export function Shell() {
             </NavLink>
           ))}
         </div>
+        <div className="items solo-esc" style={{ marginTop: 18, borderTop: '1px solid var(--ln)', paddingTop: 14 }}>
+          <NavLink to="/comunidad" className={({ isActive }) => (isActive ? 'on' : '')}>
+            <Icono nombre="grupo" tam={22} className="" />
+            Comunidad
+          </NavLink>
+          {perfil.rol === 'admin' && (
+            <NavLink to="/admin" className={({ isActive }) => (isActive ? 'on' : '')}>
+              <Icono nombre="panel" tam={22} className="" />
+              Admin
+            </NavLink>
+          )}
+        </div>
         <div className="yo">
           <NavLink to="/perfil" className={({ isActive }) => (isActive ? 'on' : '')}>
             <span className="avatar" style={{ width: 30, height: 30, fontSize: 14 }}>
@@ -50,6 +65,9 @@ export function Shell() {
           </NavLink>
         </div>
       </nav>
+      <Sincronizar />
+      <SincronizarComunidad />
+      <Celebracion />
       <main className="app-contenido" key={pathname}>
         {!enLinea && (
           <div className="franja info" role="status" style={{ marginBottom: 18 }}>

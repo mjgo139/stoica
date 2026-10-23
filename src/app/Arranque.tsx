@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { claveDia, ZONA_POR_DEFECTO } from '@core/fechas';
-import { perfilInicial, plataformaDe } from '@core/perfil';
+import { completarPerfil, perfilInicial, plataformaDe } from '@core/perfil';
 import { obtenerDriver } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
 import { useSesion } from './sesion';
@@ -63,7 +63,10 @@ export function Arranque({ children }: { children: ReactNode }) {
         usuario.uid,
         (p) => {
           if (p) {
-            poner({ estado: 'dentro', perfil: p });
+            const anterior = useSesion.getState().perfil?.rol;
+            poner({ estado: 'dentro', perfil: completarPerfil(p) });
+            // Si el servidor acaba de asignar el rol, pedimos un token nuevo para que las reglas lo vean.
+            if (p.rol && p.rol !== anterior) d.refrescarToken();
             registrarAccesoDelDia(usuario.uid, p.zonaHoraria);
           } else if (!creando) {
             creando = true;

@@ -1,55 +1,67 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { citaDelDia } from '@core/citas';
-import { claveDia, diasRestantesDelAnio, fechaLarga, momentoDelDia, partesEnZona, saludo, MOMENTOS } from '@core/fechas';
+import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLarga, fechaLargaDeClave, momentoDelDia, MOMENTOS, partesDeClave, partesEnZona, saludo, sumarDias } from '@core/fechas';
+import { cumplido, esDiaActivo, racha, type Habito } from '@core/habitos';
 import { inicial, primerNombre } from '@core/perfil';
+import { aRomano } from '@core/romanos';
+import { examenCompleto, tareaDelDia } from '@core/rutina';
+import { idTareaHecha } from '@core/rutina';
 import { useSesion } from '@/app/sesion';
+import { useComunidad } from '@/app/comunidad';
+import { alternarTarea, registrosDe, useDatos, useHabitosActivos, useHoy, VENTANA_DIAS } from '@/app/datos';
 import { Laurel } from '@/ui/Laurel';
 import { Icono } from '@/ui/Iconos';
-
-const DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-export const VIRTUDES = [
-  { id: 'sabiduria', nombre: 'Sabiduría', detalle: 'Pensar con claridad, aprender, discernir', color: 'var(--sab)' },
-  { id: 'coraje', nombre: 'Coraje', detalle: 'Hacer lo difícil, sostener el esfuerzo', color: 'var(--cor)' },
-  { id: 'justicia', nombre: 'Justicia', detalle: 'Cumplir con los demás y con tu deber', color: 'var(--jus)' },
-  { id: 'templanza', nombre: 'Templanza', detalle: 'Moderación, autocontrol, medida', color: 'var(--tem)' },
-] as const;
+import { IconoHabito } from '@/ui/IconoHabito';
+import { FilaHabito } from './habitos/FilaHabito';
+import { Plantillas } from './habitos/Editor';
 
 export function Hoy() {
   const perfil = useSesion((s) => s.perfil)!;
+  const hoy = useHoy();
+  const [sel, setSel] = useState(0);
+  const dia = sumarDias(hoy, sel);
+  const habitos = useHabitosActivos();
+  const { registros, tareas, tareasHechas, examenes, listo } = useDatos();
   const ahora = new Date();
   const zona = perfil.zonaHoraria;
-  const hoy = claveDia(ahora, zona);
   const { hora } = partesEnZona(ahora, zona);
-  const nombre = primerNombre(perfil.nombre);
-  const cita = citaDelDia(hoy);
+  const cita = citaDelDia(dia);
   const quedan = diasRestantesDelAnio(ahora, zona);
 
-  const semana = [-3, -2, -1, 0, 1, 2, 3].map((off) => {
-    const f = new Date(ahora.getTime() + off * 864e5);
-    const p = partesEnZona(f, zona);
-    return { off, clave: claveDia(f, zona), dia: p.dia, corto: DIAS_CORTOS[p.diaSemana] };
-  });
+  const delDia = useMemo(() => habitos.filter((h) => esDiaActivo(h, dia)), [habitos, dia]);
+  const hechosDe = (d: string) => {
+    const hs = habitos.filter((h) => esDiaActivo(h, d));
+    const ok = hs.filter((h) => cumplido(h, registrosDe(registros, h.id).get(d))).length;
+    return { total: hs.length, ok };
+  };
+  const resumen = hechosDe(dia);
+  const rachas = useMemo(
+    () => new Map(habitos.map((h) => [h.id, racha(h, registrosDe(registros, h.id), hoy, VENTANA_DIAS)])),
+    [habitos, registros, hoy],
+  );
+  const tareasDia = tareas.filter((t) => tareaDelDia(t, dia)).sort((a, b) => a.momento - b.momento);
+  const titulo = sel === 0 ? `${saludo(hora)}${primerNombre(perfil.nombre) ? `, ${primerNombre(perfil.nombre)}` : ''}` : sel === -1 ? 'Ayer' : sel === 1 ? 'Mañana' : fechaLargaDeClave(dia).split(' ')[0];
 
   return (
     <div className="entra">
       <section className="hero" aria-label="Bienvenida">
         <Laurel ancho={300} alto={272} completo={false} grosor={2} className="wm" />
         <div className="acciones">
+          <Link to="/habitos/nuevo" className="ico ring" style={{ background: 'var(--sf)' }} aria-label="Nuevo hábito">
+            <Icono nombre="mas" tam={18} />
+          </Link>
           <Link to="/perfil" className="avatar solo-mov" aria-label="Perfil" style={{ textDecoration: 'none' }}>
             {inicial(perfil.nombre)}
           </Link>
         </div>
-        <div style={{ position: 'relative', minWidth: 0, paddingRight: 60 }}>
-          <div className="cap gold">Panel del día</div>
-          <h1 className="titulo">
-            {saludo(hora)}
-            {nombre ? `, ${nombre}` : ''}
-          </h1>
+        <div style={{ position: 'relative', minWidth: 0, paddingRight: 100 }}>
+          <div className="cap gold">{sel === 0 ? 'Panel del día' : 'Viendo otro día'}</div>
+          <h1 className="titulo">{titulo}</h1>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
             <span className="chip-fecha">
               <Icono nombre="sol" tam={15} />
-              {fechaLarga(ahora, zona)}
+              {sel === 0 ? fechaLarga(ahora, zona) : fechaLargaDeClave(dia)}
             </span>
             {perfil.mementoMori && <span className="chip-fecha">Memento mori · {quedan} {quedan === 1 ? 'día' : 'días'}</span>}
           </div>
@@ -65,65 +77,196 @@ export function Hoy() {
       </section>
 
       <div className="hoy-grilla" style={{ marginTop: 24 }}>
-        <aside className="panel" aria-label="Semana">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Esta semana</span>
+        <aside className="panel" aria-label="Elegir día">
+          <div className="franja-dias" role="tablist">
+            {[-3, -2, -1, 0, 1, 2, 3].map((off) => {
+              const d = sumarDias(hoy, off);
+              const r = hechosDe(d);
+              const punto = r.total > 0 && r.ok === r.total ? 'ok' : r.ok > 0 ? 'medio' : '';
+              return (
+                <button key={off} type="button" role="tab" aria-selected={off === sel} className={`${off === sel ? 'on' : ''} ${off > 0 ? 'fut' : ''}`} onClick={() => setSel(off)} aria-label={fechaLargaDeClave(d)}>
+                  <span className="cap" style={{ fontSize: 10.5, letterSpacing: '.1em' }}>
+                    {DIAS_CORTOS[diaSemanaDeClave(d)]}
+                  </span>
+                  <span className="num" style={{ fontSize: 21 }}>
+                    {partesDeClave(d).dia}
+                  </span>
+                  <span className={`punto ${off <= 0 ? punto : ''}`} />
+                </button>
+              );
+            })}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', borderBottom: '1px solid var(--ln)' }}>
-            {semana.map((d) => (
-              <div
-                key={d.clave}
-                aria-current={d.off === 0 ? 'date' : undefined}
-                style={{ height: 72, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, position: 'relative', color: d.off === 0 ? 'var(--gold)' : d.off > 0 ? 'var(--mu3)' : 'var(--tx2)' }}
-              >
-                <span className="cap" style={{ fontSize: 10.5, letterSpacing: '.1em' }}>
-                  {d.corto}
-                </span>
-                <span className="num" style={{ fontSize: 21 }}>
-                  {d.dia}
-                </span>
-                {d.off === 0 && <span style={{ position: 'absolute', bottom: -1, left: '22%', right: '22%', height: 2, background: 'var(--gold)' }} />}
-              </div>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 16 }}>
+            <span className="num" style={{ fontSize: 34, color: resumen.total && resumen.ok === resumen.total ? 'var(--ok)' : 'var(--tx)' }}>
+              {resumen.ok}
+              <span className="mu2" style={{ fontSize: 20 }}>/{resumen.total}</span>
+            </span>
+            <span className="mu" style={{ fontWeight: 600 }}>
+              {resumen.total === 0 ? 'Sin prácticas este día' : resumen.ok === resumen.total ? 'Día cumplido' : 'prácticas cumplidas'}
+            </span>
           </div>
-          <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 14 }}>
-            Cada día cumplido se va a marcar con un rombo verde oliva.
-          </p>
+          <div className="barra-prog" style={{ marginTop: 10 }}>
+            <i style={{ width: `${resumen.total ? (resumen.ok / resumen.total) * 100 : 0}%` }} />
+          </div>
         </aside>
 
-        <section aria-label="Prácticas de hoy">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>{MOMENTOS[momentoDelDia(hora)]}</span>
-          </div>
-          <div className="card vacio">
-            <span className="rombo" style={{ margin: '6px auto 0', display: 'flex' }} />
-            <div className="serif" style={{ fontSize: 22, marginTop: 18 }}>
-              Empezá por una práctica
+        <section aria-label="Prácticas del día" className={sel !== 0 ? 'entra' : ''} key={dia}>
+          {listo && habitos.length === 0 ? (
+            <div className="card vacio">
+              <IconoHabito icono="med" virtud="sabiduria" grande />
+              <div className="serif" style={{ fontSize: 22, marginTop: 12 }}>
+                Empezá por una práctica
+              </div>
+              <p>Elegí un hábito: algo que marcás, una cantidad que vas sumando o una medida como tu peso.</p>
+              <Link to="/habitos/nuevo" className="btn" style={{ textDecoration: 'none', maxWidth: 320, margin: '0 auto' }}>
+                Crear mi primer hábito
+              </Link>
+              <div style={{ marginTop: 22, textAlign: 'left' }}>
+                <Plantillas compacta />
+              </div>
             </div>
-            <p>En la próxima versión vas a crear tus hábitos: algo que marcás, una cantidad que vas sumando o una medida como tu peso.</p>
-            <Link to="/habitos" className="ghost" style={{ textDecoration: 'none' }}>
-              Ver hábitos
-            </Link>
-          </div>
+          ) : (
+            <>
+              {([0, 1, 2] as const).map((m) => {
+                const lista = delDia.filter((h) => h.momento === m);
+                if (!lista.length) return null;
+                return (
+                  <div key={m}>
+                    <div className="grp cap" style={{ marginTop: m === firstMomento(delDia) ? 0 : 24 }}>
+                      <span>{MOMENTOS[m]}</span>
+                      {sel === 0 && momentoDelDia(hora) === m && <span className="mu2" style={{ fontSize: 10 }}>· ahora</span>}
+                    </div>
+                    {lista.map((h) => (
+                      <FilaHabito
+                        key={h.id}
+                        h={h}
+                        r={registrosDe(registros, h.id).get(dia)}
+                        fecha={dia}
+                        racha={rachas.get(h.id) ?? 0}
+                        perdido={sel < 0 && !cumplido(h, registrosDe(registros, h.id).get(dia))}
+                        editable={sel <= 0}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+              {listo && delDia.length === 0 && <p className="vacio-mini">No hay prácticas para este día de la semana.</p>}
+              {sel > 0 && <p className="vacio-mini">Los días futuros se pueden ver, pero no marcar.</p>}
+            </>
+          )}
+
+          {tareasDia.length > 0 && (
+            <>
+              <div className="grp cap" style={{ marginTop: 28 }}>
+                <span>Tareas</span>
+              </div>
+              {tareasDia.slice(0, 6).map((t) => {
+                const hecha = tareasHechas.has(idTareaHecha(t.id, dia));
+                return (
+                  <div key={t.id} className={`item ${hecha ? 'is-done tachada' : ''}`}>
+                    <Link to="/tareas" className="item-main">
+                      <span style={{ minWidth: 0 }}>
+                        <span className="nm">{t.titulo}</span>
+                        <span className="sub mu2">{t.dependeDeTi ? 'Depende de ti' : 'No depende de ti'}</span>
+                      </span>
+                    </Link>
+                    {t.dependeDeTi && (
+                      <button type="button" className={`dia ${hecha ? 'ok' : ''}`} aria-pressed={hecha} aria-label={`${hecha ? 'Desmarcar' : 'Marcar'} ${t.titulo}`} disabled={sel > 0} onClick={() => alternarTarea(t, dia)}>
+                        <span>
+                          <svg width="14" height="14" viewBox="0 0 24 24">
+                            <path d="M5 12l4 4 10-10" />
+                          </svg>
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
         </section>
 
-        <aside className="panel" aria-label="Las cuatro virtudes">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Las cuatro virtudes</span>
-          </div>
-          {VIRTUDES.map((v) => (
-            <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--ln2)' }}>
-              <span style={{ width: 10, height: 10, transform: 'rotate(45deg)', background: v.color, flex: 'none', margin: '0 6px' }} />
-              <span style={{ minWidth: 0 }}>
-                <strong style={{ display: 'block', color: v.color }}>{v.nombre}</strong>
-                <span className="mu" style={{ fontSize: 13, fontWeight: 500 }}>
-                  {v.detalle}
-                </span>
-              </span>
+        <aside className="rail" style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+          <UltimosSiete hoy={hoy} habitos={habitos} />
+          <div className="panel">
+            <div className="grp cap" style={{ marginTop: 0 }}>
+              <span>Rachas</span>
             </div>
-          ))}
+            {[...habitos]
+              .sort((a, b) => (rachas.get(b.id) ?? 0) - (rachas.get(a.id) ?? 0))
+              .slice(0, 4)
+              .map((h) => (
+                <Link key={h.id} to={`/habitos/${h.id}`} className="srow">
+                  <IconoHabito icono={h.icono} virtud={h.virtud} tam={34} />
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>{h.nombre}</span>
+                  <span className="num gold" style={{ fontSize: 18 }}>
+                    {aRomano(rachas.get(h.id) ?? 0)}
+                  </span>
+                </Link>
+              ))}
+            {habitos.length === 0 && <p className="vacio-mini">Tus rachas van a aparecer acá.</p>}
+          </div>
+          <PanelComunidad />
+          <Link to="/examen" className="panel" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+            <div className="grp cap" style={{ marginTop: 0 }}>
+              <span>Examen nocturno</span>
+            </div>
+            <div className="serif" style={{ fontSize: 19 }}>
+              {examenCompleto(examenes.get(hoy)) ? 'Examen de hoy hecho' : '¿Qué mal he corregido hoy?'}
+            </div>
+            <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
+              {examenCompleto(examenes.get(hoy)) ? 'Podés releerlo o completarlo.' : 'Tres preguntas de Séneca para cerrar el día.'}
+            </p>
+          </Link>
         </aside>
       </div>
     </div>
+  );
+}
+
+const firstMomento = (hs: Habito[]) => Math.min(...hs.map((h) => h.momento), 3);
+
+function UltimosSiete({ hoy, habitos }: { hoy: string; habitos: Habito[] }) {
+  const registros = useDatos((s) => s.registros);
+  const dias = [-6, -5, -4, -3, -2, -1, 0].map((o) => sumarDias(hoy, o));
+  return (
+    <div className="panel">
+      <div className="grp cap" style={{ marginTop: 0 }}>
+        <span>Últimos 7 días</span>
+      </div>
+      <div className="barras" role="img" aria-label="Porcentaje cumplido en los últimos 7 días">
+        {dias.map((d) => {
+          const hs = habitos.filter((h) => esDiaActivo(h, d));
+          const ok = hs.filter((h) => cumplido(h, registrosDe(registros, h.id).get(d))).length;
+          const p = hs.length ? Math.round((ok / hs.length) * 100) : 0;
+          return (
+            <div key={d} className={d === hoy ? 'hoy' : ''}>
+              <span className="p">{hs.length ? `${p}%` : '—'}</span>
+              <span className={`b ${p === 100 ? 'full' : ''}`} style={{ height: `${Math.max(3, p * 0.8)}px` }} />
+              <span className="cap" style={{ fontSize: 10, color: 'var(--mu2)' }}>
+                {DIAS_CORTOS[diaSemanaDeClave(d)].charAt(0)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PanelComunidad() {
+  const grupos = useComunidad((s) => s.grupos);
+  return (
+    <Link to="/comunidad" className="panel" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+      <div className="grp cap" style={{ marginTop: 0 }}>
+        <span>Comunidad</span>
+      </div>
+      <div className="serif" style={{ fontSize: 19 }}>
+        {grupos.size === 0 ? 'Acompañarse sin chat' : `${grupos.size} ${grupos.size === 1 ? 'grupo' : 'grupos'}`}
+      </div>
+      <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
+        {grupos.size === 0 ? 'Creá un grupo privado o unite con un código.' : [...grupos.values()].map((g) => g.grupo.nombre).join(' · ')}
+      </p>
+    </Link>
   );
 }

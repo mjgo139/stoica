@@ -20,5 +20,6 @@
     "baseUrl": ".",
     "paths": { "@core/*": ["functions/src/core/*"], "@/*": ["src/*"] }
   },
-  "include": ["src", "functions/src/core"]
+  "include": ["src", "functions/src/core"],
+  "exclude": ["src/sw.ts"]
 }

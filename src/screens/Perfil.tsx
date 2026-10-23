@@ -12,6 +12,7 @@ import { Hoja } from '@/ui/Hoja';
 import { Interruptor } from '@/ui/Interruptor';
 import { useAvisos } from '@/ui/avisos';
 import { BotonInstalar } from './Instalar';
+import { Accesos, MisDatos, Notificaciones } from './PerfilExtra';
 
 const TEMAS: Array<{ id: Tema; nombre: string }> = [
   { id: 'claro', nombre: 'Claro' },
@@ -118,6 +119,12 @@ export function Perfil() {
                 {perfil.zonaHoraria.replace('_', ' ')}
               </span>
             </span>
+          </div>
+          <Notificaciones />
+          <Accesos />
+          <MisDatos />
+          <div className="grp cap">
+            <span>Sesión</span>
           </div>
           <BotonInstalar estilo="fila" />
           <button type="button" className="fila" onClick={salir} style={{ color: 'var(--cor)' }}>

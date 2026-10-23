@@ -18,18 +18,30 @@ import {
   type Auth,
 } from 'firebase/auth';
 import {
+  collection,
+  deleteDoc,
   doc,
+  getDocs,
   initializeFirestore,
+  limit,
   onSnapshot,
+  orderBy,
   persistentLocalCache,
   persistentMultipleTabManager,
+  query,
   setDoc,
   updateDoc,
+  where,
   type Firestore,
+  type QueryConstraint,
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Perfil } from '@core/perfil';
 import { traducirError } from './errores';
-import { ErrorStoica, type Driver, type UsuarioSesion } from './tipos';
+import { ErrorStoica, type Consulta, type Driver, type UsuarioSesion } from './tipos';
+
+/** Espera al servidor como mucho unos segundos: sin conexión, la escritura queda en cola y se envía sola. */
+const sinBloquear = (p: Promise<unknown>, ms = 3500) => Promise.race([p, new Promise((r) => setTimeout(r, ms))]);
 
 function configuracion() {
   const e = import.meta.env;
@@ -58,6 +70,15 @@ export function crearDriverFirebase(): Driver {
   });
 
   let nombrePendiente = '';
+  const funciones = getFunctions(app, 'southamerica-east1');
+  const armar = (c: Consulta) => {
+    const partes: QueryConstraint[] = [];
+    for (const [campo, op, valor] of c.filtros ?? []) partes.push(where(campo, op, valor));
+    if (c.orden) partes.push(orderBy(c.orden[0], c.orden[1]));
+    if (c.limite) partes.push(limit(c.limite));
+    return query(collection(db, c.ruta), ...partes);
+  };
+  let tokenPush: string | null = null;
 
   const aSesion = (u: NonNullable<Auth['currentUser']>): UsuarioSesion => ({
     uid: u.uid,
@@ -123,5 +144,61 @@ export function crearDriverFirebase(): Driver {
     registrarAcceso: (uid, plataforma) => envolver(async () => {
       await updateDoc(doc(db, 'accounts', uid), { ultimoAcceso: Date.now(), plataforma, actualizadoPor: uid });
     }),
+
+    nuevoId: () => doc(collection(db, '_')).id,
+    observarDoc(ruta, cb, alFallar) {
+      return onSnapshot(
+        doc(db, ruta),
+        (snap) => cb(snap.exists() ? ({ id: snap.id, ...snap.data() } as never) : null),
+        (e) => alFallar(traducirError(e)),
+      );
+    },
+    observarLista(c, cb, alFallar) {
+      return onSnapshot(
+        armar(c),
+        (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as never)),
+        (e) => alFallar(traducirError(e)),
+      );
+    },
+    leerLista: (c) => envolver(async () => (await getDocs(armar(c))).docs.map((d) => ({ id: d.id, ...d.data() }) as never)),
+    guardar: (ruta, datos, opciones) => envolver(async () => {
+      await sinBloquear(setDoc(doc(db, ruta), datos, { merge: !!opciones?.combinar }));
+    }),
+    borrar: (ruta) => envolver(async () => {
+      await sinBloquear(deleteDoc(doc(db, ruta)));
+    }),
+    llamar: (nombre, datos) => envolver(async () => {
+      if (!navigator.onLine) throw new ErrorStoica('Para esto necesitás conexión a internet.', 'unavailable');
+      const r = await httpsCallable(funciones, nombre)(datos ?? {});
+      return r.data as never;
+    }),
+    refrescarToken: async () => {
+      await auth.currentUser?.getIdToken(true).catch(() => undefined);
+    },
+    async activarNotificaciones() {
+      const vapid = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      if (!vapid) return { error: 'Las notificaciones todavía no están configuradas en el servidor.' };
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return { error: 'Este navegador no permite notificaciones. En iPhone, primero instalá la app.' };
+      const m = await import('firebase/messaging');
+      if (!(await m.isSupported())) return { error: 'Este navegador no permite notificaciones. En iPhone, primero instalá la app.' };
+      const permiso = await Notification.requestPermission();
+      if (permiso !== 'granted') return { error: 'No diste permiso para notificaciones. Podés activarlo en los ajustes del navegador.' };
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        tokenPush = await m.getToken(m.getMessaging(app), { vapidKey: vapid, serviceWorkerRegistration: reg });
+        return tokenPush ? { token: tokenPush } : { error: 'No se pudo registrar este dispositivo.' };
+      } catch {
+        return { error: 'No se pudo registrar este dispositivo para notificaciones.' };
+      }
+    },
+    async desactivarNotificaciones() {
+      try {
+        const m = await import('firebase/messaging');
+        if (await m.isSupported()) await m.deleteToken(m.getMessaging(app));
+      } catch {
+        /* nada */
+      }
+      tokenPush = null;
+    },
   };
 }

@@ -86,3 +86,90 @@ export function momentoDelDia(hora: number): 0 | 1 | 2 {
 }
 
 export const MOMENTOS = ['I · Al amanecer', 'II · Durante el día', 'III · Al anochecer'] as const;
+
+// ---------- Aritmética con claves de día (AAAA-MM-DD), sin zona horaria ----------
+const aUTC = (clave: string) => {
+  const [a, m, d] = clave.split('-').map(Number);
+  return Date.UTC(a, m - 1, d);
+};
+const deUTC = (ms: number) => {
+  const f = new Date(ms);
+  return `${f.getUTCFullYear()}-${dos(f.getUTCMonth() + 1)}-${dos(f.getUTCDate())}`;
+};
+
+export function sumarDias(clave: string, n: number): string {
+  return deUTC(aUTC(clave) + n * 864e5);
+}
+
+/** b - a en días. */
+export function diferenciaDias(a: string, b: string): number {
+  return Math.round((aUTC(b) - aUTC(a)) / 864e5);
+}
+
+/** 0 = domingo. */
+export function diaSemanaDeClave(clave: string): number {
+  return new Date(aUTC(clave)).getUTCDay();
+}
+
+export function partesDeClave(clave: string): { anio: number; mes: number; dia: number } {
+  const [anio, mes, dia] = clave.split('-').map(Number);
+  return { anio, mes, dia };
+}
+
+/** Claves desde `desde` hasta `hasta` inclusive. */
+export function rangoDias(desde: string, hasta: string): string[] {
+  const n = diferenciaDias(desde, hasta);
+  const out: string[] = [];
+  for (let i = 0; i <= n; i++) out.push(sumarDias(desde, i));
+  return out;
+}
+
+export const DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] as const;
+export const DIAS_LETRA = ['D', 'L', 'M', 'M', 'J', 'V', 'S'] as const;
+export const MESES_NOMBRE = MESES;
+
+/** "22 oct" */
+export function fechaCorta(clave: string): string {
+  const { mes, dia } = partesDeClave(clave);
+  return `${dia} ${MESES[mes - 1].slice(0, 3)}`;
+}
+
+/** "Jueves 22 de octubre" a partir de una clave. */
+export function fechaLargaDeClave(clave: string): string {
+  const { mes, dia } = partesDeClave(clave);
+  const d = DIAS[diaSemanaDeClave(clave)];
+  return `${d.charAt(0).toUpperCase()}${d.slice(1)} ${dia} de ${MESES[mes - 1]}`;
+}
+
+// ---------- Horas y recordatorios ----------
+export function esHora(s: unknown): s is string {
+  return typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+}
+
+/** Minutos de diferencia entre la zona y UTC en una fecha (Asunción = -180). */
+export function desfaseMinutos(zona: string, fecha: Date = new Date()): number {
+  const z = zonaValida(zona) ? zona : ZONA_POR_DEFECTO;
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: z, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+  const p: Record<string, number> = {};
+  for (const x of f.formatToParts(fecha)) if (x.type !== 'literal') p[x.type] = Number(x.value);
+  const local = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
+  const utc = Math.floor(fecha.getTime() / 60000) * 60000;
+  return Math.round((local - utc) / 60000);
+}
+
+/**
+ * Franja UTC de 15 minutos (0..95) para una hora local. La función programada corre
+ * cada 15 minutos y busca los recordatorios de su franja.
+ */
+export function franjaUTC(hora: string, zona: string, fecha: Date = new Date()): number {
+  const [h, m] = hora.split(':').map(Number);
+  const min = (((h * 60 + m - desfaseMinutos(zona, fecha)) % 1440) + 1440) % 1440;
+  return Math.floor(min / 15);
+}
+
+export function franjaActual(fecha: Date = new Date()): number {
+  return Math.floor((fecha.getUTCHours() * 60 + fecha.getUTCMinutes()) / 15);
+}
+
+/** Horas cada 15 minutos para elegir recordatorios. */
+export const HORAS_15: string[] = Array.from({ length: 96 }, (_, i) => `${dos(Math.floor(i / 4))}:${dos((i % 4) * 15)}`);

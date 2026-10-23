@@ -3,3 +3,7 @@ export * from './romanos.js';
 export * from './validaciones.js';
 export * from './citas.js';
 export * from './perfil.js';
+export * from './habitos.js';
+export * from './rutina.js';
+export * from './comunidad.js';
+export * from './admin.js';

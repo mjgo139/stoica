@@ -12,6 +12,8 @@ const TRAZOS = {
   compartir: '<path d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/>',
   nube: '<path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9zM4 4l16 16"/>',
   check: '<path d="M5 12l4 4 10-10"/>',
+  grupo: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 2 6 5.5"/>',
+  panel: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
 } as const;
 
 export type NombreIcono = keyof typeof TRAZOS;

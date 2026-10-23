@@ -1,0 +1,210 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { franjaUTC, HORAS_15 } from '@core/fechas';
+import type { CambiosPerfil } from '@core/perfil';
+import { useSesion } from '@/app/sesion';
+import { hoyActual } from '@/app/datos';
+import { obtenerDriver } from '@/data';
+import { mensajeDeError } from '@/data/tipos';
+import { Interruptor } from '@/ui/Interruptor';
+import { useAvisos } from '@/ui/avisos';
+import { Hoja } from '@/ui/Hoja';
+import { esIOS, esInstalada } from '@/pwa/instalar';
+
+const CLAVE_DISPOSITIVO = 'stoica.dispositivo';
+
+/** Id corto y estable para el documento del dispositivo (no guarda el token en el id). */
+function idDispositivo(token: string): string {
+  let h1 = 0x811c9dc5;
+  let h2 = 0;
+  for (let i = 0; i < token.length; i++) {
+    h1 = Math.imul(h1 ^ token.charCodeAt(i), 16777619) >>> 0;
+    h2 = (h2 * 31 + token.charCodeAt(i)) >>> 0;
+  }
+  return `d${h1.toString(36)}${h2.toString(36)}`;
+}
+
+async function actualizar(c: CambiosPerfil) {
+  const uid = useSesion.getState().usuario!.uid;
+  await (await obtenerDriver()).actualizarPerfil(uid, c);
+}
+
+export function Notificaciones() {
+  const perfil = useSesion((s) => s.perfil)!;
+  const uid = useSesion((s) => s.usuario!.uid);
+  const mostrar = useAvisos((s) => s.mostrar);
+  const [ocupado, setOcupado] = useState(false);
+
+  const activar = async (si: boolean) => {
+    setOcupado(true);
+    try {
+      const d = await obtenerDriver();
+      if (si) {
+        const r = await d.activarNotificaciones();
+        if ('error' in r) {
+          mostrar(r.error);
+          return;
+        }
+        const id = idDispositivo(r.token);
+        await d.guardar(`users/${uid}/devices/${id}`, { token: r.token, plataforma: navigator.userAgent.includes('Mobile') ? 'celular' : 'computadora', actualizado: Date.now(), actualizadoPor: uid });
+        try {
+          localStorage.setItem(CLAVE_DISPOSITIVO, id);
+        } catch {
+          /* nada */
+        }
+        await actualizar({ notificaciones: true, examenSlot: perfil.examenHora ? franjaUTC(perfil.examenHora, perfil.zonaHoraria) : null });
+        mostrar('Notificaciones activadas en este dispositivo.');
+      } else {
+        let id: string | null = null;
+        try {
+          id = localStorage.getItem(CLAVE_DISPOSITIVO);
+        } catch {
+          /* nada */
+        }
+        if (id) await d.borrar(`users/${uid}/devices/${id}`);
+        await d.desactivarNotificaciones();
+        await actualizar({ notificaciones: false });
+        mostrar('Notificaciones desactivadas.');
+      }
+    } catch (e) {
+      mostrar(mensajeDeError(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="grp cap">
+        <span>Notificaciones</span>
+      </div>
+      <Interruptor etiqueta="Recordatorios y examen" detalle="Avisos de tus hábitos (si todavía no cumpliste) y del examen nocturno" activo={perfil.notificaciones} alCambiar={(v) => !ocupado && activar(v)} />
+      {esIOS() && !esInstalada() && (
+        <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
+          En iPhone las notificaciones funcionan solo con la app instalada (Compartir › Agregar a pantalla de inicio).
+        </p>
+      )}
+      <label className="fila" style={{ cursor: 'default' }}>
+        <span style={{ flex: 1 }}>
+          <span style={{ display: 'block' }}>Aviso del examen</span>
+          <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+            Hora en que te recordamos el examen nocturno
+          </span>
+        </span>
+        <select
+          className="fi"
+          style={{ width: 120 }}
+          value={perfil.examenHora ?? ''}
+          aria-label="Hora del aviso del examen"
+          onChange={(e) => {
+            const h = e.target.value || null;
+            actualizar({ examenHora: h, examenSlot: h ? franjaUTC(h, perfil.zonaHoraria) : null }).catch((er) => mostrar(mensajeDeError(er)));
+          }}
+        >
+          <option value="">Sin aviso</option>
+          {HORAS_15.filter((h) => h >= '17:00' || h < '02:00').map((h) => (
+            <option key={h} value={h}>
+              {h}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Interruptor etiqueta="Reacciones de mis grupos" detalle="Aviso cuando alguien reacciona a tu día" activo={perfil.notifReacciones} alCambiar={(v) => actualizar({ notifReacciones: v }).catch((er) => mostrar(mensajeDeError(er)))} />
+    </>
+  );
+}
+
+export function Accesos() {
+  const rol = useSesion((s) => s.perfil?.rol);
+  return (
+    <>
+      <div className="grp cap">
+        <span>Más</span>
+      </div>
+      <Link to="/comunidad" className="fila" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <span style={{ flex: 1 }}>Comunidad</span>
+        <span className="mu2">›</span>
+      </Link>
+      {rol === 'admin' && (
+        <Link to="/admin" className="fila" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <span style={{ flex: 1 }}>Panel de admin</span>
+          <span className="mu2">›</span>
+        </Link>
+      )}
+    </>
+  );
+}
+
+const COLECCIONES_PROPIAS = ['habits', 'logs', 'tasks', 'taskDone', 'focus', 'journal', 'milestones'] as const;
+
+export function MisDatos() {
+  const uid = useSesion((s) => s.usuario!.uid);
+  const perfil = useSesion((s) => s.perfil)!;
+  const mostrar = useAvisos((s) => s.mostrar);
+  const [borrando, setBorrando] = useState(false);
+  const [texto, setTexto] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+
+  const exportar = async () => {
+    setOcupado(true);
+    try {
+      const d = await obtenerDriver();
+      const datos: Record<string, unknown> = { app: 'Stoica', version: __VERSION__, exportado: new Date().toISOString(), perfil };
+      for (const c of COLECCIONES_PROPIAS) datos[c] = await d.leerLista({ ruta: `users/${uid}/${c}` });
+      const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `stoica-${hoyActual()}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      mostrar('Descargamos tus datos.');
+    } catch (e) {
+      mostrar(mensajeDeError(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const borrarCuenta = async () => {
+    setOcupado(true);
+    try {
+      const d = await obtenerDriver();
+      await d.llamar('borrarMiCuenta');
+      await d.salir().catch(() => undefined);
+    } catch (e) {
+      mostrar(mensajeDeError(e));
+      setOcupado(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="grp cap">
+        <span>Tus datos</span>
+      </div>
+      <button type="button" className="fila" onClick={exportar} disabled={ocupado}>
+        <span style={{ flex: 1 }}>
+          <span style={{ display: 'block' }}>Exportar mis datos</span>
+          <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+            Un archivo JSON con tus hábitos, registros, tareas, enfoque y exámenes
+          </span>
+        </span>
+      </button>
+      <button type="button" className="fila" onClick={() => (setTexto(''), setBorrando(true))} style={{ color: 'var(--cor)' }}>
+        <span style={{ flex: 1 }}>Borrar mi cuenta</span>
+      </button>
+      <Hoja titulo="Borrar mi cuenta" abierta={borrando} alCerrar={() => setBorrando(false)}>
+        <p className="mu" style={{ fontWeight: 500, marginTop: 10 }}>
+          Se borran tu cuenta y todos tus datos: hábitos, registros, tareas, enfoque, exámenes y lo que compartías en grupos. No se puede deshacer. Si querés, exportá tus datos antes.
+        </p>
+        <label className="lbl cap" htmlFor="confirmar-borrar">
+          Escribí BORRAR para confirmar
+        </label>
+        <input id="confirmar-borrar" className="inp" autoComplete="off" value={texto} onChange={(e) => setTexto(e.target.value)} />
+        <button type="button" className="ghost peligro" style={{ width: '100%', marginTop: 18, background: 'var(--missbg)' }} disabled={texto.trim().toUpperCase() !== 'BORRAR' || ocupado} onClick={borrarCuenta}>
+          {ocupado ? 'Borrando…' : 'Borrar definitivamente'}
+        </button>
+      </Hoja>
+    </>
+  );
+}
