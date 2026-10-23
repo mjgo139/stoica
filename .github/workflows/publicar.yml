@@ -100,4 +100,17 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Deploy (hosting, reglas, índices y funciones)
-        run: npx firebase deploy --only hosting,firestore,functions --project ${{ vars.VITE_FIREBASE_PROJECT_ID }} --non-interactive --force
+        run: |
+          set -o pipefail
+          intentar() { npx firebase deploy --only hosting,firestore,functions --project ${{ vars.VITE_FIREBASE_PROJECT_ID }} --non-interactive --force 2>&1 | tee deploy.log; }
+          # La primera publicación de funciones a veces falla mientras Google propaga permisos internos: se reintenta una vez.
+          if ! intentar; then
+            echo "Primer intento falló; reintento en 60 segundos."
+            sleep 60
+            if ! intentar; then
+              # Deja el final del error como anotación (se ve en el resumen de la ejecución).
+              resumen=$(grep -v '^\s*$' deploy.log | tail -n 25 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+              echo "::error title=Deploy falló::${resumen}"
+              exit 1
+            fi
+          fi
