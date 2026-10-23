@@ -15,7 +15,7 @@ const MENSAJES: Record<string, string> = {
   'auth/account-exists-with-different-credential': 'Ese correo ya entra con otro método. Probá con correo y contraseña.',
   'auth/user-disabled': 'Esta cuenta está suspendida.',
   'auth/operation-not-allowed': 'Ese método de acceso no está habilitado.',
-  'permission-denied': 'No tenés permiso para hacer eso.',
+  'permission-denied': 'No se pudo guardar: no tenés permiso. Si te pasa con todo, tu cuenta puede estar limitada; avisá al administrador.',
   unavailable: 'No hay conexión. Los cambios se guardan y se envían cuando vuelva.',
 };
 

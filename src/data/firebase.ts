@@ -37,6 +37,7 @@ import {
   type QueryConstraint,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import type { Perfil } from '@core/perfil';
 import { traducirError } from './errores';
 import { ErrorStoica, type Consulta, type Driver, type UsuarioSesion } from './tipos';
@@ -61,6 +62,15 @@ function configuracion() {
 
 export function crearDriverFirebase(): Driver {
   const app: FirebaseApp = initializeApp(configuracion());
+  // App Check: prueba ante Firebase que los pedidos vienen de esta app (y no de un programa suelto).
+  const claveRecaptcha = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+  if (claveRecaptcha) {
+    try {
+      initializeAppCheck(app, { provider: new ReCaptchaV3Provider(claveRecaptcha), isTokenAutoRefreshEnabled: true });
+    } catch {
+      /* si falla, la app sigue; mientras no se exija, no corta nada */
+    }
+  }
   const auth: Auth = initializeAuth(app, {
     persistence: [indexedDBLocalPersistence, browserLocalPersistence],
     popupRedirectResolver: browserPopupRedirectResolver,
@@ -157,7 +167,8 @@ export function crearDriverFirebase(): Driver {
     observarLista(c, cb, alFallar) {
       return onSnapshot(
         armar(c),
-        (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as never)),
+        { includeMetadataChanges: true },
+        (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as never), { desdeServidor: !snap.metadata.fromCache }),
         (e) => alFallar(traducirError(e)),
       );
     },

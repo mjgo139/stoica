@@ -11,6 +11,9 @@ export interface Cuenta {
   plataforma: string;
   rol: Rol;
   suspendida: boolean;
+  /** Bloqueo automático por abuso (lo pone el servidor). */
+  bloqueada?: boolean;
+  motivoBloqueo?: string;
 }
 
 /** metrics/{fecha} */

@@ -23,6 +23,7 @@ import { claveDia, franjaActual, ZONA_POR_DEFECTO } from './core/fechas.js';
 import { cumplido, esDiaActivo, idRegistro, type Habito, type Registro } from './core/habitos.js';
 import { examenCompleto, type Examen } from './core/rutina.js';
 import { limpiarNombre } from './core/validaciones.js';
+import { COLECCIONES_CONTADAS, LIMITES_ABUSO, sumarCreacion, topeDeColeccion, type Cuota } from './core/limites.js';
 import type { Perfil } from './core/perfil.js';
 
 initializeApp();
@@ -32,6 +33,19 @@ setGlobalOptions({ region: 'southamerica-east1', maxInstances: 5, memory: '256Mi
 const ADMIN_EMAIL = defineString('ADMIN_EMAIL', { default: '' });
 
 const db = () => getFirestore();
+
+/**
+ * App Check: con EXIGIR_APP_CHECK=true (variable del repositorio) las funciones llamables solo aceptan
+ * pedidos que vienen de la app publicada. Empieza en false para medir primero y no cortar a nadie.
+ */
+const EXIGIR_APP_CHECK = process.env.EXIGIR_APP_CHECK === 'true';
+const llamable = { enforceAppCheck: EXIGIR_APP_CHECK };
+
+/** Cambia algunos claims sin borrar los demás (rol, bloqueado). */
+async function ponerClaims(uid: string, cambios: Record<string, unknown>) {
+  const u = await getAuth().getUser(uid);
+  await getAuth().setCustomUserClaims(uid, { ...(u.customClaims ?? {}), ...cambios });
+}
 
 // ---------- Utilidades ----------
 function exigirSesion(req: CallableRequest): string {
@@ -105,7 +119,7 @@ export const alCrearUsuario = onDocumentCreated('users/{uid}', async (event) => 
     return;
   }
   const rol = rolInicial(correo, verificado, ADMIN_EMAIL.value());
-  await getAuth().setCustomUserClaims(uid, { rol });
+  await ponerClaims(uid, { rol });
   const batch = db().batch();
   batch.set(event.data!.ref, { rol }, { merge: true });
   batch.set(
@@ -136,7 +150,7 @@ export const alCambiarPerfil = onDocumentUpdated('users/{uid}', async (event) =>
     .set({ nombre: String(despues.nombre).slice(0, 40), actualizadoPor: 'servidor' }, { merge: true });
 });
 
-export const borrarMiCuenta = onCall(async (req) => {
+export const borrarMiCuenta = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
   await borrarTodoDeUsuario(uid);
   logger.info('Cuenta borrada por su dueño', { uid });
@@ -144,14 +158,14 @@ export const borrarMiCuenta = onCall(async (req) => {
 });
 
 // ---------- Admin ----------
-export const asignarRol = onCall(async (req) => {
+export const asignarRol = onCall(llamable, async (req) => {
   const yo = exigirAdmin(req);
   const { uid, rol } = (req.data ?? {}) as { uid?: unknown; rol?: unknown };
   if (typeof uid !== 'string' || !uid || typeof rol !== 'string' || !(ROLES as readonly string[]).includes(rol)) {
     throw new HttpsError('invalid-argument', 'Faltan datos válidos (uid y rol).');
   }
   if (uid === yo && rol !== 'admin') throw new HttpsError('failed-precondition', 'No podés quitarte tu propio rol de admin.');
-  await getAuth().setCustomUserClaims(uid, { rol });
+  await ponerClaims(uid, { rol });
   const batch = db().batch();
   batch.set(db().doc(`users/${uid}`), { rol }, { merge: true });
   batch.set(db().doc(`accounts/${uid}`), { rol, actualizadoPor: yo }, { merge: true });
@@ -159,7 +173,7 @@ export const asignarRol = onCall(async (req) => {
   return { ok: true };
 });
 
-export const adminSuspender = onCall(async (req) => {
+export const adminSuspender = onCall(llamable, async (req) => {
   const yo = exigirAdmin(req);
   const { uid, suspender } = (req.data ?? {}) as { uid?: unknown; suspender?: unknown };
   if (typeof uid !== 'string' || !uid || typeof suspender !== 'boolean') throw new HttpsError('invalid-argument', 'Datos inválidos.');
@@ -171,7 +185,7 @@ export const adminSuspender = onCall(async (req) => {
   return { ok: true };
 });
 
-export const adminBorrarCuenta = onCall(async (req) => {
+export const adminBorrarCuenta = onCall(llamable, async (req) => {
   const yo = exigirAdmin(req);
   const { uid } = (req.data ?? {}) as { uid?: unknown };
   if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'Datos inválidos.');
@@ -190,13 +204,18 @@ async function guardarMetricas() {
   return m;
 }
 
-export const adminCalcularMetricas = onCall(async (req) => {
+export const adminCalcularMetricas = onCall(llamable, async (req) => {
   exigirAdmin(req);
   return guardarMetricas();
 });
 
 export const metricasNocturnas = onSchedule({ schedule: '10 3 * * *', timeZone: ZONA_POR_DEFECTO }, async () => {
   const m = await guardarMetricas();
+  // Limpieza: marcas de borrado de más de 60 días (los dispositivos se resincronizan completos cada 30).
+  const marcas = await db().collectionGroup('borrados').where('actualizado', '<', Date.now() - 60 * 864e5).limit(500).get();
+  const loteMarcas = db().bulkWriter();
+  marcas.docs.forEach((d) => loteMarcas.delete(d.ref));
+  await loteMarcas.close();
   // Limpieza: marcas de avisos de reacciones de más de 3 días.
   const viejas = await db().collection('avisosReaccion').where('creado', '<', Date.now() - 3 * 864e5).limit(500).get();
   const lote = db().bulkWriter();
@@ -206,7 +225,7 @@ export const metricasNocturnas = onSchedule({ schedule: '10 3 * * *', timeZone: 
 });
 
 // ---------- Comunidad ----------
-export const crearGrupo = onCall(async (req) => {
+export const crearGrupo = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
   const nombre = limpiarNombre(String((req.data as { nombre?: unknown })?.nombre ?? ''));
   const err = validarNombreGrupo(nombre);
@@ -220,7 +239,7 @@ export const crearGrupo = onCall(async (req) => {
   return { id: ref.id, codigo };
 });
 
-export const unirseAGrupo = onCall(async (req) => {
+export const unirseAGrupo = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
   const codigo = normalizarCodigo(String((req.data as { codigo?: unknown })?.codigo ?? ''));
   if (!esCodigo(codigo)) throw new HttpsError('invalid-argument', 'Ese código no es válido.');
@@ -238,7 +257,7 @@ export const unirseAGrupo = onCall(async (req) => {
   return { id: ref.id };
 });
 
-export const salirDeGrupo = onCall(async (req) => {
+export const salirDeGrupo = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
   const gid = String((req.data as { grupoId?: unknown })?.grupoId ?? '');
   if (!gid) throw new HttpsError('invalid-argument', 'Falta el grupo.');
@@ -248,7 +267,7 @@ export const salirDeGrupo = onCall(async (req) => {
   return { ok: true };
 });
 
-export const eliminarGrupo = onCall(async (req) => {
+export const eliminarGrupo = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
   const gid = String((req.data as { grupoId?: unknown })?.grupoId ?? '');
   const ref = db().doc(`groups/${gid}`);
@@ -360,4 +379,59 @@ export const alReaccionar = onDocumentCreated('groups/{gid}/reactions/{rid}', as
     url: `/comunidad/${event.params.gid}`,
     tag: `reaccion-${event.params.gid}`,
   });
+});
+
+
+// ---------- Protección contra abuso ----------
+async function bloquear(uid: string, motivo: string) {
+  await ponerClaims(uid, { bloqueado: true });
+  await getAuth().revokeRefreshTokens(uid);
+  await db().doc(`accounts/${uid}`).set({ bloqueada: true, motivoBloqueo: motivo, actualizadoPor: 'servidor' }, { merge: true });
+  logger.warn('Cuenta bloqueada automáticamente', { uid, motivo });
+}
+
+/** Cuenta una creación del día; si se pasa del tope, bloquea la cuenta (una sola vez). */
+async function contarCreacion(uid: string) {
+  const ref = db().doc(`cuotas/${uid}`);
+  const hoy = claveDia(new Date(), ZONA_POR_DEFECTO);
+  const c = await db().runTransaction(async (t) => {
+    const nueva = sumarCreacion((await t.get(ref)).data() as Cuota | undefined, hoy);
+    t.set(ref, { dia: nueva.dia, n: nueva.n });
+    return nueva;
+  });
+  if (c.excedido && c.n === LIMITES_ABUSO.creacionesPorDia + 1) await bloquear(uid, `Más de ${LIMITES_ABUSO.creacionesPorDia} documentos nuevos en un día`);
+  return c;
+}
+
+/** Vigila lo que se crea en los datos privados: tope diario y tope por colección. */
+export const vigilarCreaciones = onDocumentCreated('users/{uid}/{col}/{id}', async (event) => {
+  const { uid, col } = event.params;
+  if (!(COLECCIONES_CONTADAS as readonly string[]).includes(col)) return;
+  await contarCreacion(uid);
+  const tope = topeDeColeccion(col);
+  if (tope !== null) {
+    const cantidad = (await db().collection(`users/${uid}/${col}`).count().get()).data().count;
+    if (cantidad > tope) {
+      await event.data?.ref.delete();
+      logger.warn('Documento borrado por superar el tope', { uid, col, cantidad, tope });
+    }
+  }
+});
+
+/** Desafíos: tope por grupo y cuenta para quien los crea. */
+export const vigilarDesafios = onDocumentCreated('groups/{gid}/challenges/{cid}', async (event) => {
+  const creador = String(event.data?.get('creador') ?? '');
+  if (creador) await contarCreacion(creador);
+  const cantidad = (await db().collection(`groups/${event.params.gid}/challenges`).count().get()).data().count;
+  if (cantidad > LIMITES_ABUSO.desafiosPorGrupo) await db().recursiveDelete(event.data!.ref);
+});
+
+export const adminDesbloquear = onCall(llamable, async (req) => {
+  const yo = exigirAdmin(req);
+  const { uid } = (req.data ?? {}) as { uid?: unknown };
+  if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'Datos inválidos.');
+  await ponerClaims(uid, { bloqueado: false });
+  await db().doc(`cuotas/${uid}`).delete();
+  await db().doc(`accounts/${uid}`).set({ bloqueada: false, motivoBloqueo: '', actualizadoPor: yo }, { merge: true });
+  return { ok: true };
 });

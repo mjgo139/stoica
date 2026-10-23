@@ -17,8 +17,12 @@ import {
 import type { Examen, SesionEnfoque, Tarea, TareaHecha } from '@core/rutina';
 import { idTareaHecha } from '@core/rutina';
 import { obtenerDriver } from '@/data';
-import { mensajeDeError, type ConId, type Filtro } from '@/data/tipos';
+import { mensajeDeError, type ConId } from '@/data/tipos';
 import { useAvisos } from '@/ui/avisos';
+import { Coleccion, idMarca, type MarcaBorrado } from './sync';
+
+/** Quita de la vista local un documento recién borrado en este dispositivo. */
+let quitarLocal: ((col: 'habits' | 'tasks', id: string) => void) | null = null;
 import { useSesion } from './sesion';
 
 /** Días de registros que se mantienen sincronizados (rachas, semana, balance de 30 días). */
@@ -75,8 +79,8 @@ export function Sincronizar() {
   useEffect(() => {
     if (!uid) return;
     const desde = sumarDias(hoy, -VENTANA_DIAS);
-    const desde30 = sumarDias(hoy, -40);
-    const cancelar: Array<() => void> = [];
+    const desde40 = sumarDias(hoy, -40);
+    const colecciones: Array<{ iniciar: () => Promise<void>; detener: () => void }> = [];
     let vivo = true;
     let pendientes = 2;
     const marcarListo = () => {
@@ -86,80 +90,46 @@ export function Sincronizar() {
     const fallo = (e: unknown) => useAvisos.getState().mostrar(mensajeDeError(e));
     obtenerDriver().then(async (d) => {
       if (!vivo) return;
-      cancelar.push(await sincronizarRegistros(d, uid, desde, (registros) => {
-        poner({ registros });
+      const enVentana = (f: string) => (x: { fecha: string }) => x.fecha >= f;
+      const habitos = new Coleccion<Habito>(d, uid, 'habits', [], () => true, (hs) => {
+        poner({ habitos: hs.sort((a, b) => a.orden - b.orden || a.creado - b.creado) });
         marcarListo();
-      }, fallo));
-      if (!vivo) return cancelar.forEach((c) => c());
-      cancelar.push(
-        d.observarLista<Habito>({ ruta: `users/${uid}/habits` }, (hs) => {
-          poner({ habitos: hs.sort((a, b) => a.orden - b.orden || a.creado - b.creado) });
-          marcarListo();
-        }, fallo),
-
-        d.observarLista<Tarea>({ ruta: `users/${uid}/tasks` }, (ts) => poner({ tareas: ts }), fallo),
-        d.observarLista<TareaHecha>({ ruta: `users/${uid}/taskDone`, filtros: [['fecha', '>=', desde30]] }, (ts) => poner({ tareasHechas: new Set(ts.map((t) => idTareaHecha(t.taskId, t.fecha))) }), fallo),
-        d.observarLista<SesionEnfoque>({ ruta: `users/${uid}/focus`, filtros: [['fecha', '>=', desde30]] }, (fs) => poner({ enfoque: fs.sort((a, b) => b.inicio - a.inicio) }), fallo),
-        d.observarLista<Examen>({ ruta: `users/${uid}/journal`, filtros: [['fecha', '>=', desde30]] }, (es) => poner({ examenes: new Map(es.map((e) => [e.fecha, e])) }), fallo),
-      );
+      }, fallo);
+      const registros = new Coleccion<Registro>(d, uid, 'logs', [['fecha', '>=', desde]], enVentana(desde), (rs) => {
+        const m: Registros = new Map();
+        for (const r of rs) {
+          if (!m.has(r.habitId)) m.set(r.habitId, new Map());
+          m.get(r.habitId)!.set(r.fecha, r);
+        }
+        poner({ registros: m });
+        marcarListo();
+      }, fallo);
+      const tareas = new Coleccion<Tarea>(d, uid, 'tasks', [], () => true, (ts) => poner({ tareas: ts }), fallo);
+      const hechas = new Coleccion<TareaHecha>(d, uid, 'taskDone', [['fecha', '>=', desde40]], enVentana(desde40), (ts) =>
+        poner({ tareasHechas: new Set(ts.filter((t) => t.hecha !== false).map((t) => idTareaHecha(t.taskId, t.fecha))) }), fallo);
+      const enfoque = new Coleccion<SesionEnfoque>(d, uid, 'focus', [['fecha', '>=', desde40]], enVentana(desde40), (fs) => poner({ enfoque: fs.sort((a, b) => b.inicio - a.inicio) }), fallo);
+      const examenes = new Coleccion<Examen>(d, uid, 'journal', [['fecha', '>=', desde40]], enVentana(desde40), (es) => poner({ examenes: new Map(es.map((e) => [e.fecha, e])) }), fallo);
+      // Marcas de borrado: quitan de la vista lo que se borró en cualquier dispositivo.
+      const marcas = new Coleccion<MarcaBorrado>(d, uid, 'borrados', [], () => true, (ms) => {
+        habitos.quitar(ms.filter((m) => m.col === 'habits').map((m) => m.docId));
+        tareas.quitar(ms.filter((m) => m.col === 'tasks').map((m) => m.docId));
+      }, () => undefined);
+      colecciones.push(habitos, registros, tareas, hechas, enfoque, examenes, marcas);
+      for (const c of colecciones) {
+        if (!vivo) break;
+        await c.iniciar();
+      }
+      if (!vivo) colecciones.forEach((c) => c.detener());
+      quitarLocal = (col, id) => (col === 'habits' ? habitos : tareas).quitar([id]);
     });
     return () => {
       vivo = false;
-      cancelar.forEach((c) => c());
+      quitarLocal = null;
+      colecciones.forEach((c) => c.detener());
     };
   }, [uid, hoy, poner]);
 
   return null;
-}
-
-/**
- * Registros con lectura incremental (para gastar pocas lecturas):
- * 1) se arma la lista con lo que ya está guardado en el dispositivo (gratis),
- * 2) al servidor solo se le piden los registros que cambiaron desde la última sincronización
- *    (con un día de margen por si el reloj de otro dispositivo está desfasado).
- * La primera vez en un dispositivo se descargan los de la ventana completa.
- */
-async function sincronizarRegistros(
-  d: Awaited<ReturnType<typeof obtenerDriver>>,
-  uid: string,
-  desde: string,
-  alCambiar: (r: Registros) => void,
-  fallo: (e: unknown) => void,
-): Promise<() => void> {
-  const clave = `stoica.sync.logs.${uid}`;
-  let ultima = 0;
-  try {
-    ultima = Number(localStorage.getItem(clave) ?? 0) || 0;
-  } catch {
-    /* sin almacenamiento: se descarga todo */
-  }
-  const ruta = `users/${uid}/logs`;
-  const todos = new Map<string, Registro>();
-  const emitir = () => {
-    const m: Registros = new Map();
-    for (const r of todos.values()) {
-      if (r.fecha < desde) continue;
-      if (!m.has(r.habitId)) m.set(r.habitId, new Map());
-      m.get(r.habitId)!.set(r.fecha, r);
-    }
-    alCambiar(m);
-  };
-  if (ultima > 0 && d.nombre === 'firebase') {
-    for (const r of await d.leerListaLocal<Registro>({ ruta, filtros: [['fecha', '>=', desde]] })) todos.set(r.id, r);
-    if (todos.size === 0) ultima = 0; // la caché se borró: hay que descargar todo
-  }
-  const consulta = ultima > 0 && d.nombre === 'firebase' ? { ruta, filtros: [['actualizado', '>=', ultima - 86400000]] as Filtro[] } : { ruta, filtros: [['fecha', '>=', desde]] as Filtro[] };
-  if (todos.size) emitir();
-  return d.observarLista<Registro>(consulta, (rs) => {
-    for (const r of rs) todos.set(r.id, r);
-    // Lo que el dispositivo ya tiene y no vino en la respuesta sigue valiendo; lo borrado se limpia al borrar el hábito.
-    emitir();
-    try {
-      localStorage.setItem(clave, String(Date.now()));
-    } catch {
-      /* nada */
-    }
-  }, fallo);
 }
 
 // ---------- Selectores ----------
@@ -191,6 +161,14 @@ async function borrar(ruta: string) {
     avisar(mensajeDeError(e));
     throw e;
   }
+}
+
+/** Borra un hábito o una tarea y deja la marca para que los demás dispositivos también lo quiten. */
+async function borrarConMarca(col: 'habits' | 'tasks', id: string) {
+  const uid = uidActual();
+  quitarLocal?.(col, id);
+  await guardar(`users/${uid}/borrados/${idMarca(col, id)}`, { col, docId: id, actualizado: Date.now(), actualizadoPor: uid });
+  await borrar(`users/${uid}/${col}/${id}`);
 }
 
 /** Guarda el registro del día y actualiza racha, mejor racha, hitos y resúmenes de grupos. */
@@ -280,7 +258,7 @@ export async function borrarHabito(h: Habito) {
   const d = await obtenerDriver();
   const regs = await d.leerLista<Registro>({ ruta: `users/${uid}/logs`, filtros: [['habitId', '==', h.id]] });
   for (const r of regs) await borrar(`users/${uid}/logs/${r.id}`);
-  await borrar(`users/${uid}/habits/${h.id}`);
+  await borrarConMarca('habits', h.id);
   avisar('Hábito borrado.');
   programarResumenGrupos();
 }
@@ -305,19 +283,16 @@ export async function alternarTarea(t: Tarea, fecha: string) {
   const uid = uidActual();
   const id = idTareaHecha(t.id, fecha);
   const hechas = new Set(useDatos.getState().tareasHechas);
-  if (hechas.has(id)) {
-    hechas.delete(id);
-    useDatos.getState().poner({ tareasHechas: hechas });
-    await borrar(`users/${uid}/taskDone/${id}`);
-  } else {
-    hechas.add(id);
-    useDatos.getState().poner({ tareasHechas: hechas });
-    await guardar(`users/${uid}/taskDone/${id}`, { taskId: t.id, fecha, actualizado: Date.now(), actualizadoPor: uid });
-  }
+  const hecha = !hechas.has(id);
+  if (hecha) hechas.add(id);
+  else hechas.delete(id);
+  useDatos.getState().poner({ tareasHechas: hechas });
+  // Se marca con hecha: true/false en vez de borrar, así la lectura incremental ve el cambio.
+  await guardar(`users/${uid}/taskDone/${id}`, { taskId: t.id, fecha, hecha, actualizado: Date.now(), actualizadoPor: uid });
 }
 
 export async function borrarTarea(t: Tarea) {
-  await borrar(`users/${uidActual()}/tasks/${t.id}`);
+  await borrarConMarca('tasks', t.id);
   avisar('Tarea borrada.');
 }
 

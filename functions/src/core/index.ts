@@ -7,3 +7,4 @@ export * from './habitos.js';
 export * from './rutina.js';
 export * from './comunidad.js';
 export * from './admin.js';
+export * from './limites.js';

@@ -169,6 +169,11 @@ export function crearDriverMemoria(): Driver {
       for (const [k, c] of cuentas) if (c.uid === d.uid) cuentas.delete(k);
       return { ok: true };
     },
+    adminDesbloquear(d) {
+      if (!esAdmin()) throw new ErrorStoica('Solo el admin puede hacer esto.', 'permission-denied');
+      escribir(`accounts/${d.uid}`, { bloqueada: false, motivoBloqueo: '' }, true);
+      return { ok: true };
+    },
     adminCalcularMetricas() {
       if (!esAdmin()) throw new ErrorStoica('Solo el admin puede hacer esto.', 'permission-denied');
       const porTipo = { sino: 0, cantidad: 0, medicion: 0 };
@@ -260,8 +265,8 @@ export function crearDriverMemoria(): Driver {
       setTimeout(f, 0);
       return () => oyentesDoc.get(ruta)?.delete(f);
     },
-    observarLista<T>(c: Consulta, cb: (docs: Array<ConId<T>>) => void): Cancelar {
-      const f = () => cb(ejecutar(c) as Array<ConId<T>>);
+    observarLista<T>(c: Consulta, cb: (docs: Array<ConId<T>>, info: { desdeServidor: boolean }) => void): Cancelar {
+      const f = () => cb(ejecutar(c) as Array<ConId<T>>, { desdeServidor: true });
       if (!oyentesCol.has(c.ruta)) oyentesCol.set(c.ruta, new Set());
       oyentesCol.get(c.ruta)!.add(f);
       setTimeout(f, 0);

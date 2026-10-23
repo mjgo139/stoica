@@ -3,11 +3,12 @@
  * El resumen se recalcula solo cuando marco algo (agrupando cambios seguidos).
  */
 import { createElement, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { create } from 'zustand';
 import { sumarDias } from '@core/fechas';
 import { cumplido, porcentaje, racha, type Habito } from '@core/habitos';
 import { finDesafio, idReaccion, type Compartido, type Desafio, type Grupo, type Miembro, type Progreso, type TipoReaccion } from '@core/comunidad';
-import { obtenerDriver } from '@/data';
+import { esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError, type ConId } from '@/data/tipos';
 import { useAvisos } from '@/ui/avisos';
 import { useSesion } from './sesion';
@@ -37,14 +38,60 @@ const actualizarGrupo = (gid: string, cambios: Partial<EstadoGrupo>) => {
   poner({ grupos: nuevo });
 };
 
-/** Escucha mis grupos y, por cada uno, mi resumen, los desafíos y mi progreso. */
+// ---------- Copia local (para no leer del servidor si no hace falta) ----------
+const claveCopia = (uid: string) => `stoica.comunidad.${uid}`;
+
+function guardarCopia(uid: string) {
+  if (esModoPrueba()) return;
+  try {
+    const g = [...useComunidad.getState().grupos.values()].map((x) => ({ ...x, misProgresos: [...x.misProgresos.entries()] }));
+    localStorage.setItem(claveCopia(uid), JSON.stringify(g));
+  } catch {
+    /* sin almacenamiento */
+  }
+}
+
+function cargarCopia(uid: string) {
+  if (esModoPrueba()) return;
+  try {
+    const crudo = JSON.parse(localStorage.getItem(claveCopia(uid)) ?? '[]') as Array<Omit<EstadoGrupo, 'misProgresos'> & { misProgresos: Array<[string, Progreso]> }>;
+    const m = new Map<string, EstadoGrupo>();
+    for (const g of crudo) m.set(g.grupo.id, { ...g, misProgresos: new Map(g.misProgresos) });
+    useComunidad.getState().poner({ grupos: m, listo: m.size > 0 });
+  } catch {
+    /* copia dañada: se ignora */
+  }
+}
+
+/**
+ * La comunidad se lee del servidor SOLO mientras estás en sus pantallas.
+ * El resto del tiempo se usa la copia local (para el panel de Hoy y para actualizar tu resumen
+ * cuando marcás algo, sin leer nada).
+ */
 export function SincronizarComunidad() {
   const uid = useSesion((s) => s.usuario?.uid);
+  const { pathname } = useLocation();
+  const activa = pathname.startsWith('/comunidad') || pathname.startsWith('/unirse');
+
+  useEffect(() => {
+    if (!uid) return;
+    cargarCopia(uid);
+    registrarActualizadorGrupos(actualizarResumenes);
+    const desuscribir = useComunidad.subscribe(() => guardarCopia(uid));
+    return () => {
+      desuscribir();
+      registrarActualizadorGrupos(null);
+    };
+  }, [uid]);
+
+  return activa && uid ? createElement(EscucharComunidad, { uid }) : null;
+}
+
+function EscucharComunidad({ uid }: { uid: string }) {
   const grupos = useComunidad((s) => s.grupos);
   const ids = [...grupos.keys()].sort().join(',');
 
   useEffect(() => {
-    if (!uid) return;
     let cancelar: (() => void) | undefined;
     obtenerDriver().then((d) => {
       cancelar = d.observarLista<Grupo>(
@@ -58,11 +105,7 @@ export function SincronizarComunidad() {
         () => useComunidad.getState().poner({ listo: true }),
       );
     });
-    registrarActualizadorGrupos(actualizarResumenes);
-    return () => {
-      cancelar?.();
-      registrarActualizadorGrupos(null);
-    };
+    return () => cancelar?.();
   }, [uid]);
 
   useEffect(() => {
@@ -150,7 +193,19 @@ async function actualizarResumenes() {
         .filter((h): h is ConId<Habito> => !!h)
         .map((h) => resumirHabito(h, hoy));
       const cambio = JSON.stringify(compartidos) !== JSON.stringify(g.yo.compartidos) || g.yo.fecha !== hoy || g.yo.nombre !== nombre;
-      if (cambio) await d.guardar(`groups/${g.grupo.id}/members/${uid}`, { nombre, compartidos, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid });
+      if (cambio) {
+        const yo = { nombre, compartidos, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid };
+        try {
+          await d.guardar(`groups/${g.grupo.id}/members/${uid}`, yo);
+          actualizarGrupo(g.grupo.id, { yo });
+        } catch {
+          // Ya no estoy en el grupo (o se eliminó): se saca de la copia local.
+          const m = new Map(useComunidad.getState().grupos);
+          m.delete(g.grupo.id);
+          useComunidad.getState().poner({ grupos: m });
+          continue;
+        }
+      }
     }
     for (const c of g.desafios) {
       const p = g.misProgresos.get(c.id);
@@ -158,7 +213,11 @@ async function actualizarResumenes() {
       if (!p || !h) continue;
       const cumplidos = contarCumplidos(h, c, hoy);
       if (cumplidos !== p.cumplidos || p.nombre !== nombre) {
-        await d.guardar(`groups/${g.grupo.id}/challenges/${c.id}/progress/${uid}`, { nombre, habitId: h.id, cumplidos, actualizado: Date.now(), actualizadoPor: uid });
+        const nuevo = { nombre, habitId: h.id, cumplidos, actualizado: Date.now(), actualizadoPor: uid };
+        await d.guardar(`groups/${g.grupo.id}/challenges/${c.id}/progress/${uid}`, nuevo).catch(() => undefined);
+        const m = new Map(g.misProgresos);
+        m.set(c.id, nuevo);
+        actualizarGrupo(g.grupo.id, { misProgresos: m });
       }
     }
   }

@@ -19,6 +19,8 @@ export interface Tarea {
 export interface TareaHecha {
   taskId: string;
   fecha: string;
+  /** false = se desmarcó (se guarda en vez de borrar, para la lectura incremental). */
+  hecha?: boolean;
   actualizado: number;
   actualizadoPor: string;
 }

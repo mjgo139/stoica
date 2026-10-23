@@ -31,6 +31,7 @@ export type NombreFuncion =
   | 'adminSuspender'
   | 'adminBorrarCuenta'
   | 'adminCalcularMetricas'
+  | 'adminDesbloquear'
   | 'asignarRol';
 
 /**
@@ -53,7 +54,8 @@ export interface Driver {
   // ---------- Datos genéricos ----------
   nuevoId(): string;
   observarDoc<T>(ruta: string, cb: (d: ConId<T> | null) => void, alFallar: (e: unknown) => void): Cancelar;
-  observarLista<T>(c: Consulta, cb: (docs: Array<ConId<T>>) => void, alFallar: (e: unknown) => void): Cancelar;
+  /** `desdeServidor` es false cuando la respuesta vino solo de la caché del dispositivo (por ejemplo, sin conexión). */
+  observarLista<T>(c: Consulta, cb: (docs: Array<ConId<T>>, info: { desdeServidor: boolean }) => void, alFallar: (e: unknown) => void): Cancelar;
   leerLista<T>(c: Consulta): Promise<Array<ConId<T>>>;
   /** Lo que ya está guardado en este dispositivo (sin ir al servidor, sin costo de lectura). */
   leerListaLocal<T>(c: Consulta): Promise<Array<ConId<T>>>;

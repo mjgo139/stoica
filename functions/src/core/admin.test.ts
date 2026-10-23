@@ -20,3 +20,23 @@ describe('métricas del admin', () => {
     expect(haceCuanto(ahora - 65 * dia, ahora, 'America/Asuncion')).toBe('hace 2 meses');
   });
 });
+
+import { sumarCreacion, topeDeColeccion } from './limites.js';
+
+describe('límites contra el abuso', () => {
+  it('cuenta creaciones por día y se reinicia al día siguiente', () => {
+    let c = sumarCreacion(undefined, '2026-10-23', 3);
+    expect(c).toEqual({ dia: '2026-10-23', n: 1, excedido: false });
+    c = sumarCreacion(c, '2026-10-23', 3);
+    c = sumarCreacion(c, '2026-10-23', 3);
+    expect(c.excedido).toBe(false);
+    c = sumarCreacion(c, '2026-10-23', 3);
+    expect(c.excedido).toBe(true);
+    expect(sumarCreacion(c, '2026-10-24', 3)).toEqual({ dia: '2026-10-24', n: 1, excedido: false });
+  });
+  it('topes por colección', () => {
+    expect(topeDeColeccion('habits')).toBe(40);
+    expect(topeDeColeccion('tasks')).toBe(500);
+    expect(topeDeColeccion('focus')).toBeNull();
+  });
+});

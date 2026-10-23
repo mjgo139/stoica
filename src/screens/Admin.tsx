@@ -10,7 +10,7 @@ import { mensajeDeError, type ConId } from '@/data/tipos';
 import { Confirmar } from '@/ui/Hoja';
 import { useAvisos } from '@/ui/avisos';
 
-type Filtro = 'todas' | 'activas7' | 'inactivas' | 'suspendidas';
+type Filtro = 'todas' | 'activas7' | 'inactivas' | 'suspendidas' | 'bloqueadas';
 
 /** Panel tipo CRM. Solo ve datos no privados: nunca hábitos, registros, exámenes ni mediciones. */
 export function Admin() {
@@ -21,7 +21,7 @@ export function Admin() {
   const { datos: metricas } = useConsulta<Metricas>(perfil?.rol === 'admin' ? { ruta: 'metrics', orden: ['fecha', 'desc'], limite: 30 } : null);
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState<Filtro>('todas');
-  const [accion, setAccion] = useState<{ tipo: 'suspender' | 'reactivar' | 'borrar' | 'clave'; c: ConId<Cuenta> } | null>(null);
+  const [accion, setAccion] = useState<{ tipo: 'suspender' | 'reactivar' | 'borrar' | 'clave' | 'desbloquear'; c: ConId<Cuenta> } | null>(null);
   const [calculando, setCalculando] = useState(false);
   const ahora = Date.now();
 
@@ -34,6 +34,7 @@ export function Admin() {
         if (filtro === 'activas7') return dias <= 7;
         if (filtro === 'inactivas') return dias > 30;
         if (filtro === 'suspendidas') return c.suspendida;
+        if (filtro === 'bloqueadas') return !!c.bloqueada;
         return true;
       });
   }, [cuentas, busqueda, filtro, ahora]);
@@ -62,6 +63,9 @@ export function Admin() {
       if (tipo === 'clave') {
         await d.recuperarContrasena(c.correo);
         mostrar(`Enviamos el correo para cambiar la contraseña a ${c.correo}.`);
+      } else if (tipo === 'desbloquear') {
+        await d.llamar('adminDesbloquear', { uid: c.id });
+        mostrar('Cuenta desbloqueada. Tiene que volver a entrar.');
       } else if (tipo === 'borrar') {
         await d.llamar('adminBorrarCuenta', { uid: c.id });
         mostrar('Cuenta borrada.');
@@ -171,6 +175,7 @@ export function Admin() {
               ['activas7', 'Activas 7 días'],
               ['inactivas', 'Inactivas +30 días'],
               ['suspendidas', 'Suspendidas'],
+              ['bloqueadas', 'Bloqueadas por abuso'],
             ] as Array<[Filtro, string]>
           ).map(([f, n]) => (
             <button key={f} type="button" aria-pressed={filtro === f} className={`chip ${filtro === f ? 'on' : ''}`} onClick={() => setFiltro(f)}>
@@ -198,6 +203,12 @@ export function Admin() {
                     {c.nombre || '—'}
                     {c.rol === 'admin' && <span className="cap gold" style={{ fontSize: 9.5 }}> · admin</span>}
                     {c.suspendida && <span className="cap" style={{ fontSize: 9.5, color: 'var(--miss)' }}> · suspendida</span>}
+                    {c.bloqueada && (
+                      <span className="cap" style={{ fontSize: 9.5, color: 'var(--miss)' }} title={c.motivoBloqueo}>
+                        {' '}
+                        · bloqueada
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '10px 6px' }}>{c.correo}</td>
                   <td style={{ padding: '10px 6px', whiteSpace: 'nowrap' }}>{haceCuanto(c.alta, ahora, zona)}</td>
@@ -212,6 +223,11 @@ export function Admin() {
                         <button type="button" className="link" style={{ minHeight: 36 }} onClick={() => setAccion({ tipo: c.suspendida ? 'reactivar' : 'suspender', c })}>
                           {c.suspendida ? 'Reactivar' : 'Suspender'}
                         </button>
+                        {c.bloqueada && (
+                          <button type="button" className="link" style={{ minHeight: 36 }} onClick={() => setAccion({ tipo: 'desbloquear', c })}>
+                            Desbloquear
+                          </button>
+                        )}
                         <button type="button" className="link" style={{ minHeight: 36, color: 'var(--cor)' }} onClick={() => setAccion({ tipo: 'borrar', c })}>
                           Borrar
                         </button>
@@ -228,10 +244,12 @@ export function Admin() {
       <Confirmar
         abierto={!!accion}
         titulo={
-          accion?.tipo === 'borrar' ? '¿Borrar esta cuenta?' : accion?.tipo === 'suspender' ? '¿Suspender esta cuenta?' : accion?.tipo === 'reactivar' ? '¿Reactivar esta cuenta?' : '¿Enviar cambio de contraseña?'
+          accion?.tipo === 'desbloquear' ? '¿Desbloquear esta cuenta?' : accion?.tipo === 'borrar' ? '¿Borrar esta cuenta?' : accion?.tipo === 'suspender' ? '¿Suspender esta cuenta?' : accion?.tipo === 'reactivar' ? '¿Reactivar esta cuenta?' : '¿Enviar cambio de contraseña?'
         }
         texto={
-          accion?.tipo === 'borrar' ? (
+          accion?.tipo === 'desbloquear' ? (
+            <>Se bloqueó sola por: {accion.c.motivoBloqueo || 'demasiada actividad'}. Si fue un error, puede volver a usar la app.</>
+          ) : accion?.tipo === 'borrar' ? (
             <>Se borra {accion.c.nombre} ({accion.c.correo}) con todos sus datos. No se puede deshacer.</>
           ) : accion?.tipo === 'suspender' ? (
             <>{accion.c.nombre} no va a poder entrar hasta que la reactives. Sus datos se conservan.</>
@@ -241,7 +259,7 @@ export function Admin() {
             <>Le llega a {accion?.c.correo} un enlace para crear una contraseña nueva.</>
           )
         }
-        accion={accion?.tipo === 'borrar' ? 'Borrar' : accion?.tipo === 'suspender' ? 'Suspender' : accion?.tipo === 'reactivar' ? 'Reactivar' : 'Enviar'}
+        accion={accion?.tipo === 'desbloquear' ? 'Desbloquear' : accion?.tipo === 'borrar' ? 'Borrar' : accion?.tipo === 'suspender' ? 'Suspender' : accion?.tipo === 'reactivar' ? 'Reactivar' : 'Enviar'}
         peligro={accion?.tipo === 'borrar' || accion?.tipo === 'suspender'}
         alCerrar={() => setAccion(null)}
         alConfirmar={ejecutar}

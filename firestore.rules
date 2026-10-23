@@ -40,6 +40,16 @@ service cloud.firestore {
     function claveDia(v) {
       return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
+    // Día cercano: entre ~2 años atrás y 2 días adelante. Evita llenar la base con fechas inventadas.
+    function diaCercano(v) {
+      return claveDia(v)
+        && timestamp.date(int(v[0:4]), int(v[5:7]), int(v[8:10])) > request.time - duration.value(800, 'd')
+        && timestamp.date(int(v[0:4]), int(v[5:7]), int(v[8:10])) < request.time + duration.value(2, 'd');
+    }
+    // Cuenta bloqueada automáticamente por abuso (claim que pone el servidor): no escribe nada.
+    function noBloqueado() {
+      return request.auth.token.get('bloqueado', false) != true;
+    }
     function hora(v) {
       return v is string && v.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$');
     }
@@ -50,7 +60,7 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
     function firmado(uid) {
-      return nuevo().actualizadoPor == uid && fechaMs(nuevo().actualizado);
+      return nuevo().actualizadoPor == uid && fechaMs(nuevo().actualizado) && noBloqueado();
     }
     function momento(v) {
       return v in [0, 1, 2];
@@ -96,7 +106,7 @@ service cloud.firestore {
             && d.variables is list && d.variables.size() <= 4
             && (d.recordatorio == null || hora(d.recordatorio))
             && (d.recordatorioSlot == null || entero(d.recordatorioSlot, 0, 95))
-            && claveDia(d.inicio)
+            && diaCercano(d.inicio)
             && d.archivado is bool
             && entero(d.orden, 0, 1000)
             && entero(d.racha, 0, 100000)
@@ -115,7 +125,7 @@ service cloud.firestore {
           let d = nuevo();
           return d.keys().hasOnly(['habitId', 'fecha', 'hecho', 'valor', 'medidas', 'nota', 'actualizado', 'actualizadoPor'])
             && texto(d.habitId, 1, 40)
-            && claveDia(d.fecha)
+            && diaCercano(d.fecha)
             && lid == d.habitId + '_' + d.fecha
             && d.hecho is bool
             && numero(d.valor, 0, 10000)
@@ -148,9 +158,10 @@ service cloud.firestore {
       match /taskDone/{did} {
         allow read, delete: if esDueno(uid);
         allow create, update: if esDueno(uid)
-          && nuevo().keys().hasOnly(['taskId', 'fecha', 'actualizado', 'actualizadoPor'])
+          && nuevo().keys().hasOnly(['taskId', 'fecha', 'hecha', 'actualizado', 'actualizadoPor'])
           && texto(nuevo().taskId, 1, 40)
-          && claveDia(nuevo().fecha)
+          && diaCercano(nuevo().fecha)
+          && (!('hecha' in nuevo()) || nuevo().hecha is bool)
           && did == nuevo().taskId + '_' + nuevo().fecha
           && firmado(uid);
       }
@@ -163,7 +174,7 @@ service cloud.firestore {
           && nuevo().tipo in ['enfoque', 'descanso', 'meditacion']
           && entero(nuevo().minutos, 1, 240)
           && texto(nuevo().etiqueta, 0, 60)
-          && claveDia(nuevo().fecha)
+          && diaCercano(nuevo().fecha)
           && nuevo().inicio is int
           && firmado(uid);
       }
@@ -173,7 +184,7 @@ service cloud.firestore {
         allow read, delete: if esDueno(uid);
         allow create, update: if esDueno(uid)
           && nuevo().keys().hasOnly(['fecha', 'respuestas', 'libre', 'actualizado', 'actualizadoPor'])
-          && claveDia(nuevo().fecha)
+          && diaCercano(nuevo().fecha)
           && fecha == nuevo().fecha
           && nuevo().respuestas is map
           && nuevo().respuestas.keys().hasOnly(['p1', 'p2', 'p3'])
@@ -193,6 +204,18 @@ service cloud.firestore {
           && entero(nuevo().dias, 1, 100000)
           && mid == nuevo().habitId + '_' + string(nuevo().dias)
           && claveDia(nuevo().fecha)
+          && firmado(uid);
+      }
+
+      // ----- Marcas de borrado (para que los otros dispositivos quiten lo borrado) -----
+      match /borrados/{bid} {
+        allow read: if esDueno(uid);
+        allow delete: if false;
+        allow create, update: if esDueno(uid)
+          && nuevo().keys().hasOnly(['col', 'docId', 'actualizado', 'actualizadoPor'])
+          && nuevo().col in ['habits', 'tasks']
+          && texto(nuevo().docId, 1, 60)
+          && bid == nuevo().col + '_' + nuevo().docId
           && firmado(uid);
       }
 
