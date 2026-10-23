@@ -1,0 +1,103 @@
+name: Publicar
+
+# En cualquier rama: tests. Solo en main, y si todo pasa: publica en Firebase.
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Tests web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix functions
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests (Vitest)
+        run: npm test
+      - name: Build de funciones
+        run: npm run build --prefix functions
+      - name: Recorridos (Playwright, modo prueba)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e
+      - name: Guardar capturas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: e2e/capturas
+          if-no-files-found: ignore
+          retention-days: 14
+
+  reglas:
+    name: Tests de reglas (emulador)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run test:reglas
+
+  publicar:
+    name: Publicar en Firebase
+    needs: [web, reglas]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: produccion
+      url: https://stoica-app.web.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix functions
+      - name: Variables de la web
+        run: |
+          {
+            echo "VITE_FIREBASE_API_KEY=${{ vars.VITE_FIREBASE_API_KEY }}"
+            echo "VITE_FIREBASE_AUTH_DOMAIN=${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}"
+            echo "VITE_FIREBASE_PROJECT_ID=${{ vars.VITE_FIREBASE_PROJECT_ID }}"
+            echo "VITE_FIREBASE_STORAGE_BUCKET=${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}"
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}"
+            echo "VITE_FIREBASE_APP_ID=${{ vars.VITE_FIREBASE_APP_ID }}"
+          } > .env.production
+      - name: Build
+        run: npm run build
+      - name: Parámetros de las funciones
+        run: echo "ADMIN_EMAIL=${{ vars.ADMIN_EMAIL }}" > functions/.env
+      - name: Credenciales de Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Deploy (hosting, reglas, índices y funciones)
+        run: npx firebase deploy --only hosting,firestore,functions --project ${{ vars.VITE_FIREBASE_PROJECT_ID }} --non-interactive --force

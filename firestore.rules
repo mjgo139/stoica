@@ -1,0 +1,115 @@
+rules_version = '2';
+
+// Reglas de Stoica. Principio: todo cerrado salvo lo que se abre explícitamente.
+// - users/**: solo el dueño. El campo `rol` lo escribe únicamente el servidor.
+// - accounts/** y metrics/**: los lee solo el admin. El dueño solo puede tocar su último acceso.
+// - catalog/** y config/**: los lee cualquiera, los escribe el admin.
+// - groups/**: cerrado hasta la v0.7 (comunidad).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function esDueno(uid) {
+      return autenticado() && request.auth.uid == uid;
+    }
+
+    function esAdmin() {
+      return autenticado() && request.auth.token.rol == 'admin';
+    }
+
+    function texto(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+
+    function ahoraMs() {
+      return request.time.toMillis();
+    }
+
+    // Fecha en milisegundos razonablemente cerca de "ahora" (tolera relojes desfasados 1 día).
+    function cercaDeAhora(v) {
+      return v is int && v > ahoraMs() - 86400000 && v < ahoraMs() + 86400000;
+    }
+
+    function cambiaron() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ---------- Perfil ----------
+    match /users/{uid} {
+      function perfilValido() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
+          && d.keys().hasAll(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor'])
+          && texto(d.nombre, 1, 40)
+          && texto(d.correo, 0, 254)
+          && d.tema in ['claro', 'oscuro', 'sistema']
+          && d.mementoMori is bool
+          && texto(d.zonaHoraria, 1, 64)
+          && d.creado is int
+          && cercaDeAhora(d.actualizado)
+          && d.actualizadoPor == uid;
+      }
+
+      allow read: if esDueno(uid);
+      allow create: if esDueno(uid)
+        && perfilValido()
+        && !('rol' in request.resource.data)
+        && cercaDeAhora(request.resource.data.creado);
+      allow update: if esDueno(uid)
+        && perfilValido()
+        && !cambiaron().hasAny(['rol', 'creado', 'correo']);
+      allow delete: if false;
+
+      // Datos privados del usuario (hábitos, registros, tareas, examen...).
+      // Cada versión agrega la validación de forma de su colección; acá va la base común.
+      match /{coleccion}/{docId} {
+        function coleccionConocida() {
+          return coleccion in ['habits', 'logs', 'notes', 'tasks', 'taskDone', 'focus', 'journal', 'milestones', 'devices'];
+        }
+        function escrituraValida() {
+          return request.resource.data.actualizadoPor == uid
+            && cercaDeAhora(request.resource.data.actualizado)
+            && request.resource.data.size() <= 40;
+        }
+        allow read, delete: if esDueno(uid) && coleccionConocida();
+        allow create, update: if esDueno(uid) && coleccionConocida() && escrituraValida();
+      }
+    }
+
+    // ---------- Cuentas (datos no privados para el admin) ----------
+    match /accounts/{uid} {
+      allow read: if esAdmin();
+      // La app actualiza el último acceso una vez por día. Nada más.
+      allow update: if esDueno(uid)
+        && cambiaron().hasOnly(['ultimoAcceso', 'plataforma', 'actualizadoPor'])
+        && cercaDeAhora(request.resource.data.ultimoAcceso)
+        && texto(request.resource.data.plataforma, 0, 40)
+        && request.resource.data.actualizadoPor == uid;
+      allow create, delete: if false;
+    }
+
+    // ---------- Métricas diarias (las calcula una función nocturna) ----------
+    match /metrics/{fecha} {
+      allow read: if esAdmin();
+      allow write: if false;
+    }
+
+    // ---------- Catálogo y configuración ----------
+    match /catalog/{doc=**} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+    match /config/{doc=**} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // ---------- Comunidad: se abre en la v0.7 ----------
+    match /groups/{doc=**} {
+      allow read, write: if false;
+    }
+  }
+}
