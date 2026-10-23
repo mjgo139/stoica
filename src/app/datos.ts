@@ -17,7 +17,7 @@ import {
 import type { Examen, SesionEnfoque, Tarea, TareaHecha } from '@core/rutina';
 import { idTareaHecha } from '@core/rutina';
 import { obtenerDriver } from '@/data';
-import { mensajeDeError, type ConId } from '@/data/tipos';
+import { mensajeDeError, type ConId, type Filtro } from '@/data/tipos';
 import { useAvisos } from '@/ui/avisos';
 import { useSesion } from './sesion';
 
@@ -84,22 +84,19 @@ export function Sincronizar() {
       if (pendientes <= 0) poner({ listo: true });
     };
     const fallo = (e: unknown) => useAvisos.getState().mostrar(mensajeDeError(e));
-    obtenerDriver().then((d) => {
+    obtenerDriver().then(async (d) => {
       if (!vivo) return;
+      cancelar.push(await sincronizarRegistros(d, uid, desde, (registros) => {
+        poner({ registros });
+        marcarListo();
+      }, fallo));
+      if (!vivo) return cancelar.forEach((c) => c());
       cancelar.push(
         d.observarLista<Habito>({ ruta: `users/${uid}/habits` }, (hs) => {
           poner({ habitos: hs.sort((a, b) => a.orden - b.orden || a.creado - b.creado) });
           marcarListo();
         }, fallo),
-        d.observarLista<Registro>({ ruta: `users/${uid}/logs`, filtros: [['fecha', '>=', desde]] }, (rs) => {
-          const m: Registros = new Map();
-          for (const r of rs) {
-            if (!m.has(r.habitId)) m.set(r.habitId, new Map());
-            m.get(r.habitId)!.set(r.fecha, r);
-          }
-          poner({ registros: m });
-          marcarListo();
-        }, fallo),
+
         d.observarLista<Tarea>({ ruta: `users/${uid}/tasks` }, (ts) => poner({ tareas: ts }), fallo),
         d.observarLista<TareaHecha>({ ruta: `users/${uid}/taskDone`, filtros: [['fecha', '>=', desde30]] }, (ts) => poner({ tareasHechas: new Set(ts.map((t) => idTareaHecha(t.taskId, t.fecha))) }), fallo),
         d.observarLista<SesionEnfoque>({ ruta: `users/${uid}/focus`, filtros: [['fecha', '>=', desde30]] }, (fs) => poner({ enfoque: fs.sort((a, b) => b.inicio - a.inicio) }), fallo),
@@ -113,6 +110,56 @@ export function Sincronizar() {
   }, [uid, hoy, poner]);
 
   return null;
+}
+
+/**
+ * Registros con lectura incremental (para gastar pocas lecturas):
+ * 1) se arma la lista con lo que ya está guardado en el dispositivo (gratis),
+ * 2) al servidor solo se le piden los registros que cambiaron desde la última sincronización
+ *    (con un día de margen por si el reloj de otro dispositivo está desfasado).
+ * La primera vez en un dispositivo se descargan los de la ventana completa.
+ */
+async function sincronizarRegistros(
+  d: Awaited<ReturnType<typeof obtenerDriver>>,
+  uid: string,
+  desde: string,
+  alCambiar: (r: Registros) => void,
+  fallo: (e: unknown) => void,
+): Promise<() => void> {
+  const clave = `stoica.sync.logs.${uid}`;
+  let ultima = 0;
+  try {
+    ultima = Number(localStorage.getItem(clave) ?? 0) || 0;
+  } catch {
+    /* sin almacenamiento: se descarga todo */
+  }
+  const ruta = `users/${uid}/logs`;
+  const todos = new Map<string, Registro>();
+  const emitir = () => {
+    const m: Registros = new Map();
+    for (const r of todos.values()) {
+      if (r.fecha < desde) continue;
+      if (!m.has(r.habitId)) m.set(r.habitId, new Map());
+      m.get(r.habitId)!.set(r.fecha, r);
+    }
+    alCambiar(m);
+  };
+  if (ultima > 0 && d.nombre === 'firebase') {
+    for (const r of await d.leerListaLocal<Registro>({ ruta, filtros: [['fecha', '>=', desde]] })) todos.set(r.id, r);
+    if (todos.size === 0) ultima = 0; // la caché se borró: hay que descargar todo
+  }
+  const consulta = ultima > 0 && d.nombre === 'firebase' ? { ruta, filtros: [['actualizado', '>=', ultima - 86400000]] as Filtro[] } : { ruta, filtros: [['fecha', '>=', desde]] as Filtro[] };
+  if (todos.size) emitir();
+  return d.observarLista<Registro>(consulta, (rs) => {
+    for (const r of rs) todos.set(r.id, r);
+    // Lo que el dispositivo ya tiene y no vino en la respuesta sigue valiendo; lo borrado se limpia al borrar el hábito.
+    emitir();
+    try {
+      localStorage.setItem(clave, String(Date.now()));
+    } catch {
+      /* nada */
+    }
+  }, fallo);
 }
 
 // ---------- Selectores ----------

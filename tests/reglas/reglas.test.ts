@@ -340,5 +340,7 @@ describe('todo lo demás está cerrado', () => {
   it('rutas inventadas', async () => {
     await assertFails(setDoc(doc(usuario('ana'), 'cualquiera/x'), { a: 1 }));
     await assertFails(getDoc(doc(usuario('jefe', 'admin'), 'cualquiera/x')));
+    await assertFails(setDoc(doc(usuario('ana'), 'avisosReaccion/g1_x'), { creado: 1 }));
+    await assertFails(getDoc(doc(usuario('jefe', 'admin'), 'avisosReaccion/g1_x')));
   });
 });

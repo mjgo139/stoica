@@ -22,6 +22,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  getDocsFromCache,
   initializeFirestore,
   limit,
   onSnapshot,
@@ -161,6 +162,13 @@ export function crearDriverFirebase(): Driver {
       );
     },
     leerLista: (c) => envolver(async () => (await getDocs(armar(c))).docs.map((d) => ({ id: d.id, ...d.data() }) as never)),
+    async leerListaLocal(c) {
+      try {
+        return (await getDocsFromCache(armar(c))).docs.map((d) => ({ id: d.id, ...d.data() }) as never);
+      } catch {
+        return [];
+      }
+    },
     guardar: (ruta, datos, opciones) => envolver(async () => {
       await sinBloquear(setDoc(doc(db, ruta), datos, { merge: !!opciones?.combinar }));
     }),

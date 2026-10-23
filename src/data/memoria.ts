@@ -271,6 +271,9 @@ export function crearDriverMemoria(): Driver {
       await espera(20);
       return ejecutar(c) as Array<ConId<T>>;
     },
+    async leerListaLocal<T>(c: Consulta) {
+      return ejecutar(c) as Array<ConId<T>>;
+    },
     async guardar(ruta, datos, opciones) {
       yo();
       escribir(ruta, datos, !!opciones?.combinar);

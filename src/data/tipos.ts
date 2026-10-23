@@ -55,6 +55,8 @@ export interface Driver {
   observarDoc<T>(ruta: string, cb: (d: ConId<T> | null) => void, alFallar: (e: unknown) => void): Cancelar;
   observarLista<T>(c: Consulta, cb: (docs: Array<ConId<T>>) => void, alFallar: (e: unknown) => void): Cancelar;
   leerLista<T>(c: Consulta): Promise<Array<ConId<T>>>;
+  /** Lo que ya está guardado en este dispositivo (sin ir al servidor, sin costo de lectura). */
+  leerListaLocal<T>(c: Consulta): Promise<Array<ConId<T>>>;
   /** Crea o reemplaza (o combina con merge) el documento. No espera al servidor si no hay conexión. */
   guardar(ruta: string, datos: Record<string, unknown>, opciones?: { combinar?: boolean }): Promise<void>;
   borrar(ruta: string): Promise<void>;

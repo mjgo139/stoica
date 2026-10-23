@@ -197,7 +197,12 @@ export const adminCalcularMetricas = onCall(async (req) => {
 
 export const metricasNocturnas = onSchedule({ schedule: '10 3 * * *', timeZone: ZONA_POR_DEFECTO }, async () => {
   const m = await guardarMetricas();
-  logger.info('Métricas del día', { fecha: m.fecha, total: m.total });
+  // Limpieza: marcas de avisos de reacciones de más de 3 días.
+  const viejas = await db().collection('avisosReaccion').where('creado', '<', Date.now() - 3 * 864e5).limit(500).get();
+  const lote = db().bulkWriter();
+  viejas.docs.forEach((d) => lote.delete(d.ref));
+  await lote.close();
+  logger.info('Métricas del día', { fecha: m.fecha, total: m.total, limpiadas: viejas.size });
 });
 
 // ---------- Comunidad ----------
@@ -334,6 +339,14 @@ export const enviarRecordatorios = onSchedule({ schedule: 'every 15 minutes', ti
 export const alReaccionar = onDocumentCreated('groups/{gid}/reactions/{rid}', async (event) => {
   const r = event.data?.data() as Reaccion | undefined;
   if (!r || r.de === r.para) return;
+  // Un solo aviso por día, por quien reacciona y por destinatario (aunque borre y vuelva a reaccionar).
+  // avisosReaccion/** lo escribe solo el servidor: las reglas no lo abren a la app.
+  const marca = db().doc(`avisosReaccion/${event.params.gid}_${event.params.rid}`);
+  try {
+    await marca.create({ creado: Date.now() });
+  } catch {
+    return; // ya se avisó hoy
+  }
   const p = (await db().doc(`users/${r.para}`).get()).data() as Perfil | undefined;
   if (!p || p.notifReacciones === false || !p.notificaciones) return;
   const g = (await db().doc(`groups/${event.params.gid}`).get()).data() as Grupo | undefined;
