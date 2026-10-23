@@ -2,12 +2,12 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, REACCIONES, validarDesafio, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
 import { fechaCorta } from '@core/fechas';
-import { cumplido, NOMBRE_VIRTUD, VIRTUDES, type Virtud } from '@core/habitos';
+import { cumplido, habitoParaDesafio, LIMITES_HABITO, NOMBRE_VIRTUD, validarHabito, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
 import { inicial } from '@core/perfil';
 import { aRomano } from '@core/romanos';
 import { limpiarNombre } from '@core/validaciones';
 import { borrarDesafio, crearDesafio, elegirCompartidos, eliminarGrupo, reaccionar, salirDeGrupo, sumarmeADesafio, useComunidad } from '@/app/comunidad';
-import { alternarSiNo, registrosDe, sumar, uidActual, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
+import { alternarSiNo, guardarHabito, registrosDe, sumar, uidActual, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
 import { HojaMedir } from '@/screens/habitos/HojaMedir';
 import { useConsulta } from '@/data/hooks';
 import type { ConId } from '@/data/tipos';
@@ -265,9 +265,42 @@ function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId: strin
   const e = estadoDesafio(d, hoy);
   const [eligiendo, setEligiendo] = useState(false);
   const [borrando, setBorrando] = useState(false);
+  const [creando, setCreando] = useState(false);
+  const mostrar = useAvisos((s) => s.mostrar);
+  const todos = useDatos((s) => s.habitos);
+  const sugerido = useMemo(() => habitoParaDesafio(d.titulo, d.virtud), [d.titulo, d.virtud]);
+  const igual = (a: string) => a.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const coincide = habitos.find((h) => igual(h.nombre) === igual(sugerido.nombre));
+  const crearYSumarme = async () => {
+    if (todos.length >= LIMITES_HABITO.habitosMax) return mostrar(`Podés tener hasta ${LIMITES_HABITO.habitosMax} hábitos.`);
+    const nuevo = {
+      ...sugerido,
+      id: '',
+      dias: [0, 1, 2, 3, 4, 5, 6],
+      variables: sugerido.variables.map((v, i) => ({ ...v, id: igual(v.nombre).replace(/[^a-z]/g, '') || `v${i}`, inicial: NaN, meta: NaN })),
+      recordatorio: null,
+      inicio: hoy,
+      archivado: false,
+      orden: todos.length,
+      racha: 0,
+      mejorRacha: 0,
+    };
+    const err = validarHabito(nuevo);
+    if (err) return mostrar(err);
+    setCreando(true);
+    try {
+      const idNuevo = await guardarHabito(nuevo);
+      const ahora = Date.now();
+      await sumarmeADesafio(grupoId, d, idNuevo, { ...nuevo, id: idNuevo, recordatorioSlot: null, creado: ahora, actualizado: ahora, actualizadoPor: uid } as Habito);
+      setEligiendo(false);
+      mostrar(`Creamos “${nuevo.nombre}” y te sumaste al desafío.`);
+    } finally {
+      setCreando(false);
+    }
+  };
   const ranking = [...progresos].sort((a, b) => b.cumplidos - a.cumplidos);
   return (
-    <div style={{ padding: '12px 0', borderBottom: '1px solid var(--ln2)' }}>
+    <div data-desafio={d.titulo} style={{ padding: '12px 0', borderBottom: '1px solid var(--ln2)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <strong className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16 }}>
           {d.titulo}
@@ -306,14 +339,36 @@ function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId: strin
         <p className="mu" style={{ fontWeight: 500, marginTop: 8 }}>
           Cuenta cada día que cumplas ese hábito dentro del desafío.
         </p>
-        {habitos.map((h) => (
-          <button key={h.id} type="button" className="srow" onClick={async () => (await sumarmeADesafio(grupoId, d, h.id), setEligiendo(false))}>
-            <IconoHabito icono={h.icono} virtud={h.virtud} tam={34} />
-            <span style={{ flex: 1, fontWeight: 600 }}>{h.nombre}</span>
-            {mio?.habitId === h.id && <span className="cap gold">Elegido</span>}
-          </button>
-        ))}
-        {habitos.length === 0 && <p className="vacio-mini">Primero creá un hábito.</p>}
+        {!coincide && (
+          <div className="franja info" style={{ display: 'block', marginTop: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <IconoHabito icono={sugerido.icono} virtud={sugerido.virtud} tam={34} />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block' }}>¿No tenés un hábito para esto?</span>
+                <span style={{ fontWeight: 500, fontSize: 13 }}>
+                  Creamos “{sugerido.nombre}” ({NOMBRE_VIRTUD[sugerido.virtud]}, todos los días). Después lo podés editar.
+                </span>
+              </span>
+            </div>
+            <button type="button" className="btn" style={{ marginTop: 12, height: 44 }} disabled={creando} onClick={crearYSumarme}>
+              {creando ? 'Creando…' : 'Crear el hábito y sumarme'}
+            </button>
+          </div>
+        )}
+        {habitos.length > 0 && (
+          <div className="fl" style={{ marginTop: 18 }}>
+            {coincide ? 'Elegí uno de tus hábitos' : 'O elegí uno que ya tenés'}
+          </div>
+        )}
+        {[...habitos]
+          .sort((a, b) => (a.id === coincide?.id ? -1 : b.id === coincide?.id ? 1 : 0))
+          .map((h) => (
+            <button key={h.id} type="button" className="srow" onClick={async () => (await sumarmeADesafio(grupoId, d, h.id), setEligiendo(false))}>
+              <IconoHabito icono={h.icono} virtud={h.virtud} tam={34} />
+              <span style={{ flex: 1, fontWeight: 600 }}>{h.nombre}</span>
+              {mio?.habitId === h.id ? <span className="cap gold">Elegido</span> : h.id === coincide?.id && <span className="cap gold">Coincide</span>}
+            </button>
+          ))}
         {mio && (
           <button type="button" className="ghost peligro" style={{ width: '100%', marginTop: 14 }} onClick={async () => (await sumarmeADesafio(grupoId, d, null), setEligiendo(false))}>
             Dejar el desafío

@@ -142,7 +142,7 @@ export function Editor() {
   if (id && listo && !existente) return <p className="vacio-mini">Ese hábito no existe.</p>;
 
   return (
-    <div className="entra" style={{ maxWidth: 760 }}>
+    <div className="entra" style={{ maxWidth: 760, marginInline: 'auto' }}>
       <button type="button" className="link" style={{ paddingLeft: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => navegar(-1)}>
         <Icono nombre="atras" tam={18} /> Volver
       </button>

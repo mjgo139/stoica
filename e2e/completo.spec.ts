@@ -230,6 +230,20 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByText('Vos', { exact: true })).toBeVisible();
     await captura(page, '20-grupo');
 
+    // Desafío sin hábito propio: se crea el hábito y se suma en un toque
+    await page.getByRole('button', { name: '+ Nuevo' }).click();
+    await page.getByLabel('Nombre').fill('10 días de gratitud');
+    await page.getByRole('dialog').getByRole('button', { name: 'Crear desafío' }).click();
+    const gratitud = page.locator('[data-desafio="10 días de gratitud"]');
+    await gratitud.getByRole('button', { name: 'Sumarme' }).click();
+    await expect(page.getByRole('dialog')).toContainText('“Gratitud”');
+    await page.getByRole('dialog').getByRole('button', { name: 'Crear el hábito y sumarme' }).click();
+    await expect(gratitud.getByText('Vos', { exact: true })).toBeVisible();
+    await ir(page, '/habitos');
+    await expect(page.getByText('Gratitud').first()).toBeVisible();
+    await ir(page, '/comunidad');
+    await page.getByText('El Pórtico').click();
+
     // Crear un grupo y ver el código
     await ir(page, '/comunidad');
     await page.getByRole('button', { name: /Crear grupo/ }).click();

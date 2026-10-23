@@ -277,10 +277,11 @@ export async function borrarDesafio(grupoId: string, cid: string) {
   await intentar(async () => (await obtenerDriver()).borrar(`groups/${grupoId}/challenges/${cid}`));
 }
 
-export async function sumarmeADesafio(grupoId: string, d: Desafio & { id: string }, habitId: string | null) {
+export async function sumarmeADesafio(grupoId: string, d: Desafio & { id: string }, habitId: string | null, recien?: Habito) {
   const uid = uidActual();
   const ruta = `groups/${grupoId}/challenges/${d.id}/progress/${uid}`;
-  const h = useDatos.getState().habitos.find((x) => x.id === habitId);
+  // `recien`: hábito que se acaba de crear y quizás todavía no llegó a la lista local.
+  const h = recien && recien.id === habitId ? recien : useDatos.getState().habitos.find((x) => x.id === habitId);
   await intentar(async () => {
     const dr = await obtenerDriver();
     if (!h) await dr.borrar(ruta);

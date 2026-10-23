@@ -324,3 +324,39 @@ export function balanceVirtudes(habitos: Habito[], registrosPorHabito: Map<strin
   }
   return out;
 }
+
+// ---------- Hábito sugerido para un desafío ----------
+const sinTildes = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+const CLAVES_DESAFIO: Array<[RegExp, string]> = [
+  [/medit/, 'meditar'],
+  [/ducha|fria/, 'fria'],
+  [/\blee|leyendo|lectura|libro/, 'leer'],
+  [/camin/, 'caminar'],
+  [/entren|ejercic|gimnas|gym/, 'ejercicio'],
+  [/pantalla|celular|redes/, 'pantallas'],
+  [/familia/, 'familia'],
+  [/diario|escrib/, 'escribir'],
+  [/agua/, 'agua'],
+  [/peso|adelgaz/, 'peso'],
+];
+
+/**
+ * Propone el hábito con el que alguien se suma a un desafío ("21 días meditando" → Meditar).
+ * Si reconoce el tema usa la plantilla; si no, arma un Sí/No con el nombre del desafío sin la duración.
+ */
+export function habitoParaDesafio(titulo: string, virtud: Virtud): Plantilla['datos'] {
+  const t = sinTildes(titulo);
+  if (/azucar|dulce/.test(t)) return { nombre: 'Sin azúcar', tipo: 'sino', virtud: 'templanza', icono: 'nosugar', momento: 1, meta: 1, unidad: '', variables: [] };
+  if (/fumar|cigarr/.test(t)) return { nombre: 'Sin fumar', tipo: 'sino', virtud: 'templanza', icono: 'nosmoke', momento: 1, meta: 1, unidad: '', variables: [] };
+  for (const [re, id] of CLAVES_DESAFIO) {
+    const p = PLANTILLAS.find((x) => x.id === id);
+    if (re.test(t) && p) return { ...p.datos, variables: p.datos.variables.map((v) => ({ ...v })) };
+  }
+  const limpio = titulo
+    .trim()
+    .replace(/^(\d+|un|una|dos|tres|cuatro|siete|diez|treinta)\s+(d[ií]as?|semanas?|mes(es)?)\s+(de\s+)?/i, '')
+    .trim();
+  const nombre = (limpio || titulo.trim()).slice(0, LIMITES_HABITO.nombreMax);
+  return { nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1), tipo: 'sino', virtud, icono: 'sun', momento: 1, meta: 1, unidad: '', variables: [] };
+}
