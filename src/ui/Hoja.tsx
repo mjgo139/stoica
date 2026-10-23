@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 /** Hoja que sube desde abajo en el celular; diálogo centrado en escritorio. */
 export function Hoja({ titulo, abierta, alCerrar, children }: { titulo: string; abierta: boolean; alCerrar: () => void; children: ReactNode }) {
@@ -21,7 +22,9 @@ export function Hoja({ titulo, abierta, alCerrar, children }: { titulo: string; 
   }, [abierta]);
 
   if (!abierta) return null;
-  return (
+  // Se dibuja directo en <body>: si quedara dentro de la pantalla (que tiene animación de entrada),
+  // el navegador la ubicaría relativa a esa pantalla y no a la ventana.
+  return createPortal(
     <div className="capa">
       <div className="fondo-capa" onClick={() => cerrar.current()} />
       <div className="hoja" role="dialog" aria-modal="true" aria-label={titulo} tabIndex={-1} ref={ref}>
@@ -38,7 +41,8 @@ export function Hoja({ titulo, abierta, alCerrar, children }: { titulo: string; 
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -53,7 +57,7 @@ export function Confirmar({ abierto, titulo, texto, accion, peligro = false, alC
     return () => document.removeEventListener('keydown', tecla);
   }, [abierto]);
   if (!abierto) return null;
-  return (
+  return createPortal(
     <div className="capa centro">
       <div className="fondo-capa" onClick={() => cerrar.current()} />
       <div className="dialogo" role="alertdialog" aria-modal="true" aria-label={titulo}>
@@ -72,6 +76,7 @@ export function Confirmar({ abierto, titulo, texto, accion, peligro = false, alC
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

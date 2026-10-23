@@ -2,12 +2,13 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, REACCIONES, validarDesafio, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
 import { fechaCorta } from '@core/fechas';
-import { NOMBRE_VIRTUD, VIRTUDES, type Virtud } from '@core/habitos';
+import { cumplido, NOMBRE_VIRTUD, VIRTUDES, type Virtud } from '@core/habitos';
 import { inicial } from '@core/perfil';
 import { aRomano } from '@core/romanos';
 import { limpiarNombre } from '@core/validaciones';
 import { borrarDesafio, crearDesafio, elegirCompartidos, eliminarGrupo, reaccionar, salirDeGrupo, sumarmeADesafio, useComunidad } from '@/app/comunidad';
-import { uidActual, useHabitosActivos, useHoy } from '@/app/datos';
+import { alternarSiNo, registrosDe, sumar, uidActual, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
+import { HojaMedir } from '@/screens/habitos/HojaMedir';
 import { useConsulta } from '@/data/hooks';
 import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
@@ -186,13 +187,17 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy }: { m: ConId<Miembr
           <span className="mu2" style={{ fontSize: 12, fontWeight: 700, width: 38, textAlign: 'right' }}>
             {c.porcentaje}%
           </span>
-          <span className={`dia ${actualizado && c.hoy ? 'ok' : ''}`} style={{ margin: 0, width: 32, height: 32 }} aria-label={actualizado && c.hoy ? 'Cumplido hoy' : 'Pendiente hoy'}>
-            <span style={{ width: 16, height: 16 }}>
-              <svg width="11" height="11" viewBox="0 0 24 24">
-                <path d="M5 12l4 4 10-10" />
-              </svg>
+          {esYo ? (
+            <MarcaMia habitId={c.habitId} nombre={c.nombre} hoy={hoy} resumenOk={actualizado && c.hoy} />
+          ) : (
+            <span className={`dia ${actualizado && c.hoy ? 'ok' : ''}`} style={{ margin: 0, width: 32, height: 32 }} aria-label={actualizado && c.hoy ? 'Cumplido hoy' : 'Pendiente hoy'}>
+              <span style={{ width: 16, height: 16 }}>
+                <svg width="11" height="11" viewBox="0 0 24 24">
+                  <path d="M5 12l4 4 10-10" />
+                </svg>
+              </span>
             </span>
-          </span>
+          )}
         </div>
       ))}
       {!esYo && (
@@ -205,6 +210,50 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy }: { m: ConId<Miembr
         </div>
       )}
     </div>
+  );
+}
+
+/** Tu propio hábito compartido: se puede marcar desde el grupo (igual que en Hoy). */
+function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string; nombre: string; hoy: string; resumenOk: boolean }) {
+  const h = useHabitosActivos().find((x) => x.id === habitId);
+  const registros = useDatos((s) => s.registros);
+  const [midiendo, setMidiendo] = useState(false);
+  const [rebote, setRebote] = useState(0);
+  const r = h ? registrosDe(registros, h.id).get(hoy) : undefined;
+  const ok = h ? cumplido(h, r) : resumenOk;
+  const tocar = () => {
+    if (!h) return;
+    setRebote((n) => n + 1);
+    if (h.tipo === 'sino') alternarSiNo(h, hoy);
+    else if (h.tipo === 'cantidad') sumar(h, hoy, 1);
+    else setMidiendo(true);
+  };
+  const etiqueta = !h ? nombre : h.tipo === 'sino' ? `${ok ? 'Desmarcar' : 'Marcar'} ${nombre}` : h.tipo === 'cantidad' ? (ok ? `${nombre}: cumplido` : `Sumar uno a ${nombre}`) : `Registrar ${nombre}`;
+  return (
+    <>
+      {h?.tipo === 'cantidad' && (
+        <span className="mu2 num" style={{ fontSize: 13 }}>
+          {r?.valor ?? 0}/{h.meta}
+        </span>
+      )}
+      <button
+        type="button"
+        key={rebote}
+        className={`dia ${ok ? 'ok' : ''} ${rebote ? 'rebote' : ''}`}
+        style={{ margin: 0, width: 32, height: 32 }}
+        disabled={!h || (h.tipo === 'cantidad' && ok)}
+        aria-pressed={ok}
+        aria-label={etiqueta}
+        onClick={tocar}
+      >
+        <span style={{ width: 16, height: 16 }}>
+          <svg width="11" height="11" viewBox="0 0 24 24">
+            <path d="M5 12l4 4 10-10" />
+          </svg>
+        </span>
+      </button>
+      {h?.tipo === 'medicion' && <HojaMedir h={h} fecha={hoy} abierta={midiendo} alCerrar={() => setMidiendo(false)} />}
+    </>
   );
 }
 

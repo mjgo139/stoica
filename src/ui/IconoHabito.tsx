@@ -37,7 +37,7 @@ const ICONOS: Record<string, [string[], Array<[number, number, number]>]> = {
 export function Glifo({ icono, tam = 20 }: { icono: string; tam?: number }) {
   const [trazos, circulos] = ICONOS[icono] ?? ICONOS.med;
   return (
-    <svg width={tam} height={tam} viewBox="0 0 24 24" aria-hidden="true">
+    <svg className="glifo" width={tam} height={tam} viewBox="0 0 24 24" aria-hidden="true">
       {trazos.map((d, i) => (
         <path key={i} d={d} />
       ))}

@@ -36,13 +36,18 @@ export function Shell() {
             STOICA
           </span>
         </div>
-        <div className="items">
+        <div className="items" style={{ ['--tabs' as string]: SECCIONES.length + 1 }}>
           {SECCIONES.map((s) => (
             <NavLink key={s.ruta} to={s.ruta} end={s.ruta === '/'} className={({ isActive }) => (isActive ? 'on' : '')}>
               <Icono nombre={s.icono} tam={22} className="" />
-              {s.nombre}
+              <span className="et">{s.nombre}</span>
             </NavLink>
           ))}
+          {/* En el celular, Comunidad va en la barra inferior; en escritorio, en su propia sección. */}
+          <NavLink to="/comunidad" className={({ isActive }) => `solo-cel ${isActive || pathname.startsWith('/unirse') ? 'on' : ''}`}>
+            <Icono nombre="grupo" tam={22} className="" />
+            <span className="et">Comunidad</span>
+          </NavLink>
         </div>
         <div className="items solo-esc" style={{ marginTop: 18, borderTop: '1px solid var(--ln)', paddingTop: 14 }}>
           <NavLink to="/comunidad" className={({ isActive }) => (isActive ? 'on' : '')}>

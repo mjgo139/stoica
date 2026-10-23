@@ -109,6 +109,7 @@ svg.laurel { display: inline-block; vertical-align: middle; }
 /* ---------- Controles ---------- */
 .ico { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--gold); flex: none; }
 .ico:hover { background: var(--hover); }
+.glifo { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .uic { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .ring { border: 1px solid var(--ln4); }
 .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--goldbg); color: var(--goldtx); font-family: var(--f-display); font-size: 18px; font-weight: 700; border: 1px solid var(--ln4); flex: none; display: inline-flex; align-items: center; justify-content: center; }
@@ -142,9 +143,11 @@ svg.laurel { display: inline-block; vertical-align: middle; }
 
 /* ---------- Navegación: barra inferior en celular ---------- */
 .nav-tab { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--nav); border-top: 1px solid var(--ln); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-.nav-tab > .items { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 4px 6px 10px; }
+.nav-tab > .items { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(var(--tabs, 5), minmax(0, 1fr)); padding: 4px 6px 10px; }
 .nav-tab a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-size: 11.5px; font-weight: 600; min-height: 58px; position: relative; color: var(--mu2); text-decoration: none; }
 .nav-tab a.on { color: var(--gold); }
+.nav-tab a .et { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 400px) { .nav-tab a { font-size: 10.5px; } }
 .nav-tab a.on::before { content: ''; position: absolute; top: 0; width: 22px; height: 2px; border-radius: 1px; background: var(--gold); }
 .nav-tab svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .nav-tab .marca, .nav-tab .yo { display: none; }
@@ -174,7 +177,7 @@ button:active:not(:disabled) { transform: scale(.97); }
 @keyframes popin { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes aviso { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes rebote { 0% { transform: scale(.72); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
-.entra { animation: entra .32s var(--ease) both; }
+.entra { animation: entra .32s var(--ease) backwards; }
 .rebote { animation: rebote .38s var(--spring); }
 
 /* ---------- Tablet ---------- */
@@ -197,6 +200,7 @@ button:active:not(:disabled) { transform: scale(.97); }
   .app-contenido { max-width: 1480px; padding-block: 44px 64px; padding-left: 48px; padding-right: 48px; }
   .app-contenido.sin-nav { padding-top: 8vh; }
   .solo-esc { display: block !important; }
+  .solo-cel { display: none !important; }
   .solo-mov { display: none !important; }
   .nav-tab { top: 0; bottom: 0; right: auto; width: 248px; border-top: 0; padding: 28px 16px 20px; display: flex; flex-direction: column;
     --tx: #f3eddf; --tx2: #ddd6c6; --mu: #bdb5a4; --mu2: #a39b89; --hover: #27231c; --goldbg: #3a3122; --goldtx: #f0ddb4; --gold: #c9a66b; --ln: #2e2921;

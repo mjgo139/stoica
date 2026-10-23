@@ -208,9 +208,19 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'El Pórtico' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Qué comparto' }).click();
+    // Las hojas se dibujan directo en <body> (si no, quedan cortadas dentro de la pantalla animada).
+    await expect(page.locator('body > .capa')).toHaveCount(1);
     await page.getByRole('dialog').getByLabel('Meditar').check();
     await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click();
     await expect(page.getByText('· vos')).toBeVisible();
+
+    // Marcar mi hábito compartido desde el grupo
+    const mio = page.getByRole('button', { name: /^(Marcar|Desmarcar) Meditar$/ });
+    const antes = await mio.getAttribute('aria-pressed');
+    await mio.click();
+    await expect(mio).toHaveAttribute('aria-pressed', antes === 'true' ? 'false' : 'true');
+    const victoria = page.getByRole('alertdialog', { name: 'Victoria sobre ti mismo' });
+    if (await victoria.isVisible().catch(() => false)) await victoria.getByRole('button').first().click();
 
     await page.getByRole('group', { name: 'Reaccionar a Epicteto' }).getByRole('button', { name: 'Fuerza' }).click();
     await expect(page.getByRole('group', { name: 'Reaccionar a Epicteto' }).getByRole('button', { name: 'Fuerza' })).toHaveAttribute('aria-pressed', 'true');
@@ -261,7 +271,9 @@ test.describe('v0.5–v1.0', () => {
     await entrarConEjemplo(page);
     if (esCelular()) {
       await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Hoy' })).toBeVisible();
-      await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comunidad' })).toBeHidden();
+      await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comunidad' })).toBeVisible();
+      await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comunidad' }).click();
+      await expect(page.getByText('El Pórtico')).toBeVisible();
     } else {
       await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comunidad' })).toBeVisible();
       await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Admin' })).toBeVisible();
