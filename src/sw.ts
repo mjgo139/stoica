@@ -41,7 +41,9 @@ self.addEventListener('push', (e) => {
     self.registration.showNotification(d.titulo || 'Stoica', {
       body: d.cuerpo || '',
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      // Ícono chico de la barra de estado: tiene que ser blanco sobre transparente (si no, se ve un cuadrado).
+      badge: '/icons/badge-96.png',
+      silent: false,
       tag: d.tag || 'stoica',
       // Volver a sonar y vibrar aunque reemplace un aviso anterior con la misma etiqueta.
       renotify: true,

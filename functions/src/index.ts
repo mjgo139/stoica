@@ -493,13 +493,16 @@ export const vigilarDesafios = onDocumentCreated('groups/{gid}/challenges/{cid}'
 });
 
 /** Manda un aviso de prueba a tus propios dispositivos (como mucho uno por minuto). */
-export const probarNotificacion = onCall(llamable, async (req) => {
+export const probarNotificacion = onCall({ ...llamable, timeoutSeconds: 30 }, async (req) => {
   const uid = exigirSesion(req);
   const ref = db().doc(`cuotas/${uid}`);
   const ultima = Number((await ref.get()).get('ultimaPrueba') ?? 0);
   const falta = Math.ceil((60_000 - (Date.now() - ultima)) / 1000);
   if (falta > 0) throw new HttpsError('resource-exhausted', `Ya te mandamos uno. Podés probar otra vez en ${falta} segundos.`);
   await ref.set({ ultimaPrueba: Date.now() }, { merge: true });
+  // Espera 10 segundos para que la persona alcance a salir de la app o bloquear el celular:
+  // con la app abierta, Android suele mostrar el aviso sin ventana ni sonido.
+  await new Promise((r) => setTimeout(r, 10_000));
   const dispositivos = (await db().collection(`users/${uid}/devices`).get()).size;
   const enviados = await avisar(uid, { titulo: 'Stoica', cuerpo: 'Aviso de prueba: las notificaciones llegan a este dispositivo.', url: '/perfil', tag: `prueba-${Date.now()}` });
   logger.info('Prueba de aviso', { dispositivos, enviados });

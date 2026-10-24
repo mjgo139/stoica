@@ -38,12 +38,13 @@ export function Notificaciones() {
   const [probando, setProbando] = useState(false);
   const probar = async () => {
     setProbando(true);
+    mostrar('En 10 segundos te llega. Salí de la app o bloqueá el celular para verlo como le llegaría a cualquiera.');
     try {
       const d = await obtenerDriver();
       const r = await d.llamar<{ enviados: number; dispositivos: number }>('probarNotificacion');
       if (r.dispositivos === 0) mostrar('No hay dispositivos registrados. Apagá y prendé las notificaciones en este dispositivo.');
       else if (r.enviados === 0) mostrar('No se pudo entregar. Apagá y prendé las notificaciones para registrar este dispositivo de nuevo.');
-      else mostrar('Aviso enviado. Debería llegarte en unos segundos.');
+      else mostrar('Aviso enviado.');
     } catch (e) {
       mostrar(mensajeDeError(e));
     } finally {
@@ -102,7 +103,7 @@ export function Notificaciones() {
       )}
       {perfil.notificaciones && (
         <button type="button" className="ghost" style={{ margin: '6px 0 4px' }} disabled={probando} onClick={probar}>
-          {probando ? 'Enviando…' : 'Mandarme un aviso de prueba'}
+          {probando ? 'Llega en 10 segundos…' : 'Mandarme un aviso de prueba'}
         </button>
       )}
       <label className="fila" style={{ cursor: 'default' }}>
