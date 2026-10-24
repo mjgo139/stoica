@@ -104,9 +104,18 @@ export function Notificaciones() {
       {perfil.notificaciones && esAndroid() && (
         <details className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Te llegan sin sonido o sin ventana?</summary>
-          <p style={{ margin: '6px 0 0' }}>
-            Samsung y otros Android a veces crean los avisos en silencio. Abrí <b>Ajustes › Notificaciones › Notificaciones de aplicaciones › {esInstalada() ? 'Stoica' : 'Chrome'} › Categorías de notificación › General</b> y elegí <b>Alerta</b>, con <b>Mostrar como ventana emergente</b> activado. Se hace una sola vez.
-          </p>
+          <ol style={{ margin: '6px 0 0', paddingLeft: 18, display: 'grid', gap: 4 }}>
+            <li>
+              En Samsung, primero activá las categorías: <b>Ajustes › Notificaciones › Ajustes avanzados › Administrar categorías de notificaciones por aplic.</b>
+            </li>
+            <li>
+              Volvé a <b>Notificaciones › Notificaciones de aplicaciones</b> y buscá <b>{esInstalada() ? 'Stoica' : 'Chrome'}</b>.
+            </li>
+            <li>
+              Entrá a <b>Categorías de notificación › General</b> y elegí <b>Alerta</b>, con <b>Mostrar como ventana emergente</b> activado.
+            </li>
+          </ol>
+          <p style={{ margin: '6px 0 0' }}>Se hace una sola vez. En otros Android las categorías aparecen directamente en la app.</p>
         </details>
       )}
       {perfil.notificaciones && (
