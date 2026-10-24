@@ -504,7 +504,7 @@ export const probarNotificacion = onCall({ ...llamable, timeoutSeconds: 30 }, as
   // con la app abierta, Android suele mostrar el aviso sin ventana ni sonido.
   await new Promise((r) => setTimeout(r, 10_000));
   const dispositivos = (await db().collection(`users/${uid}/devices`).get()).size;
-  const enviados = await avisar(uid, { titulo: 'Stoica', cuerpo: 'Aviso de prueba: las notificaciones llegan a este dispositivo.', url: '/perfil', tag: `prueba-${Date.now()}` });
+  const enviados = await avisar(uid, { titulo: 'Aviso de prueba', cuerpo: 'Las notificaciones llegan a este dispositivo.', url: '/perfil', tag: `prueba-${Date.now()}` });
   logger.info('Prueba de aviso', { dispositivos, enviados });
   return { enviados, dispositivos };
 });

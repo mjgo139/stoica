@@ -42,8 +42,9 @@ self.addEventListener('push', (e) => {
   e.waitUntil(
     self.registration.showNotification(d.titulo || 'Stoica', {
       body: d.cuerpo || '',
-      // En Android el ícono de la app ya aparece a la izquierda: repetirlo a la derecha se ve duplicado.
-      ...(esAndroid ? {} : { icon: '/icons/icon-192.png' }),
+      // En Android el logo de la app ya aparece a la izquierda: a la derecha va solo el laurel con el rombo
+      // (sin imagen, Chrome dibuja una letra en un círculo gris).
+      icon: esAndroid ? '/icons/aviso-192.png' : '/icons/icon-192.png',
       // Ícono chico de la barra de estado: tiene que ser blanco sobre transparente (si no, se ve un cuadrado).
       badge: '/icons/badge-96.png',
       silent: false,
