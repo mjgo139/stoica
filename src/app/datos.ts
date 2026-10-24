@@ -4,9 +4,10 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
-import { claveDia, franjaUTC, sumarDias } from '@core/fechas';
+import { claveDia, minutoUTC, sumarDias } from '@core/fechas';
 import {
   hitoAlcanzado,
+  horasRecordatorio,
   idRegistro,
   mejorRacha,
   racha,
@@ -14,15 +15,16 @@ import {
   type Habito,
   type Registro,
 } from '@core/habitos';
-import type { Examen, SesionEnfoque, Tarea, TareaHecha } from '@core/rutina';
-import { idTareaHecha } from '@core/rutina';
+import type { Examen, Proyecto, SesionEnfoque, Tarea, TareaHecha } from '@core/rutina';
+import { idTareaHecha, tareaHecha } from '@core/rutina';
 import { obtenerDriver } from '@/data';
 import { mensajeDeError, type ConId } from '@/data/tipos';
 import { useAvisos } from '@/ui/avisos';
 import { Coleccion, idMarca, type MarcaBorrado } from './sync';
 
 /** Quita de la vista local un documento recién borrado en este dispositivo. */
-let quitarLocal: ((col: 'habits' | 'tasks', id: string) => void) | null = null;
+type ColConMarca = 'habits' | 'tasks' | 'projects';
+let quitarLocal: ((col: ColConMarca, id: string) => void) | null = null;
 import { useSesion } from './sesion';
 
 /** Días de registros que se mantienen sincronizados (rachas, semana, balance de 30 días). */
@@ -35,6 +37,7 @@ interface Datos {
   habitos: Array<ConId<Habito>>;
   registros: Registros;
   tareas: Array<ConId<Tarea>>;
+  proyectos: Array<ConId<Proyecto>>;
   tareasHechas: Set<string>; // ids taskId_fecha
   enfoque: Array<ConId<SesionEnfoque>>;
   examenes: Map<string, Examen>;
@@ -47,6 +50,7 @@ export const useDatos = create<Datos>((set) => ({
   habitos: [],
   registros: new Map(),
   tareas: [],
+  proyectos: [],
   tareasHechas: new Set(),
   enfoque: [],
   examenes: new Map(),
@@ -105,6 +109,7 @@ export function Sincronizar() {
         marcarListo();
       }, fallo);
       const tareas = new Coleccion<Tarea>(d, uid, 'tasks', [], () => true, (ts) => poner({ tareas: ts }), fallo);
+      const proyectos = new Coleccion<Proyecto>(d, uid, 'projects', [], () => true, (ps) => poner({ proyectos: ps.sort((a, b) => a.creado - b.creado) }), fallo);
       const hechas = new Coleccion<TareaHecha>(d, uid, 'taskDone', [['fecha', '>=', desde40]], enVentana(desde40), (ts) =>
         poner({ tareasHechas: new Set(ts.filter((t) => t.hecha !== false).map((t) => idTareaHecha(t.taskId, t.fecha))) }), fallo);
       const enfoque = new Coleccion<SesionEnfoque>(d, uid, 'focus', [['fecha', '>=', desde40]], enVentana(desde40), (fs) => poner({ enfoque: fs.sort((a, b) => b.inicio - a.inicio) }), fallo);
@@ -113,14 +118,15 @@ export function Sincronizar() {
       const marcas = new Coleccion<MarcaBorrado>(d, uid, 'borrados', [], () => true, (ms) => {
         habitos.quitar(ms.filter((m) => m.col === 'habits').map((m) => m.docId));
         tareas.quitar(ms.filter((m) => m.col === 'tasks').map((m) => m.docId));
+        proyectos.quitar(ms.filter((m) => m.col === 'projects').map((m) => m.docId));
       }, () => undefined);
-      colecciones.push(habitos, registros, tareas, hechas, enfoque, examenes, marcas);
+      colecciones.push(habitos, registros, tareas, proyectos, hechas, enfoque, examenes, marcas);
       for (const c of colecciones) {
         if (!vivo) break;
         await c.iniciar();
       }
       if (!vivo) colecciones.forEach((c) => c.detener());
-      quitarLocal = (col, id) => (col === 'habits' ? habitos : tareas).quitar([id]);
+      quitarLocal = (col, id) => (col === 'habits' ? habitos : col === 'tasks' ? tareas : proyectos).quitar([id]);
     });
     return () => {
       vivo = false;
@@ -164,7 +170,7 @@ async function borrar(ruta: string) {
 }
 
 /** Borra un hábito o una tarea y deja la marca para que los demás dispositivos también lo quiten. */
-async function borrarConMarca(col: 'habits' | 'tasks', id: string) {
+async function borrarConMarca(col: ColConMarca, id: string) {
   const uid = uidActual();
   quitarLocal?.(col, id);
   await guardar(`users/${uid}/borrados/${idMarca(col, id)}`, { col, docId: id, actualizado: Date.now(), actualizadoPor: uid });
@@ -235,7 +241,11 @@ export async function guardarHabito(h: Omit<Habito, 'creado' | 'actualizado' | '
   const datos: Habito = {
     ...h,
     id,
-    recordatorioSlot: h.recordatorio ? franjaUTC(h.recordatorio, zonaActual()) : null,
+    // Avisos a cualquier minuto (`avisos`); la franja vieja de 15 min queda vacía para no avisar dos veces.
+    recordatorio: horasRecordatorio(h)[0] ?? null,
+    recordatorios: horasRecordatorio(h),
+    avisos: [...new Set(horasRecordatorio(h).map((x) => minutoUTC(x, zonaActual())))],
+    recordatorioSlot: null,
     creado: h.creado ?? ahora,
     actualizado: ahora,
     actualizadoPor: uid,
@@ -276,11 +286,41 @@ export async function guardarTarea(t: Omit<Tarea, 'id' | 'creado' | 'actualizado
   const ahora = Date.now();
   const { id: _x, ...resto } = t;
   void _x;
-  await guardar(`users/${uid}/tasks/${id}`, { ...resto, creado: t.creado ?? ahora, actualizado: ahora, actualizadoPor: uid });
+  const hora = t.hora && (t.fecha || t.repetir === 'diaria') ? t.hora : null;
+  await guardar(`users/${uid}/tasks/${id}`, {
+    ...resto,
+    proyectoId: t.proyectoId ?? null,
+    hora,
+    avisoMin: hora ? minutoUTC(hora, zonaActual()) : null,
+    completada: t.repetir === 'diaria' ? null : (t.completada ?? null),
+    creado: t.creado ?? ahora,
+    actualizado: ahora,
+    actualizadoPor: uid,
+  });
+  return id;
 }
 
 export async function alternarTarea(t: Tarea, fecha: string) {
   const uid = uidActual();
+  if (t.repetir !== 'diaria') {
+    // Tareas que no se repiten: se completan en la tarea misma (no dependen del día en que se mire).
+    const { tareasHechas, tareas } = useDatos.getState();
+    const hecha = !tareaHecha(t, fecha, tareasHechas);
+    const completada = hecha ? hoyActual() : null;
+    useDatos.getState().poner({ tareas: tareas.map((x) => (x.id === t.id ? { ...x, completada } : x)) });
+    await guardar(`users/${uid}/tasks/${t.id}`, { completada, actualizado: Date.now(), actualizadoPor: uid }, true);
+    // Marcas de versiones anteriores: se apagan para que no la vuelvan a mostrar como hecha.
+    if (!hecha) {
+      const viejas = [...tareasHechas].filter((k) => k.startsWith(`${t.id}_`));
+      if (viejas.length) {
+        const sin = new Set(tareasHechas);
+        viejas.forEach((k) => sin.delete(k));
+        useDatos.getState().poner({ tareasHechas: sin });
+        await Promise.all(viejas.map((k) => guardar(`users/${uid}/taskDone/${k}`, { taskId: t.id, fecha: k.slice(t.id.length + 1), hecha: false, actualizado: Date.now(), actualizadoPor: uid })));
+      }
+    }
+    return;
+  }
   const id = idTareaHecha(t.id, fecha);
   const hechas = new Set(useDatos.getState().tareasHechas);
   const hecha = !hechas.has(id);
@@ -294,6 +334,29 @@ export async function alternarTarea(t: Tarea, fecha: string) {
 export async function borrarTarea(t: Tarea) {
   await borrarConMarca('tasks', t.id);
   avisar('Tarea borrada.');
+}
+
+// ---------- Proyectos ----------
+export async function guardarProyecto(p: Omit<Proyecto, 'id' | 'creado' | 'actualizado' | 'actualizadoPor' | 'archivado'> & { id?: string; creado?: number; archivado?: boolean }) {
+  const uid = uidActual();
+  const d = await obtenerDriver();
+  const id = p.id || d.nuevoId();
+  const ahora = Date.now();
+  await guardar(`users/${uid}/projects/${id}`, { nombre: p.nombre, virtud: p.virtud, fechaLimite: p.fechaLimite ?? null, archivado: p.archivado ?? false, creado: p.creado ?? ahora, actualizado: ahora, actualizadoPor: uid });
+  return id;
+}
+
+export async function archivarProyecto(p: Proyecto, archivado: boolean) {
+  const uid = uidActual();
+  await guardar(`users/${uid}/projects/${p.id}`, { archivado, actualizado: Date.now(), actualizadoPor: uid }, true);
+}
+
+/** Borra el proyecto y sus tareas. */
+export async function borrarProyecto(p: Proyecto) {
+  const tareas = useDatos.getState().tareas.filter((t) => t.proyectoId === p.id);
+  for (const t of tareas) await borrarConMarca('tasks', t.id);
+  await borrarConMarca('projects', p.id);
+  avisar(tareas.length ? `Proyecto y ${tareas.length} ${tareas.length === 1 ? 'tarea borrados' : 'tareas borradas'}.` : 'Proyecto borrado.');
 }
 
 // ---------- Enfoque y examen ----------

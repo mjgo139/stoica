@@ -65,12 +65,19 @@ service cloud.firestore {
     function momento(v) {
       return v in [0, 1, 2];
     }
+    // Minuto del día en UTC (avisos a cualquier minuto).
+    function minuto(v) {
+      return entero(v, 0, 1439);
+    }
+    function opcional(d, campo) {
+      return !(campo in d) || d[campo] == null;
+    }
 
     // ---------- Perfil ----------
     match /users/{uid} {
       function perfilValido() {
         let d = nuevo();
-        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'notifReacciones', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
+        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
           && d.keys().hasAll(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor'])
           && texto(d.nombre, 1, 40)
           && texto(d.correo, 0, 254)
@@ -80,6 +87,7 @@ service cloud.firestore {
           && (!('notificaciones' in d) || d.notificaciones is bool)
           && (!('examenHora' in d) || d.examenHora == null || hora(d.examenHora))
           && (!('examenSlot' in d) || d.examenSlot == null || entero(d.examenSlot, 0, 95))
+          && (opcional(d, 'examenMin') || minuto(d.examenMin))
           && (!('notifReacciones' in d) || d.notifReacciones is bool)
           && d.creado is int
           && firmado(uid);
@@ -94,7 +102,7 @@ service cloud.firestore {
       match /habits/{hid} {
         function habitoValido() {
           let d = nuevo();
-          return d.keys().hasOnly(['nombre', 'tipo', 'virtud', 'icono', 'momento', 'dias', 'meta', 'unidad', 'variables', 'recordatorio', 'recordatorioSlot', 'inicio', 'archivado', 'orden', 'racha', 'mejorRacha', 'creado', 'actualizado', 'actualizadoPor'])
+          return d.keys().hasOnly(['nombre', 'tipo', 'virtud', 'icono', 'momento', 'dias', 'meta', 'unidad', 'variables', 'recordatorio', 'recordatorioSlot', 'recordatorios', 'avisos', 'inicio', 'archivado', 'orden', 'racha', 'mejorRacha', 'creado', 'actualizado', 'actualizadoPor'])
             && texto(d.nombre, 1, 40)
             && d.tipo in ['sino', 'cantidad', 'medicion']
             && d.virtud in ['sabiduria', 'coraje', 'justicia', 'templanza']
@@ -106,6 +114,14 @@ service cloud.firestore {
             && d.variables is list && d.variables.size() <= 4
             && (d.recordatorio == null || hora(d.recordatorio))
             && (d.recordatorioSlot == null || entero(d.recordatorioSlot, 0, 95))
+            && (!('recordatorios' in d) || (d.recordatorios is list && d.recordatorios.size() <= 3
+                && (d.recordatorios.size() < 1 || hora(d.recordatorios[0]))
+                && (d.recordatorios.size() < 2 || hora(d.recordatorios[1]))
+                && (d.recordatorios.size() < 3 || hora(d.recordatorios[2]))))
+            && (!('avisos' in d) || (d.avisos is list && d.avisos.size() <= 3
+                && (d.avisos.size() < 1 || minuto(d.avisos[0]))
+                && (d.avisos.size() < 2 || minuto(d.avisos[1]))
+                && (d.avisos.size() < 3 || minuto(d.avisos[2]))))
             && diaCercano(d.inicio)
             && d.archivado is bool
             && entero(d.orden, 0, 1000)
@@ -141,17 +157,38 @@ service cloud.firestore {
       match /tasks/{tid} {
         function tareaValida() {
           let d = nuevo();
-          return d.keys().hasOnly(['titulo', 'dependeDeTi', 'momento', 'fecha', 'repetir', 'creado', 'actualizado', 'actualizadoPor'])
+          return d.keys().hasOnly(['titulo', 'dependeDeTi', 'momento', 'fecha', 'repetir', 'proyectoId', 'hora', 'avisoMin', 'completada', 'creado', 'actualizado', 'actualizadoPor'])
             && texto(d.titulo, 1, 120)
             && d.dependeDeTi is bool
             && momento(d.momento)
             && (d.fecha == null || claveDia(d.fecha))
             && d.repetir in ['no', 'diaria']
+            && (opcional(d, 'proyectoId') || texto(d.proyectoId, 1, 40))
+            && (opcional(d, 'hora') || hora(d.hora))
+            && (opcional(d, 'avisoMin') || minuto(d.avisoMin))
+            && (opcional(d, 'completada') || diaCercano(d.completada))
             && d.creado is int
             && firmado(uid);
         }
         allow read, delete: if esDueno(uid);
         allow create, update: if esDueno(uid) && tareaValida();
+      }
+
+      // ----- Proyectos (agrupan tareas) -----
+      match /projects/{pid} {
+        function proyectoValido() {
+          let d = nuevo();
+          return d.keys().hasOnly(['nombre', 'virtud', 'fechaLimite', 'archivado', 'creado', 'actualizado', 'actualizadoPor'])
+            && texto(d.nombre, 1, 60)
+            && d.virtud in ['sabiduria', 'coraje', 'justicia', 'templanza']
+            && (d.fechaLimite == null || claveDia(d.fechaLimite))
+            && d.archivado is bool
+            && d.creado is int
+            && firmado(uid);
+        }
+        allow read, delete: if esDueno(uid);
+        allow create: if esDueno(uid) && proyectoValido();
+        allow update: if esDueno(uid) && proyectoValido() && !cambiaron().hasAny(['creado']);
       }
 
       // ----- Tareas hechas: taskDone/{taskId}_{fecha} -----
@@ -213,7 +250,7 @@ service cloud.firestore {
         allow delete: if false;
         allow create, update: if esDueno(uid)
           && nuevo().keys().hasOnly(['col', 'docId', 'actualizado', 'actualizadoPor'])
-          && nuevo().col in ['habits', 'tasks']
+          && nuevo().col in ['habits', 'tasks', 'projects']
           && texto(nuevo().docId, 1, 60)
           && bid == nuevo().col + '_' + nuevo().docId
           && firmado(uid);

@@ -9,6 +9,7 @@ import { ListaHabitos } from '@/screens/habitos/Lista';
 import { Detalle } from '@/screens/habitos/Detalle';
 import { Editor } from '@/screens/habitos/Editor';
 import { Tareas } from '@/screens/Tareas';
+import { Proyecto } from '@/screens/Proyecto';
 import { Enfoque } from '@/screens/Enfoque';
 import { Examen } from '@/screens/Examen';
 import { Comunidad, Unirse } from '@/screens/comunidad/Comunidad';
@@ -47,6 +48,7 @@ export function App() {
         <Route path="unirse/:codigo" element={<Unirse />} />
         <Route path="admin" element={<Admin />} />
         <Route path="tareas" element={<Tareas />} />
+        <Route path="tareas/proyecto/:id" element={<Proyecto />} />
         <Route path="enfoque" element={<Enfoque />} />
         <Route path="examen" element={<Examen />} />
         <Route path="perfil" element={<Perfil />} />

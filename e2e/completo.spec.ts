@@ -72,7 +72,8 @@ test.describe('v0.2–v0.3 · hábitos', () => {
     await page.getByLabel('Meta por día').fill('30');
     await page.getByLabel('Unidad').fill('minutos');
     await page.getByRole('radio', { name: 'Caminar' }).click();
-    await page.getByLabel('Recordatorio').selectOption('06:45');
+    await page.getByRole('button', { name: '+ Agregar aviso' }).click();
+    await page.getByLabel('Hora del recordatorio 1', { exact: true }).fill('06:47');
     await captura(page, '12-editor');
     await page.getByRole('button', { name: 'Crear hábito' }).click();
     await expect(page.getByText('Hábito creado.')).toBeVisible();
@@ -143,6 +144,51 @@ test.describe('v0.4 · tareas, enfoque, examen', () => {
     await page.getByRole('button', { name: 'Marcar Comprar pan' }).click();
     await expect(page.getByRole('button', { name: 'Desmarcar Comprar pan' })).toBeVisible();
     await captura(page, '15-tareas');
+  });
+
+  test('proyectos: ver avance, agregar y completar tareas, crear uno nuevo', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await ir(page, '/tareas');
+    await expect(page.getByRole('link', { name: /Mudanza/ })).toContainText('1/3');
+    await page.getByRole('link', { name: /Mudanza/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Mudanza' })).toBeVisible();
+    await page.getByRole('button', { name: 'Marcar Embalar la biblioteca' }).click();
+    await expect(page.getByText('2 de 3 tareas')).toBeVisible();
+    await page.getByRole('button', { name: /Tarea$/ }).click();
+    await page.getByLabel('Tarea', { exact: true }).fill('Dar de baja la luz');
+    await expect(page.getByLabel('Proyecto')).toHaveValue('p1');
+    await page.getByRole('dialog').getByRole('button', { name: 'Agregar tarea' }).click();
+    await expect(page.getByText('2 de 4 tareas')).toBeVisible();
+    await captura(page, '24-proyecto');
+
+    // Proyecto nuevo desde Tareas
+    await ir(page, '/tareas');
+    await page.getByRole('button', { name: '+ Nuevo' }).click();
+    await page.getByLabel('Nombre del proyecto').fill('Tesis');
+    await page.getByRole('dialog').getByRole('button', { name: 'Crear proyecto' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Tesis' })).toBeVisible();
+    await page.getByRole('button', { name: 'Borrar proyecto' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Borrar' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Tareas' })).toBeVisible();
+  });
+
+  test('avisos a cualquier hora: tarea con hora y hábito con varias horas', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await ir(page, '/tareas');
+    await page.getByRole('button', { name: 'Nueva tarea' }).click();
+    await page.getByLabel('Tarea', { exact: true }).fill('Tomar la pastilla');
+    await page.getByRole('dialog').getByRole('button', { name: '+ Agregar aviso' }).click();
+    await page.getByLabel('Hora del aviso 1', { exact: true }).fill('18:37');
+    await page.getByRole('dialog').getByRole('button', { name: 'Agregar tarea' }).click();
+    await expect(page.locator('[data-tarea="Tomar la pastilla"]')).toContainText('18:37');
+
+    await ir(page, '/habitos/h-meditar/editar');
+    await expect(page.getByLabel('Hora del recordatorio 1', { exact: true })).toHaveValue('06:30');
+    await page.getByRole('button', { name: '+ Otra hora' }).click();
+    await page.getByLabel('Hora del recordatorio 2', { exact: true }).fill('21:13');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await ir(page, '/habitos/h-meditar/editar');
+    await expect(page.getByLabel('Hora del recordatorio 2', { exact: true })).toHaveValue('21:13');
   });
 
   test('enfoque: temporizador que se pausa y cancela', async ({ page }) => {

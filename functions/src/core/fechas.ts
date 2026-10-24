@@ -171,5 +171,15 @@ export function franjaActual(fecha: Date = new Date()): number {
   return Math.floor((fecha.getUTCHours() * 60 + fecha.getUTCMinutes()) / 15);
 }
 
+/** Minuto del día en UTC (0–1439) para una hora local "HH:MM". La función de avisos corre cada minuto. */
+export function minutoUTC(hora: string, zona: string, fecha: Date = new Date()): number {
+  const [h, m] = hora.split(':').map(Number);
+  return (((h * 60 + m - desfaseMinutos(zona, fecha)) % 1440) + 1440) % 1440;
+}
+
+export function minutoActual(fecha: Date = new Date()): number {
+  return fecha.getUTCHours() * 60 + fecha.getUTCMinutes();
+}
+
 /** Horas cada 15 minutos para elegir recordatorios. */
 export const HORAS_15: string[] = Array.from({ length: 96 }, (_, i) => `${dos(Math.floor(i / 4))}:${dos((i % 4) * 15)}`);

@@ -169,6 +169,9 @@ export function crearDriverMemoria(): Driver {
       for (const [k, c] of cuentas) if (c.uid === d.uid) cuentas.delete(k);
       return { ok: true };
     },
+    probarNotificacion() {
+      return { enviados: 1, dispositivos: 1 };
+    },
     adminDesbloquear(d) {
       if (!esAdmin()) throw new ErrorStoica('Solo el admin puede hacer esto.', 'permission-denied');
       escribir(`accounts/${d.uid}`, { bloqueada: false, motivoBloqueo: '' }, true);

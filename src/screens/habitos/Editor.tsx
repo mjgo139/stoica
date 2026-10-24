@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { DIAS_CORTOS, HORAS_15, MOMENTOS } from '@core/fechas';
+import { DIAS_CORTOS, MOMENTOS } from '@core/fechas';
+import { Horas } from '@/ui/Horas';
 import {
   aNumero,
+  horasRecordatorio,
   DIRECCIONES,
   GRUPOS_ICONOS,
   LIMITES_HABITO,
@@ -44,11 +46,11 @@ interface Form {
   meta: string;
   unidad: string;
   variables: VarForm[];
-  recordatorio: string;
+  recordatorios: string[];
 }
 
 const TODOS = [0, 1, 2, 3, 4, 5, 6];
-const vacio: Form = { nombre: '', tipo: 'sino', virtud: 'sabiduria', icono: 'med', momento: 0, dias: TODOS, meta: '8', unidad: '', variables: [], recordatorio: '' };
+const vacio: Form = { nombre: '', tipo: 'sino', virtud: 'sabiduria', icono: 'med', momento: 0, dias: TODOS, meta: '8', unidad: '', variables: [], recordatorios: [] };
 const nuevaVariable = (i: number): VarForm => ({ id: `v${Date.now().toString(36)}${i}`, nombre: '', unidad: '', inicial: '', meta: '', direccion: 'bajar' });
 const aTexto = (n: number) => String(n).replace('.', ',');
 
@@ -79,7 +81,7 @@ export function Editor() {
       meta: String(existente.meta),
       unidad: existente.unidad,
       variables: existente.variables.map((v) => ({ ...v, inicial: aTexto(v.inicial), meta: aTexto(v.meta) })),
-      recordatorio: existente.recordatorio ?? '',
+      recordatorios: horasRecordatorio(existente),
     });
     setCargado(true);
   }, [existente, cargado]);
@@ -98,7 +100,7 @@ export function Editor() {
       meta: String(p.datos.meta),
       dias: p.id === 'peso' ? [1, 4] : TODOS,
       variables: p.datos.variables.map((v, i) => ({ ...nuevaVariable(i), ...v, id: v.nombre.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '') || `v${i}`, inicial: '', meta: '' })),
-      recordatorio: '',
+      recordatorios: [],
     });
 
   const armar = (): Omit<Habito, 'creado' | 'actualizado' | 'actualizadoPor' | 'recordatorioSlot'> & { creado?: number } => ({
@@ -112,7 +114,8 @@ export function Editor() {
     meta: f.tipo === 'cantidad' ? Math.round(aNumero(f.meta)) : 1,
     unidad: f.tipo === 'cantidad' ? limpiarNombre(f.unidad) : '',
     variables: f.tipo === 'medicion' ? f.variables.map((v) => ({ id: v.id, nombre: limpiarNombre(v.nombre), unidad: limpiarNombre(v.unidad), inicial: aNumero(v.inicial), meta: aNumero(v.meta), direccion: v.direccion })) : [],
-    recordatorio: f.recordatorio || null,
+    recordatorio: f.recordatorios.filter(Boolean).sort()[0] ?? null,
+    recordatorios: [...new Set(f.recordatorios.filter(Boolean))].sort(),
     inicio: existente?.inicio ?? hoyActual(),
     archivado: existente?.archivado ?? false,
     orden: existente?.orden ?? habitos.length,
@@ -317,19 +320,12 @@ export function Editor() {
           </button>
         </div>
 
-        <label className="fl" htmlFor="h-rec" style={{ marginTop: 16 }}>
-          Recordatorio
-        </label>
-        <select id="h-rec" className="fi" value={f.recordatorio} onChange={(e) => poner({ recordatorio: e.target.value })}>
-          <option value="">Sin recordatorio</option>
-          {HORAS_15.map((h) => (
-            <option key={h} value={h}>
-              {h}
-            </option>
-          ))}
-        </select>
+        <div className="fl" style={{ marginTop: 16 }}>
+          Recordatorios
+        </div>
+        <Horas idBase="h-rec" etiqueta="Hora del recordatorio" valores={f.recordatorios} alCambiar={(v) => poner({ recordatorios: v })} />
         <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 6 }}>
-          Llega como notificación si las activaste en Perfil. Si ya cumpliste, no te avisa.
+          Hasta 3 horas, a cualquier minuto. Si ya cumpliste, no te avisa.
         </p>
       </div>
 

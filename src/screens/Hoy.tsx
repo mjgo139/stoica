@@ -5,8 +5,7 @@ import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLarga, fechaL
 import { cumplido, esDiaActivo, racha, type Habito } from '@core/habitos';
 import { inicial, primerNombre } from '@core/perfil';
 import { aRomano } from '@core/romanos';
-import { examenCompleto, tareaDelDia } from '@core/rutina';
-import { idTareaHecha } from '@core/rutina';
+import { examenCompleto, tareaDelDia, tareaHecha } from '@core/rutina';
 import { useSesion } from '@/app/sesion';
 import { useComunidad } from '@/app/comunidad';
 import { alternarTarea, registrosDe, useDatos, useHabitosActivos, useHoy, VENTANA_DIAS } from '@/app/datos';
@@ -40,7 +39,10 @@ export function Hoy() {
     () => new Map(habitos.map((h) => [h.id, racha(h, registrosDe(registros, h.id), hoy, VENTANA_DIAS)])),
     [habitos, registros, hoy],
   );
-  const tareasDia = tareas.filter((t) => tareaDelDia(t, dia)).sort((a, b) => a.momento - b.momento);
+  // Sin fecha: solo las sueltas (las de un proyecto se ven en el proyecto) y no las que ya se completaron otro día.
+  const tareasDia = tareas
+    .filter((t) => tareaDelDia(t, dia) && !(t.repetir === 'no' && !t.fecha && (t.proyectoId || (t.completada && t.completada < dia))))
+    .sort((a, b) => (a.hora ?? '').localeCompare(b.hora ?? '') || a.momento - b.momento);
   const titulo = sel === 0 ? `${saludo(hora)}${primerNombre(perfil.nombre) ? `, ${primerNombre(perfil.nombre)}` : ''}` : sel === -1 ? 'Ayer' : sel === 1 ? 'Mañana' : fechaLargaDeClave(dia).split(' ')[0];
 
   return (
@@ -161,7 +163,7 @@ export function Hoy() {
                 <span>Tareas</span>
               </div>
               {tareasDia.slice(0, 6).map((t) => {
-                const hecha = tareasHechas.has(idTareaHecha(t.id, dia));
+                const hecha = tareaHecha(t, dia, tareasHechas);
                 return (
                   <div key={t.id} className={`item ${hecha ? 'is-done tachada' : ''}`}>
                     <Link to="/tareas" className="item-main">

@@ -97,6 +97,13 @@ export function sembrarEjemplo(escribir: Escribir, crearCuenta: CrearCuenta) {
   t('t3', 'Llamar a mamá', true, 2, hoy);
   t('t4', 'Ordenar el escritorio', true, 1, null, 'diaria');
   t('t5', 'Pagar la cuota del club', true, 1, sumarDias(hoy, 2));
+  // Un proyecto con varias tareas (v1.1)
+  escribir(`users/${yo}/projects/p1`, { nombre: 'Mudanza', virtud: 'coraje', fechaLimite: sumarDias(hoy, 20), archivado: false, creado: ahora, actualizado: ahora, actualizadoPor: yo });
+  const tp = (id: string, titulo: string, fecha: string | null, completada: string | null) =>
+    escribir(`users/${yo}/tasks/${id}`, { titulo, dependeDeTi: true, momento: 1, fecha, repetir: 'no', proyectoId: 'p1', hora: null, avisoMin: null, completada, creado: ahora, actualizado: ahora, actualizadoPor: yo });
+  tp('tp1', 'Pedir presupuesto de flete', null, sumarDias(hoy, -2));
+  tp('tp2', 'Embalar la biblioteca', null, null);
+  tp('tp3', 'Cambiar la dirección en el banco', sumarDias(hoy, 5), null);
   escribir(`users/${yo}/taskDone/t3_${hoy}`, { taskId: 't3', fecha: hoy, actualizado: ahora, actualizadoPor: yo });
   for (let i = 0; i < 4; i++) {
     const f = sumarDias(hoy, -i);

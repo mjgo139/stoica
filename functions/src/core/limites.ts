@@ -7,12 +7,13 @@ export const LIMITES_ABUSO = {
   creacionesPorDia: 300,
   habitosMax: 40,
   tareasMax: 500,
+  proyectosMax: 100,
   dispositivosMax: 10,
   desafiosPorGrupo: 30,
 } as const;
 
 /** Colecciones privadas con ID libre que el vigilante cuenta (las demás tienen ID fijo por día). */
-export const COLECCIONES_CONTADAS = ['habits', 'tasks', 'focus', 'milestones', 'devices', 'borrados'] as const;
+export const COLECCIONES_CONTADAS = ['habits', 'tasks', 'projects', 'focus', 'milestones', 'devices', 'borrados'] as const;
 
 export interface Cuota {
   dia: string;
@@ -29,6 +30,7 @@ export function sumarCreacion(previa: Cuota | undefined, hoy: string, tope: numb
 export function topeDeColeccion(col: string): number | null {
   if (col === 'habits') return LIMITES_ABUSO.habitosMax;
   if (col === 'tasks') return LIMITES_ABUSO.tareasMax;
+  if (col === 'projects') return LIMITES_ABUSO.proyectosMax;
   if (col === 'devices') return LIMITES_ABUSO.dispositivosMax;
   return null;
 }

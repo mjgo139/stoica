@@ -14,7 +14,8 @@ export interface Perfil {
   /** Notificaciones push (v0.5). */
   notificaciones: boolean;
   examenHora: string | null; // "HH:MM" para el aviso del examen nocturno
-  examenSlot: number | null; // franja UTC de 15 min
+  examenSlot: number | null; // franja UTC de 15 min (versiones anteriores)
+  examenMin?: number | null; // minuto UTC del aviso del examen (cualquier minuto)
   notifReacciones: boolean;
   creado: number;
   actualizado: number;
@@ -22,10 +23,10 @@ export interface Perfil {
   rol?: Rol;
 }
 
-export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria' | 'notificaciones' | 'examenHora' | 'examenSlot' | 'notifReacciones'>>;
+export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria' | 'notificaciones' | 'examenHora' | 'examenSlot' | 'examenMin' | 'notifReacciones'>>;
 
 /** Campos que la app puede escribir en users/{uid}. Debe coincidir con firestore.rules. */
-export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'notifReacciones', 'creado', 'actualizado', 'actualizadoPor'] as const;
+export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'creado', 'actualizado', 'actualizadoPor'] as const;
 
 export function perfilInicial(uid: string, nombre: string, correo: string, zona: string, ahora: number): Perfil {
   return {

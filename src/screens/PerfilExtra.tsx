@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { franjaUTC, HORAS_15 } from '@core/fechas';
+import { minutoUTC } from '@core/fechas';
 import type { CambiosPerfil } from '@core/perfil';
 import { useSesion } from '@/app/sesion';
 import { hoyActual } from '@/app/datos';
@@ -35,6 +35,22 @@ export function Notificaciones() {
   const mostrar = useAvisos((s) => s.mostrar);
   const [ocupado, setOcupado] = useState(false);
 
+  const [probando, setProbando] = useState(false);
+  const probar = async () => {
+    setProbando(true);
+    try {
+      const d = await obtenerDriver();
+      const r = await d.llamar<{ enviados: number; dispositivos: number }>('probarNotificacion');
+      if (r.dispositivos === 0) mostrar('No hay dispositivos registrados. Apagá y prendé las notificaciones en este dispositivo.');
+      else if (r.enviados === 0) mostrar('No se pudo entregar. Apagá y prendé las notificaciones para registrar este dispositivo de nuevo.');
+      else mostrar('Aviso enviado. Debería llegarte en unos segundos.');
+    } catch (e) {
+      mostrar(mensajeDeError(e));
+    } finally {
+      setProbando(false);
+    }
+  };
+
   const activar = async (si: boolean) => {
     setOcupado(true);
     try {
@@ -52,7 +68,7 @@ export function Notificaciones() {
         } catch {
           /* nada */
         }
-        await actualizar({ notificaciones: true, examenSlot: perfil.examenHora ? franjaUTC(perfil.examenHora, perfil.zonaHoraria) : null });
+        await actualizar({ notificaciones: true, examenSlot: null, examenMin: perfil.examenHora ? minutoUTC(perfil.examenHora, perfil.zonaHoraria) : null });
         mostrar('Notificaciones activadas en este dispositivo.');
       } else {
         let id: string | null = null;
@@ -84,6 +100,11 @@ export function Notificaciones() {
           En iPhone las notificaciones funcionan solo con la app instalada (Compartir › Agregar a pantalla de inicio).
         </p>
       )}
+      {perfil.notificaciones && (
+        <button type="button" className="ghost" style={{ margin: '6px 0 4px' }} disabled={probando} onClick={probar}>
+          {probando ? 'Enviando…' : 'Mandarme un aviso de prueba'}
+        </button>
+      )}
       <label className="fila" style={{ cursor: 'default' }}>
         <span style={{ flex: 1 }}>
           <span style={{ display: 'block' }}>Aviso del examen</span>
@@ -91,23 +112,17 @@ export function Notificaciones() {
             Hora en que te recordamos el examen nocturno
           </span>
         </span>
-        <select
+        <input
+          type="time"
           className="fi"
-          style={{ width: 120 }}
+          style={{ width: 130 }}
           value={perfil.examenHora ?? ''}
           aria-label="Hora del aviso del examen"
           onChange={(e) => {
             const h = e.target.value || null;
-            actualizar({ examenHora: h, examenSlot: h ? franjaUTC(h, perfil.zonaHoraria) : null }).catch((er) => mostrar(mensajeDeError(er)));
+            actualizar({ examenHora: h, examenSlot: null, examenMin: h ? minutoUTC(h, perfil.zonaHoraria) : null }).catch((er) => mostrar(mensajeDeError(er)));
           }}
-        >
-          <option value="">Sin aviso</option>
-          {HORAS_15.filter((h) => h >= '17:00' || h < '02:00').map((h) => (
-            <option key={h} value={h}>
-              {h}
-            </option>
-          ))}
-        </select>
+        />
       </label>
       <Interruptor etiqueta="Reacciones de mis grupos" detalle="Aviso cuando alguien reacciona a tu día" activo={perfil.notifReacciones} alCambiar={(v) => actualizar({ notifReacciones: v }).catch((er) => mostrar(mensajeDeError(er)))} />
     </>

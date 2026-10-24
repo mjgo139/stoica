@@ -1,7 +1,7 @@
 /** Tareas, enfoque y examen nocturno. */
-import { esClaveDia } from './fechas.js';
+import { esClaveDia, esHora } from './fechas.js';
 import { limpiarNombre } from './validaciones.js';
-import type { Momento } from './habitos.js';
+import type { Momento, Virtud } from './habitos.js';
 
 export interface Tarea {
   id: string;
@@ -10,9 +10,56 @@ export interface Tarea {
   momento: Momento;
   fecha: string | null; // null = sin fecha
   repetir: 'no' | 'diaria';
+  /** Proyecto al que pertenece (v1.1). */
+  proyectoId?: string | null;
+  /** Hora local "HH:MM" del aviso (solo con fecha o diaria) y su minuto UTC para el servidor. */
+  hora?: string | null;
+  avisoMin?: number | null;
+  /** Tareas que no se repiten: día en que se completó (null = pendiente). */
+  completada?: string | null;
   creado: number;
   actualizado: number;
   actualizadoPor: string;
+}
+
+/** projects/{id}: un proyecto agrupa varias tareas. */
+export interface Proyecto {
+  id: string;
+  nombre: string;
+  virtud: Virtud;
+  fechaLimite: string | null;
+  archivado: boolean;
+  creado: number;
+  actualizado: number;
+  actualizadoPor: string;
+}
+
+export function validarProyecto(p: Partial<Proyecto>): string | null {
+  const nombre = limpiarNombre(p.nombre ?? '');
+  if (!nombre) return 'Poné un nombre al proyecto.';
+  if (nombre.length > 60) return 'El nombre puede tener hasta 60 letras.';
+  if (p.fechaLimite !== null && p.fechaLimite !== undefined && !esClaveDia(p.fechaLimite)) return 'La fecha límite no es válida.';
+  return null;
+}
+
+/**
+ * ¿Está hecha la tarea ese día? Las diarias se marcan por día (taskDone); las demás, en la tarea misma
+ * (`completada`). `hechas` son los ids taskId_fecha marcados (incluye marcas de versiones anteriores).
+ */
+export function tareaHecha(t: Tarea, dia: string, hechas: Set<string>): boolean {
+  if (t.repetir === 'diaria') return hechas.has(idTareaHecha(t.id, dia));
+  if (t.completada !== undefined && t.completada !== null) return true;
+  if (t.completada === null) return false;
+  // Versiones anteriores: la marca está en taskDone.
+  if (t.fecha) return hechas.has(idTareaHecha(t.id, t.fecha));
+  for (const k of hechas) if (k.startsWith(`${t.id}_`)) return true;
+  return false;
+}
+
+/** Avance de un proyecto: tareas hechas sobre el total (las que no dependen de vos no cuentan). */
+export function avanceProyecto(tareas: Tarea[], hoy: string, hechas: Set<string>): { hechas: number; total: number } {
+  const cuentan = tareas.filter((t) => t.dependeDeTi);
+  return { hechas: cuentan.filter((t) => tareaHecha(t, hoy, hechas)).length, total: cuentan.length };
 }
 
 /** taskDone/{taskId}_{fecha} */
@@ -33,6 +80,10 @@ export function validarTarea(t: Partial<Tarea>): string | null {
   if (titulo.length > 120) return 'La tarea puede tener hasta 120 letras.';
   if (typeof t.dependeDeTi !== 'boolean') return 'Contestá si depende de ti.';
   if (t.fecha !== null && t.fecha !== undefined && !esClaveDia(t.fecha)) return 'La fecha no es válida.';
+  if (t.hora) {
+    if (!esHora(t.hora)) return 'La hora del aviso no es válida.';
+    if (!t.fecha && t.repetir !== 'diaria') return 'Para avisarte a una hora, la tarea necesita una fecha.';
+  }
   return null;
 }
 

@@ -376,6 +376,50 @@ describe('protección contra abuso', () => {
   });
 });
 
+describe('v1.1 · avisos a cualquier hora y proyectos', () => {
+  it('perfil: minuto del aviso del examen', async () => {
+    const db = usuario('ana');
+    await assertSucceeds(setDoc(doc(db, 'users/ana'), perfil('ana', { examenHora: '21:47', examenMin: 47 })));
+    await assertFails(setDoc(doc(db, 'users/ana'), perfil('ana', { examenMin: 1440 })));
+    await assertFails(setDoc(doc(db, 'users/ana'), perfil('ana', { examenMin: '47' })));
+  });
+  it('hábitos: hasta 3 horas a cualquier minuto', async () => {
+    const db = usuario('ana');
+    await assertSucceeds(setDoc(doc(db, 'users/ana/habits/h1'), habito('ana', { recordatorios: ['06:07', '13:41', '21:59'], avisos: [547, 1001, 119], recordatorioSlot: null })));
+    await assertSucceeds(setDoc(doc(db, 'users/ana/habits/h2'), habito('ana', { recordatorios: [], avisos: [] })));
+    await assertFails(setDoc(doc(db, 'users/ana/habits/h3'), habito('ana', { recordatorios: ['06:00', '07:00', '08:00', '09:00'], avisos: [] })));
+    await assertFails(setDoc(doc(db, 'users/ana/habits/h3'), habito('ana', { recordatorios: ['25:00'], avisos: [] })));
+    await assertFails(setDoc(doc(db, 'users/ana/habits/h3'), habito('ana', { recordatorios: ['06:00'], avisos: [1440] })));
+    await assertFails(setDoc(doc(db, 'users/ana/habits/h3'), habito('ana', { avisos: 'todos' })));
+  });
+  it('tareas: proyecto, hora del aviso y completada', async () => {
+    const db = usuario('ana');
+    const t = { titulo: 'Embalar libros', dependeDeTi: true, momento: 1, fecha: HOY, repetir: 'no', proyectoId: 'p1', hora: '18:20', avisoMin: 1280, completada: null, creado: ahora(), actualizado: ahora(), actualizadoPor: 'ana' };
+    await assertSucceeds(setDoc(doc(db, 'users/ana/tasks/t1'), t));
+    await assertSucceeds(updateDoc(doc(db, 'users/ana/tasks/t1'), { completada: HOY, actualizado: ahora(), actualizadoPor: 'ana' }));
+    await assertFails(setDoc(doc(db, 'users/ana/tasks/t2'), { ...t, hora: '7pm' }));
+    await assertFails(setDoc(doc(db, 'users/ana/tasks/t2'), { ...t, avisoMin: -1 }));
+    await assertFails(setDoc(doc(db, 'users/ana/tasks/t2'), { ...t, completada: '2099-01-01' }));
+    await assertFails(setDoc(doc(db, 'users/ana/tasks/t2'), { ...t, proyectoId: '' }));
+    await assertFails(setDoc(doc(usuario('beto'), 'users/ana/tasks/t2'), t));
+  });
+  it('proyectos: privados y con forma fija', async () => {
+    const db = usuario('ana');
+    const p = { nombre: 'Mudanza', virtud: 'coraje', fechaLimite: MANANA, archivado: false, creado: ahora(), actualizado: ahora(), actualizadoPor: 'ana' };
+    await assertSucceeds(setDoc(doc(db, 'users/ana/projects/p1'), p));
+    await assertSucceeds(updateDoc(doc(db, 'users/ana/projects/p1'), { archivado: true, actualizado: ahora(), actualizadoPor: 'ana' }));
+    await assertFails(updateDoc(doc(db, 'users/ana/projects/p1'), { creado: 1700000000000, actualizado: ahora(), actualizadoPor: 'ana' }));
+    await assertFails(setDoc(doc(db, 'users/ana/projects/p2'), { ...p, nombre: '' }));
+    await assertFails(setDoc(doc(db, 'users/ana/projects/p2'), { ...p, virtud: 'riqueza' }));
+    await assertFails(setDoc(doc(db, 'users/ana/projects/p2'), { ...p, extra: 1 }));
+    await assertFails(getDoc(doc(usuario('beto'), 'users/ana/projects/p1')));
+    await assertFails(getDoc(doc(usuario('jefa', 'admin'), 'users/ana/projects/p1')));
+    await assertSucceeds(setDoc(doc(db, 'users/ana/borrados/projects_p1'), { col: 'projects', docId: 'p1', actualizado: ahora(), actualizadoPor: 'ana' }));
+    await assertSucceeds(deleteDoc(doc(db, 'users/ana/projects/p1')));
+    await assertFails(setDoc(doc(usuario('ana', 'usuario', { bloqueado: true }), 'users/ana/projects/p3'), p));
+  });
+});
+
 describe('todo lo demás está cerrado', () => {
   it('rutas inventadas', async () => {
     await assertFails(setDoc(doc(usuario('ana'), 'cualquiera/x'), { a: 1 }));

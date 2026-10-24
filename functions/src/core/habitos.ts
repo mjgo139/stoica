@@ -55,8 +55,12 @@ export interface Habito {
   meta: number; // cantidad: meta diaria; otros: 1
   unidad: string; // cantidad: "vasos", "páginas"
   variables: Variable[]; // medición
-  recordatorio: string | null; // "HH:MM" local
-  recordatorioSlot: number | null; // franja UTC de 15 min, para la función programada
+  recordatorio: string | null; // "HH:MM" local (el primero; se mantiene por compatibilidad)
+  recordatorioSlot: number | null; // franja UTC de 15 min (versiones anteriores; las nuevas usan `avisos`)
+  /** Hasta 3 horas locales "HH:MM", a cualquier minuto. */
+  recordatorios?: string[];
+  /** Minutos del día en UTC de cada recordatorio, para que el servidor los encuentre. */
+  avisos?: number[];
   inicio: string; // clave de día
   archivado: boolean;
   orden: number;
@@ -80,6 +84,14 @@ export interface Registro {
 }
 
 export const idRegistro = (habitId: string, fecha: string) => `${habitId}_${fecha}`;
+
+export const MAX_RECORDATORIOS = 3;
+
+/** Horas de recordatorio de un hábito (las nuevas, o la única de versiones anteriores), ordenadas. */
+export function horasRecordatorio(h: Pick<Habito, 'recordatorio'> & { recordatorios?: string[] }): string[] {
+  const hs = h.recordatorios ?? (h.recordatorio ? [h.recordatorio] : []);
+  return [...hs].sort();
+}
 
 export const LIMITES_HABITO = { nombreMax: 40, unidadMax: 16, metaMax: 1000, variablesMax: 4, notaMax: 500, habitosMax: 40, valorMax: 100000 } as const;
 
@@ -282,6 +294,11 @@ export function validarHabito(h: Partial<Habito>): ErrorValidacion {
     }
   }
   if (h.recordatorio !== null && h.recordatorio !== undefined && !esHora(h.recordatorio)) return 'La hora del recordatorio no es válida.';
+  if (h.recordatorios) {
+    if (h.recordatorios.length > MAX_RECORDATORIOS) return `Podés poner hasta ${MAX_RECORDATORIOS} recordatorios por hábito.`;
+    if (h.recordatorios.some((x) => !esHora(x))) return 'Alguna hora de recordatorio no es válida.';
+    if (new Set(h.recordatorios).size !== h.recordatorios.length) return 'Hay dos recordatorios a la misma hora.';
+  }
   if (h.inicio && !esClaveDia(h.inicio)) return 'La fecha de inicio no es válida.';
   return null;
 }

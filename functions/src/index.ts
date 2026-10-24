@@ -19,9 +19,9 @@ import { logger } from 'firebase-functions';
 import { ROLES, type Rol } from './core/validaciones.js';
 import { calcularMetricas, type Cuenta } from './core/admin.js';
 import { esCodigo, generarCodigo, MAX_GRUPOS_POR_USUARIO, MAX_MIEMBROS, normalizarCodigo, REACCIONES, validarNombreGrupo, type Grupo, type Reaccion } from './core/comunidad.js';
-import { claveDia, franjaActual, ZONA_POR_DEFECTO } from './core/fechas.js';
+import { claveDia, minutoActual, ZONA_POR_DEFECTO } from './core/fechas.js';
 import { cumplido, esDiaActivo, idRegistro, type Habito, type Registro } from './core/habitos.js';
-import { examenCompleto, type Examen } from './core/rutina.js';
+import { examenCompleto, idTareaHecha, tareaDelDia, tareaHecha, type Examen, type Tarea, type TareaHecha } from './core/rutina.js';
 import { limpiarNombre } from './core/validaciones.js';
 import { COLECCIONES_CONTADAS, LIMITES_ABUSO, sumarCreacion, topeDeColeccion, type Cuota } from './core/limites.js';
 import type { Perfil } from './core/perfil.js';
@@ -308,29 +308,44 @@ async function avisar(uid: string, aviso: Aviso) {
   return r.successCount;
 }
 
-/** Corre cada 15 minutos: recordatorios de hábitos pendientes y aviso del examen nocturno. */
-export const enviarRecordatorios = onSchedule({ schedule: 'every 15 minutes', timeZone: 'UTC' }, async () => {
+/**
+ * Corre cada minuto: recordatorios de hábitos pendientes, aviso del examen nocturno y avisos de tareas.
+ * Cada consulta cuesta al menos 1 lectura aunque no devuelva nada: ~3 por minuto (~4.300 por día, dentro
+ * de la cuota gratis de 50.000). Los documentos de versiones anteriores (franjas de 15 min) se siguen
+ * buscando en los minutos 0, 15, 30 y 45.
+ */
+export const enviarRecordatorios = onSchedule({ schedule: 'every 1 minutes', timeZone: 'UTC', retryCount: 0 }, async () => {
   const ahora = new Date();
-  const franja = franjaActual(ahora);
+  const min = minutoActual(ahora);
+  const cuarto = min % 15 === 0 ? min / 15 : null;
   const perfiles = new Map<string, Perfil | null>();
   const perfil = async (uid: string) => {
     if (!perfiles.has(uid)) perfiles.set(uid, ((await db().doc(`users/${uid}`).get()).data() as Perfil | undefined) ?? null);
     return perfiles.get(uid)!;
   };
-  const porUsuario = new Map<string, Habito[]>();
 
-  const habitos = await db().collectionGroup('habits').where('recordatorioSlot', '==', franja).get();
-  for (const d of habitos.docs) {
-    const h = { id: d.id, ...d.data() } as Habito;
-    const uid = d.ref.parent.parent?.id;
-    if (!uid || h.archivado) continue;
-    const p = await perfil(uid);
-    if (!p?.notificaciones) continue;
-    const hoy = claveDia(ahora, p.zonaHoraria);
-    if (!esDiaActivo(h, hoy)) continue;
-    const r = (await db().doc(`users/${uid}/logs/${idRegistro(h.id, hoy)}`).get()).data() as Registro | undefined;
-    if (cumplido(h, r)) continue;
-    porUsuario.set(uid, [...(porUsuario.get(uid) ?? []), h]);
+  // ----- Hábitos -----
+  const porUsuario = new Map<string, Habito[]>();
+  const consultas = [db().collectionGroup('habits').where('avisos', 'array-contains', min).get()];
+  if (cuarto !== null) consultas.push(db().collectionGroup('habits').where('recordatorioSlot', '==', cuarto).get());
+  const vistos = new Set<string>();
+  let nHabitos = 0;
+  for (const snap of await Promise.all(consultas)) {
+    for (const d of snap.docs) {
+      if (vistos.has(d.ref.path)) continue;
+      vistos.add(d.ref.path);
+      nHabitos++;
+      const h = { id: d.id, ...d.data() } as Habito;
+      const uid = d.ref.parent.parent?.id;
+      if (!uid || h.archivado) continue;
+      const p = await perfil(uid);
+      if (!p?.notificaciones) continue;
+      const hoy = claveDia(ahora, p.zonaHoraria);
+      if (!esDiaActivo(h, hoy)) continue;
+      const r = (await db().doc(`users/${uid}/logs/${idRegistro(h.id, hoy)}`).get()).data() as Registro | undefined;
+      if (cumplido(h, r)) continue;
+      porUsuario.set(uid, [...(porUsuario.get(uid) ?? []), h]);
+    }
   }
   let enviados = 0;
   for (const [uid, hs] of porUsuario) {
@@ -338,20 +353,45 @@ export const enviarRecordatorios = onSchedule({ schedule: 'every 15 minutes', ti
       titulo: hs.length === 1 ? hs[0].nombre : `${hs.length} prácticas pendientes`,
       cuerpo: hs.length === 1 ? 'Es el momento de tu práctica. Lo que depende de ti, hacelo ahora.' : hs.map((h) => h.nombre).join(' · '),
       url: hs.length === 1 ? `/habitos/${hs[0].id}` : '/',
-      tag: `recordatorio-${franja}`,
+      tag: `recordatorio-${min}`,
     });
   }
 
-  const examen = await db().collection('users').where('examenSlot', '==', franja).get();
-  for (const d of examen.docs) {
-    const p = d.data() as Perfil;
-    if (!p.notificaciones) continue;
-    const hoy = claveDia(ahora, p.zonaHoraria);
-    const e = (await db().doc(`users/${d.id}/journal/${hoy}`).get()).data() as Examen | undefined;
-    if (examenCompleto(e)) continue;
-    enviados += await avisar(d.id, { titulo: 'Examen nocturno', cuerpo: '¿Qué mal he corregido hoy? Tomate cinco minutos para cerrar el día.', url: '/examen', tag: 'examen' });
+  // ----- Examen nocturno -----
+  const examenes = [db().collection('users').where('examenMin', '==', min).get()];
+  if (cuarto !== null) examenes.push(db().collection('users').where('examenSlot', '==', cuarto).get());
+  const yaExamen = new Set<string>();
+  for (const snap of await Promise.all(examenes)) {
+    for (const d of snap.docs) {
+      const p = d.data() as Perfil;
+      if (yaExamen.has(d.id) || !p.notificaciones) continue;
+      // Un perfil nuevo tiene examenMin: no se usa su franja vieja.
+      if (typeof p.examenMin === 'number' && p.examenMin !== min) continue;
+      yaExamen.add(d.id);
+      const hoy = claveDia(ahora, p.zonaHoraria);
+      const e = (await db().doc(`users/${d.id}/journal/${hoy}`).get()).data() as Examen | undefined;
+      if (examenCompleto(e)) continue;
+      enviados += await avisar(d.id, { titulo: 'Examen nocturno', cuerpo: '¿Qué mal he corregido hoy? Tomate cinco minutos para cerrar el día.', url: '/examen', tag: 'examen' });
+    }
   }
-  logger.info('Recordatorios', { franja, habitos: habitos.size, examen: examen.size, enviados });
+
+  // ----- Tareas con hora -----
+  const tareas = await db().collectionGroup('tasks').where('avisoMin', '==', min).get();
+  for (const d of tareas.docs) {
+    const t = { id: d.id, ...d.data() } as Tarea;
+    const uid = d.ref.parent.parent?.id;
+    if (!uid || !t.dependeDeTi) continue;
+    const p = await perfil(uid);
+    if (!p?.notificaciones) continue;
+    const hoy = claveDia(ahora, p.zonaHoraria);
+    if (!(t.repetir === 'diaria' ? tareaDelDia(t, hoy) : t.fecha === hoy)) continue;
+    const marca = (await db().doc(`users/${uid}/taskDone/${idTareaHecha(t.id, hoy)}`).get()).data() as TareaHecha | undefined;
+    const hechas = new Set(marca && marca.hecha !== false ? [idTareaHecha(t.id, hoy)] : []);
+    if (tareaHecha(t, hoy, hechas)) continue;
+    enviados += await avisar(uid, { titulo: t.titulo.slice(0, 80), cuerpo: 'Tarea para ahora. Si depende de ti, hacela; si no, soltala.', url: '/tareas', tag: `tarea-${t.id}` });
+  }
+
+  if (nHabitos || yaExamen.size || tareas.size) logger.info('Recordatorios', { min, habitos: nHabitos, examen: yaExamen.size, tareas: tareas.size, enviados });
 });
 
 /** Aviso cuando alguien reacciona a tu día (v0.9). */
@@ -424,6 +464,19 @@ export const vigilarDesafios = onDocumentCreated('groups/{gid}/challenges/{cid}'
   if (creador) await contarCreacion(creador);
   const cantidad = (await db().collection(`groups/${event.params.gid}/challenges`).count().get()).data().count;
   if (cantidad > LIMITES_ABUSO.desafiosPorGrupo) await db().recursiveDelete(event.data!.ref);
+});
+
+/** Manda un aviso de prueba a tus propios dispositivos (como mucho uno por minuto). */
+export const probarNotificacion = onCall(llamable, async (req) => {
+  const uid = exigirSesion(req);
+  const ref = db().doc(`cuotas/${uid}`);
+  const ultima = Number((await ref.get()).get('ultimaPrueba') ?? 0);
+  if (Date.now() - ultima < 60_000) throw new HttpsError('resource-exhausted', 'Esperá un minuto antes de probar otra vez.');
+  await ref.set({ ultimaPrueba: Date.now() }, { merge: true });
+  const dispositivos = (await db().collection(`users/${uid}/devices`).get()).size;
+  const enviados = await avisar(uid, { titulo: 'Stoica', cuerpo: 'Aviso de prueba: las notificaciones llegan a este dispositivo.', url: '/perfil', tag: 'prueba' });
+  logger.info('Prueba de aviso', { dispositivos, enviados });
+  return { enviados, dispositivos };
 });
 
 export const adminDesbloquear = onCall(llamable, async (req) => {
