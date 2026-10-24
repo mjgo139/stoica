@@ -209,7 +209,7 @@ export const adminCalcularMetricas = onCall(llamable, async (req) => {
   return guardarMetricas();
 });
 
-export const metricasNocturnas = onSchedule({ schedule: '10 3 * * *', timeZone: ZONA_POR_DEFECTO }, async () => {
+export const metricasNocturnas = onSchedule({ schedule: '10 3 * * *', timeZone: ZONA_POR_DEFECTO, timeoutSeconds: 300 }, async () => {
   const m = await guardarMetricas();
   // Limpieza: marcas de borrado de más de 60 días (los dispositivos se resincronizan completos cada 30).
   const marcas = await db().collectionGroup('borrados').where('actualizado', '<', Date.now() - 60 * 864e5).limit(500).get();
@@ -314,7 +314,7 @@ async function avisar(uid: string, aviso: Aviso) {
  * de la cuota gratis de 50.000). Los documentos de versiones anteriores (franjas de 15 min) se siguen
  * buscando en los minutos 0, 15, 30 y 45.
  */
-export const enviarRecordatorios = onSchedule({ schedule: 'every 1 minutes', timeZone: 'UTC', retryCount: 0 }, async () => {
+export const enviarRecordatorios = onSchedule({ schedule: 'every 1 minutes', timeZone: 'UTC', retryCount: 0, timeoutSeconds: 50 }, async () => {
   const ahora = new Date();
   const min = minutoActual(ahora);
   const cuarto = min % 15 === 0 ? min / 15 : null;
