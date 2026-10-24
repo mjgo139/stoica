@@ -22,5 +22,8 @@ const MENSAJES: Record<string, string> = {
 export function traducirError(e: unknown): ErrorStoica {
   if (e instanceof ErrorStoica) return e;
   const codigo = typeof e === 'object' && e && 'code' in e ? String((e as { code: unknown }).code) : 'desconocido';
-  return new ErrorStoica(MENSAJES[codigo] ?? 'Algo salió mal. Probá de nuevo en un momento.', codigo);
+  // Las funciones del servidor ya responden en español (por ejemplo "Esperá un minuto…"): se muestra ese texto.
+  const mensaje = typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : '';
+  if (codigo.startsWith('functions/') && codigo !== 'functions/internal' && mensaje && !/^[a-z-]+$/.test(mensaje)) return new ErrorStoica(mensaje, codigo);
+  return new ErrorStoica(MENSAJES[codigo] ?? MENSAJES[codigo.replace('functions/', '')] ?? 'Algo salió mal. Probá de nuevo en un momento.', codigo);
 }

@@ -169,6 +169,9 @@ export function crearDriverMemoria(): Driver {
       for (const [k, c] of cuentas) if (c.uid === d.uid) cuentas.delete(k);
       return { ok: true };
     },
+    asegurarCuenta() {
+      return { rol: esAdmin() ? 'admin' : 'usuario' };
+    },
     probarNotificacion() {
       return { enviados: 1, dispositivos: 1 };
     },

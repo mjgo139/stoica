@@ -33,6 +33,7 @@ export type NombreFuncion =
   | 'adminCalcularMetricas'
   | 'adminDesbloquear'
   | 'probarNotificacion'
+  | 'asegurarCuenta'
   | 'asignarRol';
 
 /**

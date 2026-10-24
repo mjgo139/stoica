@@ -67,6 +67,9 @@ export function Arranque({ children }: { children: ReactNode }) {
             poner({ estado: 'dentro', perfil: completarPerfil(p) });
             // Si el servidor acaba de asignar el rol, pedimos un token nuevo para que las reglas lo vean.
             if (p.rol && p.rol !== anterior) d.refrescarToken();
+            // Una vez por dispositivo: que el servidor revise el rol (cuentas creadas antes del servidor,
+            // o el correo del admin configurado después). Si cambia, llega por el perfil y se refresca el token.
+            if (p.rol !== 'admin') revisarCuenta(usuario.uid, () => d.llamar('asegurarCuenta'));
             registrarAccesoDelDia(usuario.uid, p.zonaHoraria);
           } else if (!creando) {
             creando = true;
@@ -85,4 +88,21 @@ export function Arranque({ children }: { children: ReactNode }) {
   }, [tema]);
 
   return <>{children}</>;
+}
+
+function revisarCuenta(uid: string, llamar: () => Promise<unknown>) {
+  const clave = `stoica.cuentaRevisada.${uid}`;
+  try {
+    if (localStorage.getItem(clave)) return;
+    localStorage.setItem(clave, '1');
+  } catch {
+    return;
+  }
+  llamar().catch(() => {
+    try {
+      localStorage.removeItem(clave);
+    } catch {
+      /* nada */
+    }
+  });
 }

@@ -43,8 +43,11 @@ self.addEventListener('push', (e) => {
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: d.tag || 'stoica',
+      // Volver a sonar y vibrar aunque reemplace un aviso anterior con la misma etiqueta.
+      renotify: true,
+      vibrate: [120, 60, 120],
       data: { url: d.url || '/' },
-    }),
+    } as NotificationOptions),
   );
 });
 

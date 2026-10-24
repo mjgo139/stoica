@@ -103,29 +103,37 @@ async function borrarTodoDeUsuario(uid: string) {
 }
 
 // ---------- Cuentas ----------
-export const alCrearUsuario = onDocumentCreated('users/{uid}', async (event) => {
-  const uid = event.params.uid;
-  const datos = event.data?.data() ?? {};
+/**
+ * Prepara la cuenta: rol (claim y perfil) y ficha no privada para el admin.
+ * Nunca baja a nadie de rol: solo lo asigna si falta o lo sube a admin si el correo coincide y está verificado.
+ */
+async function prepararCuenta(uid: string, nombre: unknown): Promise<Rol | null> {
   let correo: string | undefined;
   let verificado = false;
   let alta = Date.now();
+  let claims: Record<string, unknown> = {};
   try {
     const u = await getAuth().getUser(uid);
     correo = u.email;
     verificado = u.emailVerified;
     alta = Date.parse(u.metadata.creationTime) || alta;
+    claims = u.customClaims ?? {};
   } catch {
     logger.warn('Usuario sin registro en Auth', { uid });
-    return;
+    return null;
   }
-  const rol = rolInicial(correo, verificado, ADMIN_EMAIL.value());
-  await ponerClaims(uid, { rol });
+  const perfilRef = db().doc(`users/${uid}`);
+  const cuentaRef = db().doc(`accounts/${uid}`);
+  const [perfil, cuenta] = await Promise.all([perfilRef.get(), cuentaRef.get()]);
+  const actual = (perfil.get('rol') as Rol | undefined) ?? (claims.rol as Rol | undefined);
+  const calculado = rolInicial(correo, verificado, ADMIN_EMAIL.value());
+  const rol: Rol = calculado === 'admin' ? 'admin' : (actual ?? 'usuario');
+  if (claims.rol !== rol) await ponerClaims(uid, { rol });
   const batch = db().batch();
-  batch.set(event.data!.ref, { rol }, { merge: true });
-  batch.set(
-    db().doc(`accounts/${uid}`),
-    {
-      nombre: typeof datos.nombre === 'string' ? datos.nombre.slice(0, 40) : '',
+  if (perfil.exists && perfil.get('rol') !== rol) batch.set(perfilRef, { rol }, { merge: true });
+  if (!cuenta.exists) {
+    batch.set(cuentaRef, {
+      nombre: typeof nombre === 'string' ? nombre.slice(0, 40) : '',
       correo: correo ?? '',
       alta,
       ultimoAcceso: Date.now(),
@@ -133,11 +141,29 @@ export const alCrearUsuario = onDocumentCreated('users/{uid}', async (event) => 
       rol,
       suspendida: false,
       actualizadoPor: 'servidor',
-    },
-    { merge: true },
-  );
+    });
+  } else if (cuenta.get('rol') !== rol) {
+    batch.set(cuentaRef, { rol, actualizadoPor: 'servidor' }, { merge: true });
+  }
   await batch.commit();
+  return rol;
+}
+
+export const alCrearUsuario = onDocumentCreated('users/{uid}', async (event) => {
+  const uid = event.params.uid;
+  const rol = await prepararCuenta(uid, event.data?.get('nombre'));
   logger.info('Cuenta creada', { uid, rol });
+});
+
+/**
+ * La app lo llama una vez por dispositivo si el perfil no tiene rol o es "usuario": arregla las cuentas
+ * creadas antes de que existiera el servidor, o cuando el correo del admin se configuró después.
+ */
+export const asegurarCuenta = onCall(llamable, async (req) => {
+  const uid = exigirSesion(req);
+  const nombre = (await db().doc(`users/${uid}`).get()).get('nombre');
+  const rol = await prepararCuenta(uid, nombre);
+  return { rol };
 });
 
 /** Mantiene el nombre de accounts/{uid} igual al del perfil. */
@@ -471,10 +497,11 @@ export const probarNotificacion = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
   const ref = db().doc(`cuotas/${uid}`);
   const ultima = Number((await ref.get()).get('ultimaPrueba') ?? 0);
-  if (Date.now() - ultima < 60_000) throw new HttpsError('resource-exhausted', 'Esperá un minuto antes de probar otra vez.');
+  const falta = Math.ceil((60_000 - (Date.now() - ultima)) / 1000);
+  if (falta > 0) throw new HttpsError('resource-exhausted', `Ya te mandamos uno. Podés probar otra vez en ${falta} segundos.`);
   await ref.set({ ultimaPrueba: Date.now() }, { merge: true });
   const dispositivos = (await db().collection(`users/${uid}/devices`).get()).size;
-  const enviados = await avisar(uid, { titulo: 'Stoica', cuerpo: 'Aviso de prueba: las notificaciones llegan a este dispositivo.', url: '/perfil', tag: 'prueba' });
+  const enviados = await avisar(uid, { titulo: 'Stoica', cuerpo: 'Aviso de prueba: las notificaciones llegan a este dispositivo.', url: '/perfil', tag: `prueba-${Date.now()}` });
   logger.info('Prueba de aviso', { dispositivos, enviados });
   return { enviados, dispositivos };
 });
