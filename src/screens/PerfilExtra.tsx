@@ -9,7 +9,7 @@ import { mensajeDeError } from '@/data/tipos';
 import { Interruptor } from '@/ui/Interruptor';
 import { useAvisos } from '@/ui/avisos';
 import { Hoja } from '@/ui/Hoja';
-import { esIOS, esInstalada } from '@/pwa/instalar';
+import { esAndroid, esIOS, esInstalada } from '@/pwa/instalar';
 
 const CLAVE_DISPOSITIVO = 'stoica.dispositivo';
 
@@ -100,6 +100,14 @@ export function Notificaciones() {
         <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
           En iPhone las notificaciones funcionan solo con la app instalada (Compartir › Agregar a pantalla de inicio).
         </p>
+      )}
+      {perfil.notificaciones && esAndroid() && (
+        <details className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Te llegan sin sonido o sin ventana?</summary>
+          <p style={{ margin: '6px 0 0' }}>
+            Samsung y otros Android a veces crean los avisos en silencio. Abrí <b>Ajustes › Notificaciones › Notificaciones de aplicaciones › {esInstalada() ? 'Stoica' : 'Chrome'} › Categorías de notificación › General</b> y elegí <b>Alerta</b>, con <b>Mostrar como ventana emergente</b> activado. Se hace una sola vez.
+          </p>
+        </details>
       )}
       {perfil.notificaciones && (
         <button type="button" className="ghost" style={{ margin: '6px 0 4px' }} disabled={probando} onClick={probar}>

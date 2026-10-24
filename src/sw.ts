@@ -22,6 +22,8 @@ self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+const esAndroid = /Android/i.test(self.navigator.userAgent);
+
 interface Aviso {
   titulo?: string;
   cuerpo?: string;
@@ -40,7 +42,8 @@ self.addEventListener('push', (e) => {
   e.waitUntil(
     self.registration.showNotification(d.titulo || 'Stoica', {
       body: d.cuerpo || '',
-      icon: '/icons/icon-192.png',
+      // En Android el ícono de la app ya aparece a la izquierda: repetirlo a la derecha se ve duplicado.
+      ...(esAndroid ? {} : { icon: '/icons/icon-192.png' }),
       // Ícono chico de la barra de estado: tiene que ser blanco sobre transparente (si no, se ve un cuadrado).
       badge: '/icons/badge-96.png',
       silent: false,

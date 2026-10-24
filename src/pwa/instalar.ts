@@ -25,6 +25,10 @@ export function esInstalada(): boolean {
   return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
+export function esAndroid(): boolean {
+  return /Android/i.test(navigator.userAgent);
+}
+
 export function esIOS(): boolean {
   const ua = navigator.userAgent;
   return /iphone|ipad|ipod/i.test(ua) || (ua.includes('Macintosh') && navigator.maxTouchPoints > 1);
