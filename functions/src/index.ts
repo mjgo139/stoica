@@ -555,12 +555,22 @@ async function diasGracia(): Promise<number> {
   return diasGraciaValidos((await db().doc('config/plan').get()).get('diasGracia') ?? DIAS_GRACIA_DEFECTO);
 }
 
+/** Bucket de las fotos (US-EAST1, con cuota gratis). Se nombra explícito: las funciones pueden haberse publicado antes de crearlo. */
+const configFirebase = (() => {
+  try {
+    return JSON.parse(process.env.FIREBASE_CONFIG ?? '{}') as { projectId?: string; storageBucket?: string };
+  } catch {
+    return {};
+  }
+})();
+const almacen = () => getStorage().bucket(configFirebase.storageBucket || `${configFirebase.projectId || process.env.GCLOUD_PROJECT}.firebasestorage.app`);
+
 const carpetaGrupo = (gid: string) => `grupos/${gid}/`;
 const carpetaDesafio = (gid: string, cid: string) => `grupos/${gid}/desafios/${cid}/`;
 
 async function borrarArchivos(prefijo: string) {
   try {
-    await getStorage().bucket().deleteFiles({ prefix: prefijo, force: true });
+    await almacen().deleteFiles({ prefix: prefijo, force: true });
   } catch (e) {
     logger.warn('No se pudieron borrar archivos', { prefijo, e: String(e) });
   }
@@ -659,7 +669,7 @@ export const subirFotoDesafio = onCall({ ...llamable, memory: '512MiB' }, async 
   const perfil = (await db().doc(`users/${uid}`).get()).data() as Perfil | undefined;
   const dia = claveDia(new Date(), perfil?.zonaHoraria ?? ZONA_POR_DEFECTO);
   const base = `${carpetaDesafio(gid, cid)}${uid}_${dia}`;
-  const bucket = getStorage().bucket();
+  const bucket = almacen();
   const guardarArchivo = async (ruta: string, datos: Buffer) => {
     const token = randomUUID();
     await bucket.file(ruta).save(datos, { contentType: 'image/jpeg', resumable: false, metadata: { cacheControl: 'private, max-age=31536000', metadata: { firebaseStorageDownloadTokens: token } } });
@@ -683,7 +693,7 @@ export const subirFotoDesafio = onCall({ ...llamable, memory: '512MiB' }, async 
 export const alBorrarPublicacion = onDocumentDeleted('groups/{gid}/challenges/{cid}/posts/{pid}', async (event) => {
   const rutas = (event.data?.get('rutas') as string[] | undefined) ?? [];
   if (!rutas.length) return;
-  const bucket = getStorage().bucket();
+  const bucket = almacen();
   await Promise.all(rutas.map((r) => bucket.file(r).delete({ ignoreNotFound: true }).catch(() => undefined)));
 });
 
