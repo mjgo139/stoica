@@ -32,7 +32,10 @@ async function actualizar(c: CambiosPerfil) {
 /** ¿Este dispositivo está registrado para recibir avisos? (la cuenta puede tenerlos en otro dispositivo). */
 function dispositivoRegistrado(): boolean {
   try {
-    return !!localStorage.getItem(CLAVE_DISPOSITIVO) && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+    if (!localStorage.getItem(CLAVE_DISPOSITIVO)) return false;
+    // En modo prueba el registro es simulado: no depende del permiso real del navegador.
+    if (import.meta.env.MODE === 'prueba') return true;
+    return typeof Notification !== 'undefined' && Notification.permission === 'granted';
   } catch {
     return false;
   }
