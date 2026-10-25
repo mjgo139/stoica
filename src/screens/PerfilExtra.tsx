@@ -29,28 +29,28 @@ async function actualizar(c: CambiosPerfil) {
   await (await obtenerDriver()).actualizarPerfil(uid, c);
 }
 
-export function Notificaciones() {
+/** ¿Este dispositivo está registrado para recibir avisos? (la cuenta puede tenerlos en otro dispositivo). */
+function dispositivoRegistrado(): boolean {
+  try {
+    return !!localStorage.getItem(CLAVE_DISPOSITIVO) && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Activar o apagar los avisos en ESTE dispositivo. El navegador solo muestra la pregunta de permiso
+ * cuando la persona toca un botón; por eso esto se usa desde Perfil y desde la invitación en Hoy.
+ */
+export function useNotificacionesDispositivo() {
   const perfil = useSesion((s) => s.perfil)!;
   const uid = useSesion((s) => s.usuario!.uid);
   const mostrar = useAvisos((s) => s.mostrar);
   const [ocupado, setOcupado] = useState(false);
-
-  const [probando, setProbando] = useState(false);
-  const probar = async () => {
-    setProbando(true);
-    mostrar('En 10 segundos te llega. Salí de la app o bloqueá el celular para verlo como le llegaría a cualquiera.');
-    try {
-      const d = await obtenerDriver();
-      const r = await d.llamar<{ enviados: number; dispositivos: number }>('probarNotificacion');
-      if (r.dispositivos === 0) mostrar('No hay dispositivos registrados. Apagá y prendé las notificaciones en este dispositivo.');
-      else if (r.enviados === 0) mostrar('No se pudo entregar. Apagá y prendé las notificaciones para registrar este dispositivo de nuevo.');
-      else mostrar('Aviso enviado.');
-    } catch (e) {
-      mostrar(mensajeDeError(e));
-    } finally {
-      setProbando(false);
-    }
-  };
+  const [, refrescar] = useState(0);
+  const soportado = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
+  const bloqueado = soportado && Notification.permission === 'denied';
+  const activa = !!perfil.notificaciones && dispositivoRegistrado();
 
   const activar = async (si: boolean) => {
     setOcupado(true);
@@ -80,13 +80,46 @@ export function Notificaciones() {
         }
         if (id) await d.borrar(`users/${uid}/devices/${id}`);
         await d.desactivarNotificaciones();
-        await actualizar({ notificaciones: false });
+        try {
+          localStorage.removeItem(CLAVE_DISPOSITIVO);
+        } catch {
+          /* nada */
+        }
+        // Si quedan otros dispositivos registrados, la cuenta sigue recibiendo avisos en ellos.
+        const otros = await d.leerLista({ ruta: `users/${uid}/devices` }).catch(() => []);
+        if (otros.length === 0) await actualizar({ notificaciones: false });
         mostrar('Notificaciones desactivadas.');
       }
     } catch (e) {
       mostrar(mensajeDeError(e));
     } finally {
       setOcupado(false);
+      refrescar((n) => n + 1);
+    }
+  };
+
+  return { activa, ocupado, activar, soportado, bloqueado };
+}
+
+export function Notificaciones() {
+  const perfil = useSesion((s) => s.perfil)!;
+  const mostrar = useAvisos((s) => s.mostrar);
+  const { activa, ocupado, activar, soportado, bloqueado } = useNotificacionesDispositivo();
+
+  const [probando, setProbando] = useState(false);
+  const probar = async () => {
+    setProbando(true);
+    mostrar('En 10 segundos te llega. Salí de la app o bloqueá el celular para verlo como le llegaría a cualquiera.');
+    try {
+      const d = await obtenerDriver();
+      const r = await d.llamar<{ enviados: number; dispositivos: number }>('probarNotificacion');
+      if (r.dispositivos === 0) mostrar('No hay dispositivos registrados. Apagá y prendé las notificaciones en este dispositivo.');
+      else if (r.enviados === 0) mostrar('No se pudo entregar. Apagá y prendé las notificaciones para registrar este dispositivo de nuevo.');
+      else mostrar('Aviso enviado.');
+    } catch (e) {
+      mostrar(mensajeDeError(e));
+    } finally {
+      setProbando(false);
     }
   };
 
@@ -95,13 +128,23 @@ export function Notificaciones() {
       <div className="grp cap">
         <span>Notificaciones</span>
       </div>
-      <Interruptor etiqueta="Recordatorios y examen" detalle="Avisos de tus hábitos (si todavía no cumpliste) y del examen nocturno" activo={perfil.notificaciones} alCambiar={(v) => !ocupado && activar(v)} />
+      <Interruptor etiqueta="Recordatorios y examen" detalle="Avisos de tus hábitos (si todavía no cumpliste) y del examen nocturno" activo={activa} alCambiar={(v) => !ocupado && activar(v)} />
       {esIOS() && !esInstalada() && (
         <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
           En iPhone las notificaciones funcionan solo con la app instalada (Compartir › Agregar a pantalla de inicio).
         </p>
       )}
-      {perfil.notificaciones && esAndroid() && (
+      {bloqueado && (
+        <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
+          Este navegador tiene los avisos bloqueados para Stoica. Tocá el candado o los tres puntos junto a la dirección › <b>Permisos</b> › <b>Notificaciones</b> › <b>Permitir</b>, y después prendé el interruptor.
+        </p>
+      )}
+      {!soportado && (
+        <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
+          Este navegador no permite avisos. Usá Chrome o instalá la app.
+        </p>
+      )}
+      {activa && esAndroid() && (
         <details className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Te llegan sin sonido o sin ventana?</summary>
           <ol style={{ margin: '6px 0 0', paddingLeft: 18, display: 'grid', gap: 4 }}>
@@ -118,7 +161,7 @@ export function Notificaciones() {
           <p style={{ margin: '6px 0 0' }}>Se hace una sola vez. En otros Android las categorías aparecen directamente en la app.</p>
         </details>
       )}
-      {perfil.notificaciones && (
+      {activa && (
         <button type="button" className="ghost" style={{ margin: '6px 0 4px' }} disabled={probando} onClick={probar}>
           {probando ? 'Llega en 10 segundos…' : 'Mandarme un aviso de prueba'}
         </button>

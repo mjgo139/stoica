@@ -14,6 +14,7 @@ import { Icono } from '@/ui/Iconos';
 import { IconoHabito } from '@/ui/IconoHabito';
 import { FilaHabito } from './habitos/FilaHabito';
 import { Plantillas } from './habitos/Editor';
+import { useNotificacionesDispositivo } from './PerfilExtra';
 
 export function Hoy() {
   const perfil = useSesion((s) => s.perfil)!;
@@ -78,6 +79,9 @@ export function Hoy() {
         </figure>
       </section>
 
+      <div style={{ marginTop: 18 }}>
+        <InvitarAvisos />
+      </div>
       <div className="hoy-grilla" style={{ marginTop: 24 }}>
         <aside className="panel" aria-label="Elegir día">
           <div className="franja-dias" role="tablist">
@@ -256,18 +260,63 @@ function UltimosSiete({ hoy, habitos }: { hoy: string; habitos: Habito[] }) {
   );
 }
 
+/** Invita a activar los avisos en este dispositivo (el navegador solo pregunta al tocar un botón). */
+function InvitarAvisos() {
+  const { activa, ocupado, activar, soportado, bloqueado } = useNotificacionesDispositivo();
+  const clave = 'stoica.invitacionAvisos';
+  const [oculta, setOculta] = useState(() => {
+    try {
+      return localStorage.getItem(clave) === 'no';
+    } catch {
+      return false;
+    }
+  });
+  if (activa || !soportado || bloqueado || oculta) return null;
+  return (
+    <div className="panel">
+      <div className="grp cap" style={{ marginTop: 0 }}>
+        <span>Recordatorios</span>
+      </div>
+      <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: '0 0 12px' }}>
+        Activá los avisos en este dispositivo para que Stoica te recuerde tus prácticas y el examen nocturno.
+      </p>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button type="button" className="btn" style={{ width: 'auto', padding: '0 22px', height: 44 }} disabled={ocupado} onClick={() => activar(true)}>
+          Activar avisos
+        </button>
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            try {
+              localStorage.setItem(clave, 'no');
+            } catch {
+              /* nada */
+            }
+            setOculta(true);
+          }}
+        >
+          Ahora no
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function PanelComunidad() {
   const grupos = useComunidad((s) => s.grupos);
+  // Sin grupos no se muestra: la Comunidad ya tiene su pestaña.
+  if (grupos.size === 0) return null;
   return (
     <Link to="/comunidad" className="panel" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
       <div className="grp cap" style={{ marginTop: 0 }}>
         <span>Comunidad</span>
       </div>
       <div className="serif" style={{ fontSize: 19 }}>
-        {grupos.size === 0 ? 'Acompañarse sin chat' : `${grupos.size} ${grupos.size === 1 ? 'grupo' : 'grupos'}`}
+        {`${grupos.size} ${grupos.size === 1 ? 'grupo' : 'grupos'}`}
       </div>
       <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
-        {grupos.size === 0 ? 'Creá un grupo privado o unite con un código.' : [...grupos.values()].map((g) => g.grupo.nombre).join(' · ')}
+        {[...grupos.values()].map((g) => g.grupo.nombre).join(' · ')}
       </p>
     </Link>
   );

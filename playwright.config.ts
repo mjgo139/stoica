@@ -18,6 +18,8 @@ export default defineConfig({
     serviceWorkers: 'block',
     launchOptions,
     reducedMotion: 'reduce',
+    // Permiso de avisos concedido (el modo prueba simula el registro del dispositivo).
+    permissions: ['notifications'],
   },
   webServer: {
     command: 'npm run build:prueba && npx vite preview --mode prueba --port 4173 --strictPort --host 127.0.0.1',
