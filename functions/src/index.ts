@@ -321,6 +321,21 @@ export const salirDeGrupo = onCall(llamable, async (req) => {
   return { ok: true };
 });
 
+/** Solo quien creó el grupo le cambia el nombre. */
+export const renombrarGrupo = onCall(llamable, async (req) => {
+  const uid = exigirSesion(req);
+  const { grupoId, nombre } = (req.data ?? {}) as { grupoId?: unknown; nombre?: unknown };
+  const ref = db().doc(`groups/${String(grupoId ?? '')}`);
+  const g = (await ref.get()).data() as Grupo | undefined;
+  if (!g) throw new HttpsError('not-found', 'Ese grupo ya no existe.');
+  if (g.creador !== uid) throw new HttpsError('permission-denied', 'Solo quien creó el grupo puede cambiarle el nombre.');
+  const n = limpiarNombre(String(nombre ?? ''));
+  const err = validarNombreGrupo(n);
+  if (err) throw new HttpsError('invalid-argument', err);
+  await ref.update({ nombre: n });
+  return { ok: true };
+});
+
 export const eliminarGrupo = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
   const gid = String((req.data as { grupoId?: unknown })?.grupoId ?? '');

@@ -145,6 +145,20 @@ export function Tareas() {
           )}
         </div>
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+          <Link to="/tareas/enfoque" className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit' }}>
+            <span className="hic v-sabiduria" style={{ width: 44, height: 44 }}>
+              <Icono nombre="enfoque" tam={22} />
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span className="nm">Enfoque</span>
+              <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500 }}>
+                Temporizador para una tarea, un descanso o meditar.
+              </span>
+            </span>
+            <span className="gold" style={{ fontSize: 22 }} aria-hidden="true">
+              ›
+            </span>
+          </Link>
           <div className="panel">
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>

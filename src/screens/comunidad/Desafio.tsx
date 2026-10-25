@@ -13,7 +13,10 @@ import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
-import { TarjetaDesafio } from './Grupo';
+import { HojaElegirHabito, MarcaMia, RankingDesafio } from './Grupo';
+import { TarjetaHabito } from '../habitos/Lista';
+import { registrosDe, useDatos } from '@/app/datos';
+import type { Desafio as TipoDesafio } from '@core/comunidad';
 import { AvisoBorrado, HojaCodigo, usePlan } from './Plan';
 
 const hora = (ms: number) => new Date(ms).toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' });
@@ -57,12 +60,53 @@ export function Desafio() {
 
       <div className="cols c64" style={{ marginTop: 20 }}>
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+          <MiHabito d={d} gid={gid} hoy={hoy} terminado={e.estado === 'terminado'} />
           <Muro gid={gid} cid={cid} plan={plan} />
         </div>
-        <div className="panel" style={{ alignSelf: 'start' }}>
-          <TarjetaDesafio d={d} grupoId={gid} hoy={hoy} completo alBorrar={() => navegar(`/comunidad/${gid}`, { replace: true })} />
+        <div style={{ alignSelf: 'start' }}>
+          <RankingDesafio d={d} grupoId={gid} alBorrar={() => navegar(`/comunidad/${gid}`, { replace: true })} />
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Tu hábito en este desafío: la misma tarjeta de Hábitos, con el rombo para marcar hoy y el enlace al detalle. */
+function MiHabito({ d, gid, hoy, terminado }: { d: ConId<TipoDesafio>; gid: string; hoy: string; terminado: boolean }) {
+  const uid = uidActual();
+  const progresos = useConsulta<Progreso>({ ruta: `groups/${gid}/challenges/${d.id}/progress` }).datos;
+  const mio = progresos.find((p) => p.id === uid);
+  const habitos = useDatos((s) => s.habitos);
+  const registros = useDatos((s) => s.registros);
+  const [eligiendo, setEligiendo] = useState(false);
+  const h = mio ? habitos.find((x) => x.id === mio.habitId) : undefined;
+  return (
+    <div data-mi-habito>
+      {h ? (
+        <>
+          <TarjetaHabito h={h} hoy={hoy} regs={registrosDe(registros, h.id)} accion={<MarcaMia habitId={h.id} nombre={h.nombre} hoy={hoy} resumenOk={false} />} />
+          {!terminado && (
+            <button type="button" className="link" style={{ paddingLeft: 0, marginTop: 6 }} onClick={() => setEligiendo(true)}>
+              Cambiar el hábito con el que participo
+            </button>
+          )}
+        </>
+      ) : (
+        <div className="panel">
+          <div className="grp cap" style={{ marginTop: 0 }}>
+            <span>Tu participación</span>
+          </div>
+          <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
+            {terminado ? 'Este desafío ya terminó.' : mio ? 'El hábito con el que participabas ya no está activo. Elegí otro.' : 'Sumate eligiendo uno de tus hábitos: cada día que lo cumplas cuenta para el desafío.'}
+          </p>
+          {!terminado && (
+            <button type="button" className="btn" style={{ marginTop: 12, height: 44 }} onClick={() => setEligiendo(true)}>
+              {mio ? 'Elegir hábito' : 'Sumarme'}
+            </button>
+          )}
+        </div>
+      )}
+      <HojaElegirHabito d={d} grupoId={gid} abierta={eligiendo} alCerrar={() => setEligiendo(false)} />
     </div>
   );
 }

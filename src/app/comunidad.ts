@@ -169,6 +169,7 @@ export function resumirHabito(h: Habito, hoy: string): Compartido {
     hoy: cumplido(h, regs.get(hoy)),
     racha: racha(h, regs, hoy, VENTANA_DIAS),
     porcentaje: porcentaje(h, regs, sumarDias(hoy, -29), hoy),
+    semana: [-6, -5, -4, -3, -2, -1, 0].map((o) => cumplido(h, regs.get(sumarDias(hoy, o)))),
   };
 }
 
@@ -272,6 +273,14 @@ export async function crearDesafio(grupoId: string, d: Omit<Desafio, 'id' | 'cre
     await dr.guardar(`groups/${grupoId}/challenges/${dr.nuevoId()}`, { ...d, creador: uid, actualizado: Date.now(), actualizadoPor: uid });
   });
 }
+
+/** Solo quien lo creó: nombre, virtud, meta y duración (solo alargar; el inicio no cambia). */
+export async function editarDesafio(grupoId: string, cid: string, cambios: Pick<Desafio, 'titulo' | 'virtud' | 'duracion' | 'meta'>) {
+  const uid = uidActual();
+  await intentar(async () => (await obtenerDriver()).guardar(`groups/${grupoId}/challenges/${cid}`, { ...cambios, actualizado: Date.now(), actualizadoPor: uid }, { combinar: true }));
+}
+
+export const renombrarGrupo = (grupoId: string, nombre: string) => intentar(async () => (await obtenerDriver()).llamar('renombrarGrupo', { grupoId, nombre }));
 
 export async function borrarDesafio(grupoId: string, cid: string) {
   await intentar(async () => (await obtenerDriver()).borrar(`groups/${grupoId}/challenges/${cid}`));

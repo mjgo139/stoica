@@ -77,7 +77,7 @@ service cloud.firestore {
     match /users/{uid} {
       function perfilValido() {
         let d = nuevo();
-        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
+        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'nacimiento', 'esperanzaVida', 'contadores', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
           && d.keys().hasAll(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor'])
           && texto(d.nombre, 1, 40)
           && texto(d.correo, 0, 254)
@@ -88,6 +88,9 @@ service cloud.firestore {
           && (!('examenHora' in d) || d.examenHora == null || hora(d.examenHora))
           && (!('examenSlot' in d) || d.examenSlot == null || entero(d.examenSlot, 0, 95))
           && (opcional(d, 'examenMin') || minuto(d.examenMin))
+          && (opcional(d, 'nacimiento') || claveDia(d.nacimiento))
+          && (!('esperanzaVida' in d) || entero(d.esperanzaVida, 40, 120))
+          && (!('contadores' in d) || (d.contadores is list && d.contadores.size() <= 5))
           && (!('notifReacciones' in d) || d.notifReacciones is bool)
           && d.creado is int
           && firmado(uid);
@@ -366,7 +369,10 @@ service cloud.firestore {
         }
         allow read: if esMiembro();
         allow create: if esMiembro() && desafioValido() && nuevo().creador == request.auth.uid;
-        allow update: if esMiembro() && desafioValido() && resource.data.creador == request.auth.uid && !cambiaron().hasAny(['creador']);
+        // Quien lo creó edita nombre, virtud y meta; la duración solo se alarga y el inicio no cambia.
+        allow update: if esMiembro() && desafioValido() && resource.data.creador == request.auth.uid
+          && !cambiaron().hasAny(['creador', 'inicio'])
+          && nuevo().duracion >= resource.data.duracion;
         allow delete: if esMiembro() && resource.data.creador == request.auth.uid;
 
         // Fotos y mensajes (plan de pago). Los ven todos los integrantes; escriben quienes se sumaron.

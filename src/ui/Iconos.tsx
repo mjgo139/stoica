@@ -3,6 +3,7 @@ const TRAZOS = {
   habitos: '<path d="M4 21h16M5 4h14M6 4v17M10 4v17M14 4v17M18 4v17M3 4l9-2 9 2"/>',
   tareas: '<path d="M7 3h10v18H7zM10 8h4M10 12h4M10 16h2M5 5v14M19 5v14"/>',
   enfoque: '<path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/>',
+  craneo: '<path d="M12 3a8 8 0 0 0-8 8c0 2.6 1.2 4.4 3 5.5V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3.5c1.8-1.1 3-2.9 3-5.5a8 8 0 0 0-8-8z"/><circle cx="8.8" cy="11.5" r="1.9"/><circle cx="15.2" cy="11.5" r="1.9"/><path d="M12 14.2l-1 2h2zM10 21v-2.4M14 21v-2.4"/>',
   examen: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   mas: '<path d="M12 5v14M5 12h14"/>',
   atras: '<path d="M15 6l-6 6 6 6"/>',

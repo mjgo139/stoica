@@ -12,6 +12,7 @@ import { Tareas } from '@/screens/Tareas';
 import { Proyecto } from '@/screens/Proyecto';
 import { Enfoque } from '@/screens/Enfoque';
 import { Examen } from '@/screens/Examen';
+import { MementoMori } from '@/screens/MementoMori';
 import { Comunidad, Unirse } from '@/screens/comunidad/Comunidad';
 import { Grupo } from '@/screens/comunidad/Grupo';
 import { Desafio } from '@/screens/comunidad/Desafio';
@@ -51,7 +52,9 @@ export function App() {
         <Route path="admin" element={<Admin />} />
         <Route path="tareas" element={<Tareas />} />
         <Route path="tareas/proyecto/:id" element={<Proyecto />} />
-        <Route path="enfoque" element={<Enfoque />} />
+        <Route path="tareas/enfoque" element={<Enfoque />} />
+        <Route path="enfoque" element={<Navigate to="/tareas/enfoque" replace />} />
+        <Route path="memento" element={<MementoMori />} />
         <Route path="examen" element={<Examen />} />
         <Route path="perfil" element={<Perfil />} />
         <Route path="*" element={<Navigate to="/" replace />} />

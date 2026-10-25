@@ -3,6 +3,8 @@ import { fechaCorta } from '@core/fechas';
 import { mmss, NOMBRE_ENFOQUE, restante, TIPOS_ENFOQUE, type TipoEnfoque } from '@core/rutina';
 import { guardarSesionEnfoque, hoyActual, useDatos, useHoy } from '@/app/datos';
 import { useAvisos } from '@/ui/avisos';
+import { Link } from 'react-router-dom';
+import { Icono } from '@/ui/Iconos';
 
 const CLAVE = 'stoica.temporizador';
 const OPCIONES: Record<TipoEnfoque, number[]> = { enfoque: [25, 50, 90], descanso: [5, 10, 15], meditacion: [5, 10, 20] };
@@ -90,6 +92,9 @@ export function Enfoque() {
 
   return (
     <div className="entra">
+      <Link to="/tareas" className="link" style={{ paddingLeft: 0, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
+        <Icono nombre="atras" tam={18} /> Tareas
+      </Link>
       <div className="cap gold">Atención plena</div>
       <h1 className="titulo">Enfoque</h1>
       <p className="lead">Una cosa por vez, con toda la atención.</p>

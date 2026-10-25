@@ -342,3 +342,17 @@ button:active:not(:disabled) { transform: scale(.97); }
 /* ---------- Tablas simples (Admin) ---------- */
 .tabla { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tabla td { padding: 8px 6px; border-bottom: 1px solid var(--ln2); vertical-align: middle; }
+
+/* ---------- Semana chica (comunidad) ---------- */
+.semana-mini { display: flex; gap: 6px; }
+.semana-mini > span { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 18px; }
+.semana-mini i { width: 10px; height: 10px; transform: rotate(45deg); border: 1.5px solid var(--chk); border-radius: 2px; display: block; margin-top: 2px; }
+.semana-mini .ok i { background: var(--ok); border-color: var(--ok); }
+.semana-mini .nd i { border-style: dashed; opacity: .5; }
+.semana-mini b { font-size: 9.5px; font-weight: 700; color: var(--mu2); }
+.semana-mini .hoy b { color: var(--gold); }
+
+/* ---------- Tarjeta de desafío (toda la tarjeta abre el desafío) ---------- */
+.tarjeta-desafio { display: block; color: inherit; text-decoration: none; padding: 14px; margin: 10px -4px 0; border: 1px solid var(--ln2); border-radius: 14px; background: var(--sf); }
+.tarjeta-desafio:hover { border-color: var(--ln4); box-shadow: var(--shadow-h); }
+.tarjeta-desafio:active { opacity: .8; }

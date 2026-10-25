@@ -326,6 +326,11 @@ describe('groups · comunidad', () => {
     await assertFails(setDoc(doc(usuario('beto'), 'groups/g1/challenges/c3'), desafio('beto', { duracion: 2 })));
     await assertFails(setDoc(doc(usuario('beto'), 'groups/g1/challenges/c3'), desafio('beto', { meta: 30 })));
     await assertFails(setDoc(doc(usuario('beto'), 'groups/g1/challenges/c3'), desafio('ana')));
+    // Editar: nombre, virtud y meta; la duración solo se alarga y el inicio no cambia
+    await assertSucceeds(updateDoc(doc(usuario('beto'), 'groups/g1/challenges/c1'), { titulo: '30 días', virtud: 'coraje', duracion: 30, meta: 25, actualizado: ahora(), actualizadoPor: 'beto' }));
+    await assertFails(updateDoc(doc(usuario('beto'), 'groups/g1/challenges/c1'), { duracion: 10, meta: 5, actualizado: ahora(), actualizadoPor: 'beto' }));
+    await assertFails(updateDoc(doc(usuario('beto'), 'groups/g1/challenges/c1'), { inicio: MANANA, actualizado: ahora(), actualizadoPor: 'beto' }));
+    await assertFails(updateDoc(doc(usuario('ana'), 'groups/g1/challenges/c1'), { titulo: 'Mío', actualizado: ahora(), actualizadoPor: 'ana' }));
     await assertFails(deleteDoc(doc(usuario('ana'), 'groups/g1/challenges/c1')));
     await assertSucceeds(deleteDoc(doc(usuario('beto'), 'groups/g1/challenges/c1')));
   });
@@ -337,6 +342,18 @@ describe('groups · comunidad', () => {
     await assertFails(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/progress/beto'), p('beto')));
     await assertFails(setDoc(doc(usuario('carla'), 'groups/g1/challenges/c1/progress/carla'), p('carla')));
     await assertFails(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/progress/ana'), { ...p('ana'), cumplidos: 999 }));
+  });
+});
+
+describe('memento mori en el perfil', () => {
+  it('fecha de nacimiento, esperanza y hasta 5 contadores; privado', async () => {
+    const db = usuario('ana');
+    const c = (i: number) => ({ id: `c${i}`, nombre: `Fecha ${i}`, fecha: '2027-01-01' });
+    await assertSucceeds(setDoc(doc(db, 'users/ana'), perfil('ana', { nacimiento: '1999-05-10', esperanzaVida: 73, contadores: [c(1), c(2)] })));
+    await assertFails(setDoc(doc(db, 'users/ana'), perfil('ana', { nacimiento: '10/05/1999' })));
+    await assertFails(setDoc(doc(db, 'users/ana'), perfil('ana', { esperanzaVida: 300 })));
+    await assertFails(setDoc(doc(db, 'users/ana'), perfil('ana', { contadores: [c(1), c(2), c(3), c(4), c(5), c(6)] })));
+    await assertFails(getDoc(doc(usuario('jefa', 'admin'), 'users/ana')));
   });
 });
 

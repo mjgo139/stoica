@@ -40,7 +40,7 @@ test.describe('v0.1 · base', () => {
     await expect(page.getByText(/Memento mori · \d+ días/)).toBeVisible();
     await captura(page, '03-hoy-claro');
 
-    for (const [seccion, titulo] of [['Hábitos', 'Hábitos'], ['Tareas', 'Tareas'], ['Enfoque', 'Enfoque'], ['Examen', 'Examen']] as const) {
+    for (const [seccion, titulo] of [['Hábitos', 'Hábitos'], ['Tareas', 'Tareas'], ['Examen', 'Examen'], ['Memento', 'Recordá que vas a morir']] as const) {
       await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: seccion }).click();
       await expect(page.getByRole('heading', { level: 1, name: titulo })).toBeVisible();
     }

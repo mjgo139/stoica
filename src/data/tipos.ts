@@ -39,6 +39,7 @@ export type NombreFuncion =
   | 'subirFotoDesafio'
   | 'reportarPublicacion'
   | 'adminResolverReporte'
+  | 'renombrarGrupo'
   | 'asignarRol';
 
 /**

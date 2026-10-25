@@ -1,12 +1,12 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { estadoDesafio, finDesafio, REACCIONES, validarDesafio, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
-import { fechaCorta } from '@core/fechas';
+import { estadoDesafio, finDesafio, REACCIONES, semanaAlDia, validarDesafio, validarNombreGrupo, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
+import { fechaCorta, sumarDias } from '@core/fechas';
 import { cumplido, habitoParaDesafio, LIMITES_HABITO, NOMBRE_VIRTUD, validarHabito, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
 import { inicial } from '@core/perfil';
 import { aRomano } from '@core/romanos';
 import { limpiarNombre } from '@core/validaciones';
-import { borrarDesafio, crearDesafio, elegirCompartidos, eliminarGrupo, reaccionar, salirDeGrupo, sumarmeADesafio, useComunidad } from '@/app/comunidad';
+import { borrarDesafio, crearDesafio, editarDesafio, elegirCompartidos, eliminarGrupo, reaccionar, renombrarGrupo, salirDeGrupo, sumarmeADesafio, useComunidad } from '@/app/comunidad';
 import { alternarSiNo, guardarHabito, registrosDe, sumar, uidActual, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
 import { HojaMedir } from '@/screens/habitos/HojaMedir';
 import { useConsulta } from '@/data/hooks';
@@ -15,6 +15,7 @@ import { Confirmar, Hoja } from '@/ui/Hoja';
 import { IconoHabito } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
+import { SemanaMini } from '@/ui/SemanaMini';
 import { PanelPlan, usePlan } from './Plan';
 
 export function Grupo() {
@@ -29,6 +30,7 @@ export function Grupo() {
   const { datos: reacciones } = useConsulta<Reaccion>(estado ? { ruta: `groups/${id}/reactions`, filtros: [['dia', '==', hoy]] } : null);
   const [hoja, setHoja] = useState<'compartir' | 'desafio' | null>(null);
   const [saliendo, setSaliendo] = useState(false);
+  const [renombrando, setRenombrando] = useState(false);
   const plan = usePlan(estado?.grupo);
 
   if (!estado) {
@@ -71,7 +73,14 @@ export function Grupo() {
           <div className="cap gold">
             Grupo privado · {grupo.miembros.length}/{20}
           </div>
-          <h1 className="titulo">{grupo.nombre}</h1>
+          <h1 className="titulo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {grupo.nombre}
+            {grupo.creador === uid && (
+              <button type="button" className="link" style={{ fontSize: 14 }} onClick={() => setRenombrando(true)}>
+                Editar nombre
+              </button>
+            )}
+          </h1>
         </div>
         <button type="button" className="ghost" onClick={() => setHoja('compartir')}>
           Qué comparto
@@ -96,7 +105,7 @@ export function Grupo() {
           )}
           {!yo && (
             <div className="franja info" style={{ marginTop: 14 }}>
-              Todavía no compartís nada. Tocá “Qué comparto” para elegir tus hábitos: solo se ve si lo cumpliste hoy, la racha y el %.
+              Todavía no compartís nada. Tocá “Qué comparto” para elegir tus hábitos: solo se ve si lo cumpliste en la semana, la racha y el %.
             </div>
           )}
         </div>
@@ -135,6 +144,7 @@ export function Grupo() {
         </div>
       </div>
 
+      {estado && <HojaRenombrar abierta={renombrando} alCerrar={() => setRenombrando(false)} grupoId={id} actual={estado.grupo.nombre} />}
       <HojaCompartir abierta={hoja === 'compartir'} alCerrar={() => setHoja(null)} grupoId={id} actuales={yo?.compartidos.map((c) => c.habitId) ?? []} />
       <HojaDesafio abierta={hoja === 'desafio'} alCerrar={() => setHoja(null)} grupoId={id} hoy={hoy} />
       <Confirmar
@@ -181,9 +191,16 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy }: { m: ConId<Miembr
       </div>
       {m.compartidos.length === 0 && <p className="vacio-mini" style={{ padding: '8px 0 0' }}>No comparte hábitos.</p>}
       {m.compartidos.map((c) => (
-        <div key={c.habitId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 0 50px' }}>
+        <div key={c.habitId} style={{ padding: '8px 0 0 50px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <IconoHabito icono={c.icono} virtud={c.virtud} tam={30} />
-          <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>{c.nombre}</span>
+          {esYo ? (
+            <Link to={`/habitos/${c.habitId}`} style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5, color: 'inherit', textDecoration: 'none' }}>
+              {c.nombre} <span className="gold">›</span>
+            </Link>
+          ) : (
+            <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>{c.nombre}</span>
+          )}
           <span className="num gold" style={{ fontSize: 15 }} title={`Racha de ${c.racha} días`}>
             {aRomano(c.racha)}
           </span>
@@ -202,6 +219,10 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy }: { m: ConId<Miembr
             </span>
           )}
         </div>
+        <div style={{ paddingLeft: 40, marginTop: 6 }}>
+          {esYo ? <MiSemana habitId={c.habitId} hoy={hoy} nombre={c.nombre} /> : <SemanaMini dias={semanaAlDia(c.semana, m.fecha, hoy)} hoy={hoy} etiqueta={`${m.nombre}, ${c.nombre}`} />}
+        </div>
+        </div>
       ))}
       {!esYo && (
         <div className="chips" style={{ padding: '10px 0 0 50px', gap: 6 }} role="group" aria-label={`Reaccionar a ${m.nombre}`}>
@@ -217,7 +238,16 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy }: { m: ConId<Miembr
 }
 
 /** Tu propio hábito compartido: se puede marcar desde el grupo (igual que en Hoy). */
-function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string; nombre: string; hoy: string; resumenOk: boolean }) {
+/** Tu semana de un hábito, calculada con tus datos (siempre al día). */
+function MiSemana({ habitId, hoy, nombre }: { habitId: string; hoy: string; nombre: string }) {
+  const h = useHabitosActivos().find((x) => x.id === habitId);
+  const registros = useDatos((s) => s.registros);
+  if (!h) return null;
+  const regs = registrosDe(registros, h.id);
+  return <SemanaMini dias={[-6, -5, -4, -3, -2, -1, 0].map((o) => cumplido(h, regs.get(sumarDias(hoy, o))))} hoy={hoy} etiqueta={`Tu semana de ${nombre}`} />;
+}
+
+export function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string; nombre: string; hoy: string; resumenOk: boolean }) {
   const h = useHabitosActivos().find((x) => x.id === habitId);
   const registros = useDatos((s) => s.registros);
   const [midiendo, setMidiendo] = useState(false);
@@ -260,15 +290,108 @@ function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string; nombre
   );
 }
 
-/** Un desafío: ranking y acciones. En el grupo lleva un enlace a su pantalla; en la pantalla, `completo`. */
-export function TarjetaDesafio({ d, grupoId, hoy, completo = false, conPlan = false, alBorrar }: { d: ConId<Desafio>; grupoId: string; hoy: string; completo?: boolean; conPlan?: boolean; alBorrar?: () => void }) {
+/** Tarjeta de un desafío en el grupo: toda la tarjeta abre su pantalla. */
+export function TarjetaDesafio({ d, grupoId, hoy, conPlan = false }: { d: ConId<Desafio>; grupoId: string; hoy: string; conPlan?: boolean }) {
   const uid = uidActual();
-  const habitos = useHabitosActivos();
   const progresos = useConsulta<Progreso>({ ruta: `groups/${grupoId}/challenges/${d.id}/progress` }).datos;
   const mio = progresos.find((p) => p.id === uid);
   const e = estadoDesafio(d, hoy);
-  const [eligiendo, setEligiendo] = useState(false);
+  const otros = [...progresos].filter((p) => p.id !== uid).sort((a, b) => b.cumplidos - a.cumplidos).slice(0, 2);
+  const barra = (p: ConId<Progreso>, nombre: string) => (
+    <span key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+      <span style={{ width: 96, fontWeight: 600, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre}</span>
+      <span className="barra-prog" style={{ flex: 1 }}>
+        <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
+      </span>
+      <span className="num" style={{ fontSize: 14, width: 48, textAlign: 'right' }}>
+        {p.cumplidos}/{d.meta}
+      </span>
+    </span>
+  );
+  return (
+    <Link to={`/comunidad/${grupoId}/desafio/${d.id}`} className="tarjeta-desafio" data-desafio={d.titulo} aria-label={`Abrir desafío ${d.titulo}`}>
+      <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <strong className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16 }}>
+          {d.titulo}
+        </strong>
+        <span className="cap mu2" style={{ fontSize: 10 }}>
+          {e.estado === 'activo' ? `Día ${e.dia} de ${d.duracion}` : e.estado === 'proximo' ? `Empieza en ${e.quedan} días` : 'Terminado'}
+        </span>
+      </span>
+      <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+        Meta: {d.meta} de {d.duracion} días · {fechaCorta(d.inicio)} al {fechaCorta(finDesafio(d))}
+      </span>
+      {mio ? barra(mio, 'Vos') : <span className="mu2" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginTop: 8 }}>Todavía no participás</span>}
+      {otros.map((p) => barra(p, p.nombre))}
+      <span style={{ display: 'flex', alignItems: 'center', marginTop: 10, gap: 8 }}>
+        <span className="mu2" style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>
+          {progresos.length} {progresos.length === 1 ? 'participa' : 'participan'}
+          {conPlan && ' · 📷 Fotos y chat'}
+        </span>
+        <span className="gold" style={{ fontWeight: 700, fontSize: 13.5 }}>
+          {mio ? 'Abrir' : e.estado === 'terminado' ? 'Ver' : 'Ver y sumarme'} ›
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+/** Dentro del desafío: ranking completo y, para quien lo creó, editar o borrar. */
+export function RankingDesafio({ d, grupoId, alBorrar }: { d: ConId<Desafio>; grupoId: string; alBorrar?: () => void }) {
+  const uid = uidActual();
+  const progresos = useConsulta<Progreso>({ ruta: `groups/${grupoId}/challenges/${d.id}/progress` }).datos;
+  const ranking = [...progresos].sort((a, b) => b.cumplidos - a.cumplidos);
+  const [menu, setMenu] = useState(false);
+  const [editando, setEditando] = useState(false);
   const [borrando, setBorrando] = useState(false);
+  return (
+    <div className="panel" data-ranking>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
+          <span>Ranking · {ranking.length}</span>
+        </div>
+        {d.creador === uid && (
+          <button type="button" className="ico" aria-label="Opciones del desafío" onClick={() => setMenu(true)} style={{ fontSize: 20, fontWeight: 800, marginTop: -6 }}>
+            ⋯
+          </button>
+        )}
+      </div>
+      {ranking.length === 0 && <p className="vacio-mini">Nadie se sumó todavía.</p>}
+      {ranking.map((p, i) => (
+        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+          <span className="num mu2" style={{ width: 18, fontSize: 13 }}>
+            {i + 1}
+          </span>
+          <span style={{ width: 100, fontWeight: 600, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.id === uid ? 'Vos' : p.nombre}</span>
+          <span className="barra-prog" style={{ flex: 1 }}>
+            <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
+          </span>
+          <span className="num" style={{ fontSize: 14, width: 48, textAlign: 'right' }}>
+            {p.cumplidos}/{d.meta}
+          </span>
+        </div>
+      ))}
+      <Hoja titulo="Opciones del desafío" abierta={menu} alCerrar={() => setMenu(false)}>
+        <button type="button" className="ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => (setMenu(false), setEditando(true))}>
+          Editar desafío
+        </button>
+        <button type="button" className="ghost peligro" style={{ width: '100%', marginTop: 10 }} onClick={() => (setMenu(false), setBorrando(true))}>
+          Borrar desafío
+        </button>
+      </Hoja>
+      <HojaDesafio abierta={editando} alCerrar={() => setEditando(false)} grupoId={grupoId} hoy={d.inicio} existente={d} />
+      <Confirmar abierto={borrando} titulo="¿Borrar el desafío?" texto="Se borra para todo el grupo, con sus fotos y mensajes." accion="Borrar" peligro alCerrar={() => setBorrando(false)} alConfirmar={() => (setBorrando(false), borrarDesafio(grupoId, d.id), alBorrar?.())} />
+    </div>
+  );
+}
+
+/** Elegir con qué hábito participás (o crear uno sugerido y sumarte en un toque). */
+export function HojaElegirHabito({ d, grupoId, abierta, alCerrar }: { d: ConId<Desafio>; grupoId: string; abierta: boolean; alCerrar: () => void }) {
+  const uid = uidActual();
+  const hoy = useHoy();
+  const habitos = useHabitosActivos();
+  const progresos = useConsulta<Progreso>(abierta ? { ruta: `groups/${grupoId}/challenges/${d.id}/progress` } : null).datos;
+  const mio = progresos.find((p) => p.id === uid);
   const [creando, setCreando] = useState(false);
   const mostrar = useAvisos((s) => s.mostrar);
   const todos = useDatos((s) => s.habitos);
@@ -296,102 +419,88 @@ export function TarjetaDesafio({ d, grupoId, hoy, completo = false, conPlan = fa
       const idNuevo = await guardarHabito(nuevo);
       const ahora = Date.now();
       await sumarmeADesafio(grupoId, d, idNuevo, { ...nuevo, id: idNuevo, recordatorioSlot: null, creado: ahora, actualizado: ahora, actualizadoPor: uid } as Habito);
-      setEligiendo(false);
+      alCerrar();
       mostrar(`Creamos “${nuevo.nombre}” y te sumaste al desafío.`);
     } finally {
       setCreando(false);
     }
   };
-  const ranking = [...progresos].sort((a, b) => b.cumplidos - a.cumplidos);
   return (
-    <div data-desafio={d.titulo} style={{ padding: '12px 0', borderBottom: '1px solid var(--ln2)' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        {completo ? (
-          <strong className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16 }}>
-            Ranking
-          </strong>
-        ) : (
-          <Link to={`/comunidad/${grupoId}/desafio/${d.id}`} className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16, fontWeight: 700, textDecoration: 'none' }}>
-            {d.titulo} ›
-          </Link>
-        )}
-        <span className="cap mu2" style={{ fontSize: 10 }}>
-          {e.estado === 'activo' ? `Día ${e.dia} de ${d.duracion}` : e.estado === 'proximo' ? `Empieza en ${e.quedan} días` : 'Terminado'}
-        </span>
-      </div>
-      <div className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 2 }}>
-        Meta: {d.meta} de {d.duracion} días · {fechaCorta(d.inicio)} al {fechaCorta(finDesafio(d))}
-      </div>
-      {ranking.map((p) => (
-        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-          <span style={{ width: 110, fontWeight: 600, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.id === uid ? 'Vos' : p.nombre}</span>
-          <span className="barra-prog" style={{ flex: 1 }}>
-            <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
-          </span>
-          <span className="num" style={{ fontSize: 14, width: 48, textAlign: 'right' }}>
-            {p.cumplidos}/{d.meta}
-          </span>
-        </div>
-      ))}
-      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        {!completo && (
-          <Link to={`/comunidad/${grupoId}/desafio/${d.id}`} className="link" style={{ paddingLeft: 0, textDecoration: 'none' }}>
-            {conPlan ? 'Fotos y chat' : 'Abrir'}
-          </Link>
-        )}
-        {e.estado !== 'terminado' && (
-          <button type="button" className="link" style={{ paddingLeft: 0 }} onClick={() => setEligiendo(true)}>
-            {mio ? 'Cambiar mi hábito' : 'Sumarme'}
-          </button>
-        )}
-        {d.creador === uid && (
-          <button type="button" className="link" style={{ color: 'var(--cor)' }} onClick={() => setBorrando(true)}>
-            Borrar
-          </button>
-        )}
-      </div>
-      <Hoja titulo="¿Con qué hábito participás?" abierta={eligiendo} alCerrar={() => setEligiendo(false)}>
-        <p className="mu" style={{ fontWeight: 500, marginTop: 8 }}>
-          Cuenta cada día que cumplas ese hábito dentro del desafío.
-        </p>
-        {!coincide && (
-          <div className="franja info" style={{ display: 'block', marginTop: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <IconoHabito icono={sugerido.icono} virtud={sugerido.virtud} tam={34} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block' }}>¿No tenés un hábito para esto?</span>
-                <span style={{ fontWeight: 500, fontSize: 13 }}>
-                  Creamos “{sugerido.nombre}” ({NOMBRE_VIRTUD[sugerido.virtud]}, todos los días). Después lo podés editar.
-                </span>
+    <Hoja titulo="¿Con qué hábito participás?" abierta={abierta} alCerrar={alCerrar}>
+      <p className="mu" style={{ fontWeight: 500, marginTop: 8 }}>
+        Cuenta cada día que cumplas ese hábito dentro del desafío.
+      </p>
+      {!coincide && (
+        <div className="franja info" style={{ display: 'block', marginTop: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <IconoHabito icono={sugerido.icono} virtud={sugerido.virtud} tam={34} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block' }}>¿No tenés un hábito para esto?</span>
+              <span style={{ fontWeight: 500, fontSize: 13 }}>
+                Creamos “{sugerido.nombre}” ({NOMBRE_VIRTUD[sugerido.virtud]}, todos los días). Después lo podés editar.
               </span>
-            </div>
-            <button type="button" className="btn" style={{ marginTop: 12, height: 44 }} disabled={creando} onClick={crearYSumarme}>
-              {creando ? 'Creando…' : 'Crear el hábito y sumarme'}
-            </button>
+            </span>
           </div>
-        )}
-        {habitos.length > 0 && (
-          <div className="fl" style={{ marginTop: 18 }}>
-            {coincide ? 'Elegí uno de tus hábitos' : 'O elegí uno que ya tenés'}
-          </div>
-        )}
-        {[...habitos]
-          .sort((a, b) => (a.id === coincide?.id ? -1 : b.id === coincide?.id ? 1 : 0))
-          .map((h) => (
-            <button key={h.id} type="button" className="srow" onClick={async () => (await sumarmeADesafio(grupoId, d, h.id), setEligiendo(false))}>
-              <IconoHabito icono={h.icono} virtud={h.virtud} tam={34} />
-              <span style={{ flex: 1, fontWeight: 600 }}>{h.nombre}</span>
-              {mio?.habitId === h.id ? <span className="cap gold">Elegido</span> : h.id === coincide?.id && <span className="cap gold">Coincide</span>}
-            </button>
-          ))}
-        {mio && (
-          <button type="button" className="ghost peligro" style={{ width: '100%', marginTop: 14 }} onClick={async () => (await sumarmeADesafio(grupoId, d, null), setEligiendo(false))}>
-            Dejar el desafío
+          <button type="button" className="btn" style={{ marginTop: 12, height: 44 }} disabled={creando} onClick={crearYSumarme}>
+            {creando ? 'Creando…' : 'Crear el hábito y sumarme'}
           </button>
-        )}
-      </Hoja>
-      <Confirmar abierto={borrando} titulo="¿Borrar el desafío?" texto="Se borra para todo el grupo, con sus fotos y mensajes." accion="Borrar" peligro alCerrar={() => setBorrando(false)} alConfirmar={() => (setBorrando(false), borrarDesafio(grupoId, d.id), alBorrar?.())} />
-    </div>
+        </div>
+      )}
+      {habitos.length > 0 && (
+        <div className="fl" style={{ marginTop: 18 }}>
+          {coincide ? 'Elegí uno de tus hábitos' : 'O elegí uno que ya tenés'}
+        </div>
+      )}
+      {[...habitos]
+        .sort((a, b) => (a.id === coincide?.id ? -1 : b.id === coincide?.id ? 1 : 0))
+        .map((h) => (
+          <button key={h.id} type="button" className="srow" onClick={async () => (await sumarmeADesafio(grupoId, d, h.id), alCerrar())}>
+            <IconoHabito icono={h.icono} virtud={h.virtud} tam={34} />
+            <span style={{ flex: 1, fontWeight: 600 }}>{h.nombre}</span>
+            {mio?.habitId === h.id ? <span className="cap gold">Elegido</span> : h.id === coincide?.id && <span className="cap gold">Coincide</span>}
+          </button>
+        ))}
+      {mio && (
+        <button type="button" className="ghost peligro" style={{ width: '100%', marginTop: 14 }} onClick={async () => (await sumarmeADesafio(grupoId, d, null), alCerrar())}>
+          Dejar el desafío
+        </button>
+      )}
+    </Hoja>
+  );
+}
+
+function HojaRenombrar({ abierta, alCerrar, grupoId, actual }: { abierta: boolean; alCerrar: () => void; grupoId: string; actual: string }) {
+  const [nombre, setNombre] = useState(actual);
+  const [error, setError] = useState('');
+  const [antes, setAntes] = useState(false);
+  if (abierta && !antes) {
+    setAntes(true);
+    setNombre(actual);
+    setError('');
+  }
+  if (!abierta && antes) setAntes(false);
+  const enviar = async (e: FormEvent) => {
+    e.preventDefault();
+    const err = validarNombreGrupo(nombre);
+    if (err) return setError(err);
+    const r = await renombrarGrupo(grupoId, nombre);
+    if (r !== undefined) alCerrar();
+  };
+  return (
+    <Hoja titulo="Nombre del grupo" abierta={abierta} alCerrar={alCerrar}>
+      <form onSubmit={enviar} noValidate>
+        <label className="lbl cap" htmlFor="g-nombre">
+          Nombre
+        </label>
+        <input id="g-nombre" className="inp" maxLength={40} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <div className="err" role="alert">
+          {error}
+        </div>
+        <button className="btn" type="submit" style={{ marginTop: 8 }}>
+          Guardar
+        </button>
+      </form>
+    </Hoja>
   );
 }
 
@@ -407,7 +516,7 @@ function HojaCompartir({ abierta, alCerrar, grupoId, actuales }: { abierta: bool
   return (
     <Hoja titulo="Qué comparto en este grupo" abierta={abierta} alCerrar={alCerrar}>
       <p className="mu" style={{ fontWeight: 500, marginTop: 8 }}>
-        De cada hábito se ve solo: si lo cumpliste hoy, tu racha y el % de los últimos 30 días. Nunca tus notas, tu examen ni los valores de tus mediciones.
+        De cada hábito se ve solo: si lo cumpliste en los últimos 7 días, tu racha y el % de los últimos 30 días. Nunca tus notas, tu examen ni los valores de tus mediciones.
       </p>
       {habitos.map((h) => (
         <label key={h.id} className="fila">
@@ -424,29 +533,44 @@ function HojaCompartir({ abierta, alCerrar, grupoId, actuales }: { abierta: bool
   );
 }
 
-function HojaDesafio({ abierta, alCerrar, grupoId, hoy }: { abierta: boolean; alCerrar: () => void; grupoId: string; hoy: string }) {
+function HojaDesafio({ abierta, alCerrar, grupoId, hoy, existente }: { abierta: boolean; alCerrar: () => void; grupoId: string; hoy: string; existente?: ConId<Desafio> }) {
   const [titulo, setTitulo] = useState('');
   const [virtud, setVirtud] = useState<Virtud>('templanza');
   const [duracion, setDuracion] = useState('21');
   const [meta, setMeta] = useState('18');
   const [error, setError] = useState('');
+  const [antes, setAntes] = useState(false);
+  if (abierta && !antes) {
+    setAntes(true);
+    setError('');
+    if (existente) {
+      setTitulo(existente.titulo);
+      setVirtud(existente.virtud);
+      setDuracion(String(existente.duracion));
+      setMeta(String(existente.meta));
+    }
+  }
+  if (!abierta && antes) setAntes(false);
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
-    const d = { titulo: limpiarNombre(titulo), virtud, duracion: Number(duracion), meta: Number(meta), inicio: hoy };
+    const d = { titulo: limpiarNombre(titulo), virtud, duracion: Number(duracion), meta: Number(meta), inicio: existente?.inicio ?? hoy };
+    if (existente && d.duracion < existente.duracion) return setError(`La duración solo se puede alargar (ahora: ${existente.duracion} días).`);
     const err = validarDesafio(d);
     if (err) return setError(err);
-    await crearDesafio(grupoId, d);
+    if (existente) await editarDesafio(grupoId, existente.id, { titulo: d.titulo, virtud: d.virtud, duracion: d.duracion, meta: d.meta });
+    else await crearDesafio(grupoId, d);
     setTitulo('');
     alCerrar();
   };
   const sugeridos = useMemo(() => ['21 días meditando', '30 días sin azúcar', 'Una semana de ducha fría', '14 días leyendo'], []);
   return (
-    <Hoja titulo="Nuevo desafío" abierta={abierta} alCerrar={alCerrar}>
+    <Hoja titulo={existente ? 'Editar desafío' : 'Nuevo desafío'} abierta={abierta} alCerrar={alCerrar}>
       <form onSubmit={enviar} noValidate>
         <label className="lbl cap" htmlFor="d-titulo">
           Nombre
         </label>
         <input id="d-titulo" className="inp" maxLength={60} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="21 días meditando" />
+        {!existente && (
         <div className="chips" style={{ marginTop: 10 }}>
           {sugeridos.map((s) => (
             <button key={s} type="button" className="chip" onClick={() => setTitulo(s)}>
@@ -454,6 +578,7 @@ function HojaDesafio({ abierta, alCerrar, grupoId, hoy }: { abierta: boolean; al
             </button>
           ))}
         </div>
+        )}
         <div className="lbl cap">Virtud</div>
         <div className="chips">
           {VIRTUDES.map((v) => (
@@ -477,13 +602,13 @@ function HojaDesafio({ abierta, alCerrar, grupoId, hoy }: { abierta: boolean; al
           </div>
         </div>
         <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>
-          Empieza hoy. Cada integrante elige con qué hábito participa.
+          {existente ? 'La fecha de inicio no cambia y la duración solo se puede alargar, para no romper el conteo de quienes participan.' : 'Empieza hoy. Cada integrante elige con qué hábito participa.'}
         </p>
         <div className="err" role="alert">
           {error}
         </div>
         <button className="btn" type="submit" style={{ marginTop: 8 }}>
-          Crear desafío
+          {existente ? 'Guardar cambios' : 'Crear desafío'}
         </button>
       </form>
     </Hoja>

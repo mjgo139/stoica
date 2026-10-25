@@ -42,6 +42,18 @@ export interface Compartido {
   hoy: boolean;
   racha: number;
   porcentaje: number;
+  /** Últimos 7 días (del más viejo a `fecha` del resumen): solo cumplió / no cumplió. */
+  semana?: boolean[];
+}
+
+/**
+ * Corre la semana compartida al día de hoy: si el resumen es de hace N días, los últimos N quedan
+ * sin dato (null) porque esa persona todavía no abrió la app.
+ */
+export function semanaAlDia(semana: boolean[] | undefined, fecha: string, hoy: string): Array<boolean | null> {
+  const base = semana && semana.length === 7 ? semana : Array<boolean | null>(7).fill(null);
+  const n = Math.max(0, Math.min(7, diferenciaDias(fecha, hoy)));
+  return [...base.slice(n), ...Array<boolean | null>(n).fill(null)];
 }
 
 /** groups/{id}/members/{uid} */

@@ -66,7 +66,11 @@ export function Hoy() {
               <Icono nombre="sol" tam={15} />
               {sel === 0 ? fechaLarga(ahora, zona) : fechaLargaDeClave(dia)}
             </span>
-            {perfil.mementoMori && <span className="chip-fecha">Memento mori · {quedan} {quedan === 1 ? 'día' : 'días'}</span>}
+            {perfil.mementoMori && (
+              <Link to="/memento" className="chip-fecha" style={{ textDecoration: 'none' }}>
+                Memento mori · {quedan} {quedan === 1 ? 'día' : 'días'} ›
+              </Link>
+            )}
           </div>
         </div>
         <figure className="hq" style={{ margin: 0 }}>

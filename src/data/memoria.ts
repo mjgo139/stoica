@@ -135,6 +135,16 @@ export function crearDriverMemoria(): Driver {
       else escribir(`groups/${d.grupoId}`, { miembros: quedan, creador: g.creador === uid ? quedan[0] : g.creador }, true);
       return { ok: true };
     },
+    renombrarGrupo(d) {
+      const uid = yo();
+      const g = leerDoc(`groups/${d.grupoId}`) as Grupo | undefined;
+      if (!g) throw new ErrorStoica('Ese grupo ya no existe.', 'not-found');
+      if (g.creador !== uid) throw new ErrorStoica('Solo quien creó el grupo puede cambiarle el nombre.', 'permission-denied');
+      const err = validarNombreGrupo(String(d.nombre ?? ''));
+      if (err) throw new ErrorStoica(err, 'invalid-argument');
+      escribir(`groups/${d.grupoId}`, { nombre: limpiarNombre(String(d.nombre)) }, true);
+      return { ok: true };
+    },
     eliminarGrupo(d) {
       const uid = yo();
       const g = leerDoc(`groups/${d.grupoId}`) as Grupo | undefined;

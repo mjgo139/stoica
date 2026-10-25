@@ -13,8 +13,9 @@ const SECCIONES: Array<{ ruta: string; nombre: string; icono: NombreIcono }> = [
   { ruta: '/', nombre: 'Hoy', icono: 'hoy' },
   { ruta: '/habitos', nombre: 'Hábitos', icono: 'habitos' },
   { ruta: '/tareas', nombre: 'Tareas', icono: 'tareas' },
-  { ruta: '/enfoque', nombre: 'Enfoque', icono: 'enfoque' },
+
   { ruta: '/examen', nombre: 'Examen', icono: 'examen' },
+  { ruta: '/memento', nombre: 'Memento', icono: 'craneo' },
 ];
 
 /** Estructura de la app: barra inferior en el celular, barra lateral oscura en escritorio. */

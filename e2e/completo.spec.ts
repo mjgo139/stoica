@@ -193,7 +193,8 @@ test.describe('v0.4 · tareas, enfoque, examen', () => {
 
   test('enfoque: temporizador que se pausa y cancela', async ({ page }) => {
     await entrarConEjemplo(page);
-    await ir(page, '/enfoque');
+    await ir(page, '/tareas');
+    await page.getByRole('link', { name: /Enfoque/ }).click();
     await page.getByRole('radio', { name: 'Meditación' }).click();
     await page.getByRole('button', { name: '5 min' }).click();
     await page.getByRole('button', { name: 'Comenzar' }).click();
@@ -271,20 +272,40 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('group', { name: 'Reaccionar a Epicteto' }).getByRole('button', { name: 'Fuerza' }).click();
     await expect(page.getByRole('group', { name: 'Reaccionar a Epicteto' }).getByRole('button', { name: 'Fuerza' })).toHaveAttribute('aria-pressed', 'true');
 
-    await page.getByRole('button', { name: 'Sumarme' }).first().click();
+    // La semana de los demás se ve en rombos chicos
+    await expect(page.getByRole('img', { name: /Epicteto, Meditar: \d de 7 días/ })).toBeVisible();
+
+    // Toda la tarjeta del desafío abre su pantalla; ahí te sumás y marcás tu hábito
+    await page.locator('[data-desafio="21 días meditando"]').click();
+    await expect(page.getByRole('heading', { level: 1, name: '21 días meditando' })).toBeVisible();
+    await page.locator('[data-mi-habito]').getByRole('button', { name: 'Sumarme' }).click();
     await page.getByRole('dialog').getByRole('button', { name: /Meditar/ }).click();
-    await expect(page.getByText('Vos', { exact: true })).toBeVisible();
+    await expect(page.locator('[data-mi-habito]')).toContainText('Meditar');
+    await expect(page.locator('[data-mi-habito]').getByRole('button', { name: /^(Marcar|Desmarcar) Meditar$/ })).toBeVisible();
+    await expect(page.locator('[data-ranking]').getByText('Vos', { exact: true })).toBeVisible();
     await captura(page, '20-grupo');
+    await ir(page, '/comunidad/g-portico');
 
     // Desafío sin hábito propio: se crea el hábito y se suma en un toque
     await page.getByRole('button', { name: '+ Nuevo' }).click();
     await page.getByLabel('Nombre').fill('10 días de gratitud');
     await page.getByRole('dialog').getByRole('button', { name: 'Crear desafío' }).click();
-    const gratitud = page.locator('[data-desafio="10 días de gratitud"]');
-    await gratitud.getByRole('button', { name: 'Sumarme' }).click();
+    await page.locator('[data-desafio="10 días de gratitud"]').click();
+    await page.locator('[data-mi-habito]').getByRole('button', { name: 'Sumarme' }).click();
     await expect(page.getByRole('dialog')).toContainText('“Gratitud”');
     await page.getByRole('dialog').getByRole('button', { name: 'Crear el hábito y sumarme' }).click();
-    await expect(gratitud.getByText('Vos', { exact: true })).toBeVisible();
+    await expect(page.locator('[data-mi-habito]')).toContainText('Gratitud');
+
+    // Quien lo creó lo edita: la duración solo se alarga
+    await page.getByRole('button', { name: 'Opciones del desafío' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Editar desafío' }).click();
+    await page.getByLabel('Nombre').fill('15 días de gratitud');
+    await page.getByLabel('Duración (días)').fill('5');
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('solo se puede alargar');
+    await page.getByLabel('Duración (días)').fill('30');
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: '15 días de gratitud' })).toBeVisible();
     await ir(page, '/habitos');
     await expect(page.getByText('Gratitud').first()).toBeVisible();
     await ir(page, '/comunidad');
@@ -296,6 +317,11 @@ test.describe('v0.5–v1.0', () => {
     await page.getByLabel('Nombre del grupo').fill('Jardín de Epicuro');
     await page.getByRole('dialog').getByRole('button', { name: 'Crear' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Jardín de Epicuro' })).toBeVisible();
+    // Quien creó el grupo le cambia el nombre
+    await page.getByRole('button', { name: 'Editar nombre' }).click();
+    await page.getByLabel('Nombre', { exact: true }).fill('Jardín');
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: /^Jardín/ })).toBeVisible();
 
     // Código inválido
     await ir(page, '/comunidad');
@@ -320,7 +346,7 @@ test.describe('v0.5–v1.0', () => {
     await ir(page, '/comunidad');
     await page.getByText('El Pórtico').click();
     await expect(page.locator('[data-plan="sin"]')).toBeVisible();
-    await page.locator('[data-desafio="21 días meditando"]').getByRole('link', { name: /21 días meditando/ }).click();
+    await page.locator('[data-desafio="21 días meditando"]').click();
     await expect(page.getByRole('heading', { level: 1, name: '21 días meditando' })).toBeVisible();
     await expect(page.locator('[data-muro="bloqueado"]')).toBeVisible();
 
@@ -336,7 +362,7 @@ test.describe('v0.5–v1.0', () => {
     // Chat: se ven los mensajes de los demás; sin sumarse no se escribe
     await expect(page.locator('[data-muro="chat"]')).toContainText('Lo que depende de nosotros');
     await expect(page.locator('[data-muro="chat"]')).toContainText('Sumate al desafío para escribir.');
-    await page.getByRole('button', { name: 'Sumarme' }).click();
+    await page.locator('[data-mi-habito]').getByRole('button', { name: /Sumarme|Elegir hábito/ }).click();
     await page.getByRole('dialog').getByRole('button', { name: /Meditar/ }).click();
     await page.getByLabel('Mensaje', { exact: true }).fill('¡Vamos, Pórtico!');
     await page.getByRole('button', { name: 'Enviar' }).click();
@@ -357,6 +383,27 @@ test.describe('v0.5–v1.0', () => {
     await page.getByLabel('Código de habilitación').fill(codigo);
     await page.getByRole('dialog').getByRole('button', { name: 'Activar' }).click();
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('ya se usó');
+  });
+
+  test('memento mori: pestaña con calavera, fecha de nacimiento, contadores y grilla de semanas', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Memento' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Recordá que vas a morir' })).toBeVisible();
+    await page.getByLabel('Fecha de nacimiento').fill('1990-03-15');
+    await page.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.locator('[data-contador="Ya viviste"]')).toContainText('años');
+    await expect(page.locator('[data-contador="Probablemente te quedan"]')).toContainText('días');
+    await expect(page.getByRole('img', { name: /semanas vividas de 3796/ })).toBeVisible();
+    await page.getByRole('button', { name: '+ Agregar' }).click();
+    await page.getByLabel('Nombre').fill('Viaje');
+    await page.getByLabel('Fecha', { exact: true }).fill('2030-01-01');
+    await page.getByRole('dialog').getByRole('button', { name: 'Agregar' }).click();
+    await expect(page.locator('[data-contador-propio="Viaje"]')).toContainText('faltan');
+    await captura(page, '26-memento');
+    // Enfoque ahora está dentro de Tareas
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Tareas' }).click();
+    await page.getByRole('link', { name: /Enfoque/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Enfoque' })).toBeVisible();
   });
 
   test('borrar mi cuenta', async ({ page }) => {

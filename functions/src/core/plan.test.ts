@@ -37,3 +37,11 @@ describe('plan de fotos y chat', () => {
     expect(validarMensaje('¡Vamos!')).toBeNull();
   });
 });
+
+import { semanaAlDia } from './comunidad.js';
+describe('semana compartida', () => {
+  const s = [true, false, true, true, false, true, true];
+  it('al día: igual', () => expect(semanaAlDia(s, '2026-10-25', '2026-10-25')).toEqual(s));
+  it('resumen de hace 2 días: corre y deja sin dato los últimos', () => expect(semanaAlDia(s, '2026-10-23', '2026-10-25')).toEqual([true, true, false, true, true, null, null]));
+  it('sin semana (versiones anteriores): todo sin dato', () => expect(semanaAlDia(undefined, '2026-10-25', '2026-10-25')).toEqual(Array(7).fill(null)));
+});

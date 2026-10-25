@@ -1,3 +1,4 @@
+import { ESPERANZA_DEFECTO, type ContadorPropio } from './memento.js';
 import { ZONA_POR_DEFECTO, zonaValida } from './fechas.js';
 import { limpiarNombre, type Rol, type Tema } from './validaciones.js';
 
@@ -17,16 +18,20 @@ export interface Perfil {
   examenSlot: number | null; // franja UTC de 15 min (versiones anteriores)
   examenMin?: number | null; // minuto UTC del aviso del examen (cualquier minuto)
   notifReacciones: boolean;
+  /** Memento mori (privado: nunca va a accounts ni a los grupos). */
+  nacimiento?: string | null;
+  esperanzaVida?: number;
+  contadores?: ContadorPropio[];
   creado: number;
   actualizado: number;
   actualizadoPor: string;
   rol?: Rol;
 }
 
-export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria' | 'notificaciones' | 'examenHora' | 'examenSlot' | 'examenMin' | 'notifReacciones'>>;
+export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria' | 'notificaciones' | 'examenHora' | 'examenSlot' | 'examenMin' | 'notifReacciones' | 'nacimiento' | 'esperanzaVida' | 'contadores'>>;
 
 /** Campos que la app puede escribir en users/{uid}. Debe coincidir con firestore.rules. */
-export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'creado', 'actualizado', 'actualizadoPor'] as const;
+export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'nacimiento', 'esperanzaVida', 'contadores', 'creado', 'actualizado', 'actualizadoPor'] as const;
 
 export function perfilInicial(uid: string, nombre: string, correo: string, zona: string, ahora: number): Perfil {
   return {
@@ -72,6 +77,10 @@ export function completarPerfil(p: Partial<Perfil>): Perfil {
     examenHora: p.examenHora === undefined ? '22:00' : p.examenHora,
     examenSlot: p.examenSlot ?? null,
     notifReacciones: p.notifReacciones ?? true,
+    ...(p.examenMin !== undefined ? { examenMin: p.examenMin } : {}),
+    nacimiento: p.nacimiento ?? null,
+    esperanzaVida: p.esperanzaVida ?? ESPERANZA_DEFECTO,
+    contadores: p.contadores ?? [],
     creado: p.creado ?? 0,
     actualizado: p.actualizado ?? 0,
     actualizadoPor: p.actualizadoPor ?? '',
