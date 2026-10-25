@@ -8,6 +8,8 @@ import { validarContrasena, validarCorreo } from '@core/validaciones';
 import { calcularMetricas, type Cuenta } from '@core/admin';
 import { esCodigo, generarCodigo, MAX_GRUPOS_POR_USUARIO, MAX_MIEMBROS, normalizarCodigo, validarNombreGrupo, type Grupo } from '@core/comunidad';
 import { limpiarNombre } from '@core/validaciones';
+import { esCodigoPlan, estadoPlan, extenderPlan, generarCodigoPlan, idFoto, MESES_PLAN, normalizarCodigoPlan, type CodigoPlan } from '@core/plan';
+import { claveDia } from '@core/fechas';
 import { ErrorStoica, type Cancelar, type ConId, type Consulta, type Driver, type NombreFuncion, type UsuarioSesion } from './tipos';
 import { sembrarEjemplo } from './ejemplo';
 
@@ -171,6 +173,65 @@ export function crearDriverMemoria(): Driver {
     },
     asegurarCuenta() {
       return { rol: esAdmin() ? 'admin' : 'usuario' };
+    },
+    adminCrearCodigos(d) {
+      if (!esAdmin()) throw new ErrorStoica('Solo el admin puede hacer esto.', 'permission-denied');
+      const meses = Number(d.meses);
+      if (!(MESES_PLAN as readonly number[]).includes(meses)) throw new ErrorStoica('Elegí 1, 3, 6 o 12 meses.', 'invalid-argument');
+      const codigos = Array.from({ length: Math.max(1, Math.min(20, Number(d.cantidad ?? 1))) }, () => generarCodigoPlan(Math.random));
+      for (const c of codigos) escribir(`codigos/${c}`, { meses: meses as CodigoPlan['meses'], nota: String(d.nota ?? ''), creado: Date.now(), usado: false, usadoPor: null, grupoId: null, grupoNombre: null, usadoEn: null } satisfies CodigoPlan);
+      return { codigos };
+    },
+    canjearCodigo(d) {
+      const uid = yo();
+      const g = leerDoc(`groups/${d.grupoId}`) as Grupo | undefined;
+      if (!g || !g.miembros.includes(uid)) throw new ErrorStoica('No estás en este grupo.', 'permission-denied');
+      const cod = normalizarCodigoPlan(String(d.codigo ?? ''));
+      if (!esCodigoPlan(cod)) throw new ErrorStoica('Ese código no es válido. Revisá que esté bien escrito.', 'not-found');
+      const k = leerDoc(`codigos/${cod}`) as CodigoPlan | undefined;
+      if (!k) throw new ErrorStoica('Ese código no existe.', 'not-found');
+      if (k.usado) throw new ErrorStoica('Ese código ya se usó.', 'not-found');
+      const hasta = extenderPlan(g.premiumHasta, Date.now(), k.meses);
+      escribir(`groups/${d.grupoId}`, { premiumHasta: hasta }, true);
+      escribir(`codigos/${cod}`, { usado: true, usadoPor: uid, grupoId: d.grupoId, grupoNombre: g.nombre, usadoEn: Date.now() }, true);
+      return { hasta, meses: k.meses };
+    },
+    subirFotoDesafio(d) {
+      const uid = yo();
+      const g = leerDoc(`groups/${d.grupoId}`) as Grupo | undefined;
+      if (!g || !g.miembros.includes(uid)) throw new ErrorStoica('No estás en este grupo.', 'permission-denied');
+      if (estadoPlan(g.premiumHasta, Date.now()).estado !== 'activo') throw new ErrorStoica('El grupo no tiene el plan con fotos activo.', 'failed-precondition');
+      if (!leerDoc(`groups/${d.grupoId}/challenges/${d.desafioId}/progress/${uid}`)) throw new ErrorStoica('Sumate al desafío para subir fotos.', 'permission-denied');
+      const dia = claveDia(new Date(), 'America/Asuncion');
+      const perfil = leerDoc(`users/${uid}`) as Partial<Perfil> | undefined;
+      escribir(`groups/${d.grupoId}/challenges/${d.desafioId}/posts/${idFoto(uid, dia)}`, {
+        de: uid,
+        nombre: perfil?.nombre ?? '',
+        tipo: 'foto',
+        texto: String(d.texto ?? '').slice(0, 280),
+        dia,
+        fotoUrl: `data:image/jpeg;base64,${d.foto}`,
+        miniUrl: `data:image/jpeg;base64,${d.mini}`,
+        rutas: [],
+        creado: Date.now(),
+        actualizado: Date.now(),
+        actualizadoPor: 'servidor',
+      });
+      return { ok: true };
+    },
+    reportarPublicacion(d) {
+      const ruta = `groups/${d.grupoId}/challenges/${d.desafioId}/posts/${d.publicacionId}`;
+      const p = leerDoc(ruta) as Record<string, unknown> | undefined;
+      if (!p) throw new ErrorStoica('Esa publicación ya no existe.', 'not-found');
+      escribir(`reportes/${ruta.replace(/\//g, '_')}`, { ruta, grupoNombre: (leerDoc(`groups/${d.grupoId}`) as unknown as Grupo).nombre, autor: p.nombre, autorUid: p.de, tipo: p.tipo, texto: p.texto, miniUrl: p.miniUrl ?? null, fotoUrl: p.fotoUrl ?? null, motivo: String(d.motivo ?? ''), reportadoPor: yo(), creado: Date.now() });
+      return { ok: true };
+    },
+    adminResolverReporte(d) {
+      if (!esAdmin()) throw new ErrorStoica('Solo el admin puede hacer esto.', 'permission-denied');
+      const r = leerDoc(`reportes/${d.reporteId}`) as { ruta: string } | undefined;
+      if (r && d.borrar === true) escribir(r.ruta, null);
+      escribir(`reportes/${d.reporteId}`, null);
+      return { ok: true };
     },
     probarNotificacion() {
       return { enviados: 1, dispositivos: 1 };

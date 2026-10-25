@@ -340,6 +340,64 @@ describe('groups · comunidad', () => {
   });
 });
 
+describe('plan con fotos y chat', () => {
+  const grupo = (extra: Record<string, unknown> = {}) => ({ nombre: 'Pórtico', creador: 'ana', codigo: 'STOA2026', miembros: ['ana', 'beto', 'carla'], creado: 1, ...extra });
+  const desafio = { titulo: '21 días', virtud: 'sabiduria', duracion: 21, meta: 18, inicio: HOY, creador: 'ana', actualizado: 1, actualizadoPor: 'ana' };
+  const progreso = (uid: string) => ({ nombre: uid, habitId: 'h1', cumplidos: 1, actualizado: 1, actualizadoPor: uid });
+  const mensaje = (uid: string, extra: Record<string, unknown> = {}) => ({ de: uid, nombre: uid, tipo: 'texto', texto: '¡Vamos!', dia: HOY, creado: ahora(), actualizado: ahora(), actualizadoPor: uid, ...extra });
+  const ruta = 'groups/g1/challenges/c1/posts';
+
+  beforeEach(async () => {
+    await sembrar('groups/g1/challenges/c1', desafio);
+    await sembrar('groups/g1/challenges/c1/progress/ana', progreso('ana'));
+    await sembrar('groups/g1/challenges/c1/progress/beto', progreso('beto'));
+  });
+
+  it('con el plan activo escriben quienes se sumaron; leen todos los integrantes', async () => {
+    await sembrar('groups/g1', grupo({ premiumHasta: Date.now() + 864e5 }));
+    await assertSucceeds(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
+    await assertSucceeds(getDoc(doc(usuario('carla'), `${ruta}/m1`)));
+    await assertFails(getDoc(doc(usuario('dani'), `${ruta}/m1`)));
+    // carla está en el grupo pero no en el desafío
+    await assertFails(setDoc(doc(usuario('carla'), `${ruta}/m2`), mensaje('carla')));
+    // nadie escribe en nombre de otro, ni fotos, ni textos largos, ni campos de más
+    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('ana')));
+    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { tipo: 'foto' })));
+    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { texto: 'x'.repeat(281) })));
+    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { fotoUrl: 'https://otro.sitio/x.jpg' })));
+    // no se edita; se borra solo lo propio
+    await assertFails(updateDoc(doc(usuario('ana'), `${ruta}/m1`), { texto: 'otro' }));
+    await assertFails(deleteDoc(doc(usuario('beto'), `${ruta}/m1`)));
+    await assertSucceeds(deleteDoc(doc(usuario('ana'), `${ruta}/m1`)));
+  });
+
+  it('sin plan o vencido no se puede escribir', async () => {
+    await sembrar('groups/g1', grupo());
+    await assertFails(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
+    await sembrar('groups/g1', grupo({ premiumHasta: Date.now() - 1000 }));
+    await assertFails(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
+  });
+
+  it('el plan, los códigos y los reportes no se tocan desde la app', async () => {
+    await sembrar('groups/g1', grupo());
+    await assertFails(updateDoc(doc(usuario('ana'), 'groups/g1'), { premiumHasta: Date.now() + 365 * 864e5 }));
+    await sembrar('codigos/STOA-AAAA-BBBB', { meses: 1, usado: false });
+    await assertFails(getDoc(doc(usuario('ana'), 'codigos/STOA-AAAA-BBBB')));
+    await assertFails(setDoc(doc(usuario('ana'), 'codigos/STOA-CCCC-DDDD'), { meses: 12, usado: false }));
+    await assertSucceeds(getDoc(doc(usuario('jefa', 'admin'), 'codigos/STOA-AAAA-BBBB')));
+    await assertFails(setDoc(doc(usuario('jefa', 'admin'), 'codigos/STOA-CCCC-DDDD'), { meses: 12, usado: false }));
+    await sembrar('reportes/r1', { ruta: 'x' });
+    await assertFails(getDoc(doc(usuario('ana'), 'reportes/r1')));
+    await assertSucceeds(getDoc(doc(usuario('jefa', 'admin'), 'reportes/r1')));
+  });
+
+  it('días de espera: los edita solo el admin, de 0 a 60', async () => {
+    await assertSucceeds(getDoc(doc(usuario('ana'), 'config/plan')));
+    await assertFails(setDoc(doc(usuario('ana'), 'config/plan'), { diasGracia: 30 }));
+    await assertSucceeds(setDoc(doc(usuario('jefa', 'admin'), 'config/plan'), { diasGracia: 10 }));
+  });
+});
+
 describe('protección contra abuso', () => {
   it('no acepta registros con fechas lejanas o inventadas', async () => {
     const db = usuario('ana');

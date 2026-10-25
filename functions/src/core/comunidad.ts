@@ -24,6 +24,13 @@ export interface Grupo {
   codigo: string;
   miembros: string[];
   creado: number;
+  /** Plan con fotos y chat (lo escribe el servidor al canjear un código). */
+  premiumHasta?: number;
+  /** Marcas de avisos ya enviados para este vencimiento (servidor). */
+  avisoPorVencer?: number;
+  avisoVencido?: number;
+  avisoBorrado?: number;
+  premiumBorrado?: number;
 }
 
 /** Lo que cada uno comparte de un hábito. Nunca valores reales de medición ni el examen. */

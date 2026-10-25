@@ -9,6 +9,7 @@ import { useConsulta } from '@/data/hooks';
 import { mensajeDeError, type ConId } from '@/data/tipos';
 import { Confirmar } from '@/ui/Hoja';
 import { useAvisos } from '@/ui/avisos';
+import { AdminPlan } from './AdminPlan';
 
 type Filtro = 'todas' | 'activas7' | 'inactivas' | 'suspendidas' | 'bloqueadas';
 
@@ -240,6 +241,8 @@ export function Admin() {
           </table>
         </div>
       </div>
+
+      <AdminPlan />
 
       <Confirmar
         abierto={!!accion}

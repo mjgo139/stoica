@@ -149,6 +149,14 @@ export function sembrarEjemplo(escribir: Escribir, crearCuenta: CrearCuenta) {
   escribir(`groups/${g}/challenges/c1`, { titulo: '21 días meditando', virtud: 'sabiduria', duracion: 21, meta: 18, inicio: sumarDias(hoy, -6), creador: 'u-seneca', actualizado: ahora, actualizadoPor: 'u-seneca' });
   escribir(`groups/${g}/challenges/c1/progress/u-seneca`, { nombre: 'Lucio Séneca', habitId: 'a', cumplidos: 6, actualizado: ahora, actualizadoPor: 'u-seneca' });
   escribir(`groups/${g}/challenges/c1/progress/u-epicteto`, { nombre: 'Epicteto', habitId: 'a', cumplidos: 7, actualizado: ahora, actualizadoPor: 'u-epicteto' });
+  // Plan con fotos y chat (inventado): mensajes guardados y un código sin usar para probar la activación.
+  const msj = (id: string, de: string, nombre: string, texto: string, horas: number) =>
+    escribir(`groups/${g}/challenges/c1/posts/${id}`, { de, nombre, tipo: 'texto', texto, dia: hoy, creado: ahora - horas * 36e5, actualizado: ahora - horas * 36e5, actualizadoPor: de });
+  msj('p1', 'u-seneca', 'Lucio Séneca', 'Día 7. Diez minutos antes del amanecer, sin el celular.', 5);
+  msj('p2', 'u-epicteto', 'Epicteto', 'Lo que depende de nosotros: sentarse. Lo demás llega solo.', 3);
+  escribir('codigos/STOA-PRUE-BA22', { meses: 1, nota: 'Código de prueba', creado: ahora - 864e5, usado: false, usadoPor: null, grupoId: null, grupoNombre: null, usadoEn: null });
+  escribir('codigos/STOA-USAD-AAAA', { meses: 3, nota: 'Ya usado', creado: ahora - 20 * 864e5, usado: true, usadoPor: 'u-zenon', grupoId: 'g-otro', grupoNombre: 'Jardín', usadoEn: ahora - 19 * 864e5 });
+  escribir('config/plan', { diasGracia: 7 });
   escribir(`metrics/${sumarDias(hoy, -1)}`, {
     fecha: sumarDias(hoy, -1), total: 7, activosHoy: 3, activos7: 5, activos30: 7, altasHoy: 1, altas7: 2, altas30: 5, retencion7: 75, suspendidas: 0,
     porTipo: { sino: 5, cantidad: 4, medicion: 1 }, porPlataforma: { Android: 2, iOS: 2, Windows: 2, macOS: 1 }, calculado: ahora - 864e5,

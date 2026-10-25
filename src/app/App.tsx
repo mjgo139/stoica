@@ -14,6 +14,7 @@ import { Enfoque } from '@/screens/Enfoque';
 import { Examen } from '@/screens/Examen';
 import { Comunidad, Unirse } from '@/screens/comunidad/Comunidad';
 import { Grupo } from '@/screens/comunidad/Grupo';
+import { Desafio } from '@/screens/comunidad/Desafio';
 import { Admin } from '@/screens/Admin';
 import { Cargando, PantallaError, SinConexion } from '@/screens/Estados';
 import { useEnLinea } from '@/pwa/conexion';
@@ -45,6 +46,7 @@ export function App() {
         <Route path="habitos/:id/editar" element={<Editor />} />
         <Route path="comunidad" element={<Comunidad />} />
         <Route path="comunidad/:id" element={<Grupo />} />
+        <Route path="comunidad/:id/desafio/:cid" element={<Desafio />} />
         <Route path="unirse/:codigo" element={<Unirse />} />
         <Route path="admin" element={<Admin />} />
         <Route path="tareas" element={<Tareas />} />

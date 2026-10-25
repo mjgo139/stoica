@@ -34,6 +34,11 @@ export type NombreFuncion =
   | 'adminDesbloquear'
   | 'probarNotificacion'
   | 'asegurarCuenta'
+  | 'adminCrearCodigos'
+  | 'canjearCodigo'
+  | 'subirFotoDesafio'
+  | 'reportarPublicacion'
+  | 'adminResolverReporte'
   | 'asignarRol';
 
 /**

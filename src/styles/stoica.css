@@ -338,3 +338,7 @@ button:active:not(:disabled) { transform: scale(.97); }
   .tarjetas { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; align-items: stretch; }
   .item-main:hover .nm { color: var(--gold); }
 }
+
+/* ---------- Tablas simples (Admin) ---------- */
+.tabla { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tabla td { padding: 8px 6px; border-bottom: 1px solid var(--ln2); vertical-align: middle; }

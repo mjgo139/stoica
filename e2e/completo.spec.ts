@@ -238,7 +238,7 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('button', { name: 'Recalcular métricas' }).click();
     await expect(page.getByText('Métricas actualizadas.')).toBeVisible();
     await page.getByLabel('Buscar cuentas').fill('zenon');
-    await expect(page.getByRole('row')).toHaveCount(2);
+    await expect(page.locator('table').first().getByRole('row')).toHaveCount(2);
     await page.getByRole('button', { name: 'Suspender' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Suspender' }).click();
     await expect(page.getByText('Cuenta suspendida.')).toBeVisible();
@@ -303,6 +303,60 @@ test.describe('v0.5–v1.0', () => {
     await page.getByLabel('Código de invitación').fill('XX');
     await page.getByRole('dialog').getByRole('button', { name: 'Unirme' }).click();
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('8 letras');
+  });
+
+  test('plan de fotos y chat: admin genera código, el grupo lo activa, chat y foto en el desafío', async ({ page }) => {
+    await entrarConEjemplo(page);
+    // Admin: generar un código y ver los días de espera
+    await ir(page, '/admin');
+    const plan = page.locator('[data-admin="plan"]');
+    await plan.getByLabel('Duración del código').selectOption('3');
+    await plan.getByRole('button', { name: 'Generar código' }).click();
+    const codigo = (await plan.locator('[data-codigo-nuevo]').first().textContent())!.trim();
+    expect(codigo).toMatch(/^STOA-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    await expect(plan.getByLabel('Días de espera')).toHaveValue('7');
+
+    // Grupo sin plan: el desafío muestra la invitación
+    await ir(page, '/comunidad');
+    await page.getByText('El Pórtico').click();
+    await expect(page.locator('[data-plan="sin"]')).toBeVisible();
+    await page.locator('[data-desafio="21 días meditando"]').getByRole('link', { name: /21 días meditando/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: '21 días meditando' })).toBeVisible();
+    await expect(page.locator('[data-muro="bloqueado"]')).toBeVisible();
+
+    // Código inválido y después el bueno
+    await page.locator('[data-muro="bloqueado"]').getByRole('button', { name: 'Activar con un código' }).click();
+    await page.getByLabel('Código de habilitación').fill('STOA-ZZZZ-ZZZZ');
+    await page.getByRole('dialog').getByRole('button', { name: 'Activar' }).click();
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('no existe');
+    await page.getByLabel('Código de habilitación').fill(codigo.toLowerCase());
+    await page.getByRole('dialog').getByRole('button', { name: 'Activar' }).click();
+    await expect(page.getByText(/fotos y chat activos hasta/)).toBeVisible();
+
+    // Chat: se ven los mensajes de los demás; sin sumarse no se escribe
+    await expect(page.locator('[data-muro="chat"]')).toContainText('Lo que depende de nosotros');
+    await expect(page.locator('[data-muro="chat"]')).toContainText('Sumate al desafío para escribir.');
+    await page.getByRole('button', { name: 'Sumarme' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: /Meditar/ }).click();
+    await page.getByLabel('Mensaje', { exact: true }).fill('¡Vamos, Pórtico!');
+    await page.getByRole('button', { name: 'Enviar' }).click();
+    await expect(page.locator('[data-muro="chat"]')).toContainText('¡Vamos, Pórtico!');
+
+    // Foto del día (se achica en el navegador antes de subir)
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP8z4APMOGVHbHSAEEsAROxCnMTAAAAAElFTkSuQmCC', 'base64');
+    await page.locator('[data-muro="fotos"]').getByLabel('Elegir foto').setInputFiles({ name: 'dia.png', mimeType: 'image/png', buffer: png });
+    await page.getByLabel('Comentario (opcional)').fill('Día cumplido');
+    await page.getByRole('dialog').getByRole('button', { name: 'Compartir' }).click();
+    await expect(page.locator('[data-muro="fotos"]').getByRole('button', { name: /Foto de Marco Aurelio/ })).toBeVisible();
+    await captura(page, '25-desafio-plan');
+
+    // El código ya no sirve otra vez
+    await ir(page, '/comunidad/g-portico');
+    await expect(page.locator('[data-plan="activo"]')).toBeVisible();
+    await page.locator('[data-plan="activo"]').getByRole('button', { name: 'Renovar con un código' }).click();
+    await page.getByLabel('Código de habilitación').fill(codigo);
+    await page.getByRole('dialog').getByRole('button', { name: 'Activar' }).click();
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('ya se usó');
   });
 
   test('borrar mi cuenta', async ({ page }) => {

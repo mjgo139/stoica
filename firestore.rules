@@ -290,9 +290,25 @@ service cloud.firestore {
       allow read: if true;
       allow write: if esAdmin();
     }
+    match /config/plan {
+      allow read: if true;
+      allow write: if esAdmin()
+        && nuevo().keys().hasOnly(['diasGracia'])
+        && entero(nuevo().diasGracia, 0, 60);
+    }
     match /config/{doc=**} {
       allow read: if true;
       allow write: if esAdmin();
+    }
+
+    // ---------- Plan de pago: códigos y reportes (solo el admin los lee; los escribe el servidor) ----------
+    match /codigos/{c} {
+      allow read: if esAdmin();
+      allow write: if false;
+    }
+    match /reportes/{r} {
+      allow read: if esAdmin();
+      allow write: if false;
     }
 
     // ---------- Comunidad ----------
@@ -352,6 +368,29 @@ service cloud.firestore {
         allow create: if esMiembro() && desafioValido() && nuevo().creador == request.auth.uid;
         allow update: if esMiembro() && desafioValido() && resource.data.creador == request.auth.uid && !cambiaron().hasAny(['creador']);
         allow delete: if esMiembro() && resource.data.creador == request.auth.uid;
+
+        // Fotos y mensajes (plan de pago). Los ven todos los integrantes; escriben quienes se sumaron.
+        // Las fotos las crea solo el servidor; los mensajes, la app mientras el plan esté activo.
+        match /posts/{pubId} {
+          function planActivo() {
+            return get(/databases/$(database)/documents/groups/$(gid)).data.get('premiumHasta', 0) > request.time.toMillis();
+          }
+          function participa() {
+            return exists(/databases/$(database)/documents/groups/$(gid)/challenges/$(cid)/progress/$(request.auth.uid));
+          }
+          allow read: if esMiembro();
+          allow create: if esMiembro() && planActivo() && participa()
+            && nuevo().keys().hasOnly(['de', 'nombre', 'tipo', 'texto', 'dia', 'creado', 'actualizado', 'actualizadoPor'])
+            && nuevo().de == request.auth.uid
+            && nuevo().tipo == 'texto'
+            && texto(nuevo().texto, 1, 280)
+            && texto(nuevo().nombre, 0, 40)
+            && claveDia(nuevo().dia)
+            && fechaMs(nuevo().creado)
+            && firmado(request.auth.uid);
+          allow update: if false;
+          allow delete: if esMiembro() && resource.data.de == request.auth.uid;
+        }
 
         match /progress/{pid} {
           allow read: if esMiembro();

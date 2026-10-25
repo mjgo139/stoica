@@ -15,6 +15,7 @@ import { Confirmar, Hoja } from '@/ui/Hoja';
 import { IconoHabito } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
+import { PanelPlan, usePlan } from './Plan';
 
 export function Grupo() {
   const { id = '' } = useParams();
@@ -28,6 +29,7 @@ export function Grupo() {
   const { datos: reacciones } = useConsulta<Reaccion>(estado ? { ruta: `groups/${id}/reactions`, filtros: [['dia', '==', hoy]] } : null);
   const [hoja, setHoja] = useState<'compartir' | 'desafio' | null>(null);
   const [saliendo, setSaliendo] = useState(false);
+  const plan = usePlan(estado?.grupo);
 
   if (!estado) {
     return listo ? (
@@ -112,9 +114,10 @@ export function Grupo() {
             {[...desafios]
               .sort((a, b) => (a.inicio < b.inicio ? 1 : -1))
               .map((d) => (
-                <TarjetaDesafio key={d.id} d={d} grupoId={id} hoy={hoy} />
+                <TarjetaDesafio key={d.id} d={d} grupoId={id} hoy={hoy} conPlan={plan.estado === 'activo' || plan.estado === 'gracia'} />
               ))}
           </div>
+          <PanelPlan grupoId={id} plan={plan} />
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
               <span>Invitación</span>
@@ -257,7 +260,8 @@ function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string; nombre
   );
 }
 
-function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId: string; hoy: string }) {
+/** Un desafío: ranking y acciones. En el grupo lleva un enlace a su pantalla; en la pantalla, `completo`. */
+export function TarjetaDesafio({ d, grupoId, hoy, completo = false, conPlan = false, alBorrar }: { d: ConId<Desafio>; grupoId: string; hoy: string; completo?: boolean; conPlan?: boolean; alBorrar?: () => void }) {
   const uid = uidActual();
   const habitos = useHabitosActivos();
   const progresos = useConsulta<Progreso>({ ruta: `groups/${grupoId}/challenges/${d.id}/progress` }).datos;
@@ -302,9 +306,15 @@ function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId: strin
   return (
     <div data-desafio={d.titulo} style={{ padding: '12px 0', borderBottom: '1px solid var(--ln2)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <strong className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16 }}>
-          {d.titulo}
-        </strong>
+        {completo ? (
+          <strong className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16 }}>
+            Ranking
+          </strong>
+        ) : (
+          <Link to={`/comunidad/${grupoId}/desafio/${d.id}`} className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16, fontWeight: 700, textDecoration: 'none' }}>
+            {d.titulo} ›
+          </Link>
+        )}
         <span className="cap mu2" style={{ fontSize: 10 }}>
           {e.estado === 'activo' ? `Día ${e.dia} de ${d.duracion}` : e.estado === 'proximo' ? `Empieza en ${e.quedan} días` : 'Terminado'}
         </span>
@@ -323,7 +333,12 @@ function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId: strin
           </span>
         </div>
       ))}
-      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {!completo && (
+          <Link to={`/comunidad/${grupoId}/desafio/${d.id}`} className="link" style={{ paddingLeft: 0, textDecoration: 'none' }}>
+            {conPlan ? 'Fotos y chat' : 'Abrir'}
+          </Link>
+        )}
         {e.estado !== 'terminado' && (
           <button type="button" className="link" style={{ paddingLeft: 0 }} onClick={() => setEligiendo(true)}>
             {mio ? 'Cambiar mi hábito' : 'Sumarme'}
@@ -375,7 +390,7 @@ function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId: strin
           </button>
         )}
       </Hoja>
-      <Confirmar abierto={borrando} titulo="¿Borrar el desafío?" texto="Se borra para todo el grupo." accion="Borrar" peligro alCerrar={() => setBorrando(false)} alConfirmar={() => (setBorrando(false), borrarDesafio(grupoId, d.id))} />
+      <Confirmar abierto={borrando} titulo="¿Borrar el desafío?" texto="Se borra para todo el grupo, con sus fotos y mensajes." accion="Borrar" peligro alCerrar={() => setBorrando(false)} alConfirmar={() => (setBorrando(false), borrarDesafio(grupoId, d.id), alBorrar?.())} />
     </div>
   );
 }
