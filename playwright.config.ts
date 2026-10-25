@@ -10,7 +10,8 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   fullyParallel: false,
-  reporter: [['list']],
+  // En GitHub, los errores quedan también como anotaciones del run (se leen sin bajar los registros).
+  reporter: process.env.CI ? [['list'], ['github']] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:4173',
     locale: 'es-PY',
