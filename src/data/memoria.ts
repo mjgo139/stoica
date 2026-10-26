@@ -307,6 +307,16 @@ export function crearDriverMemoria(): Driver {
       const v = validarCorreo(correo);
       if (!v.ok) throw new ErrorStoica(v.error, 'auth/invalid-email');
     },
+    async cambiarContrasena(actual, nueva) {
+      await espera();
+      const uid = yo();
+      const c = [...cuentas.values()].find((x) => x.uid === uid);
+      if (!c || !c.contrasena) throw new ErrorStoica('Tu cuenta no usa contraseña.', 'auth/operation-not-allowed');
+      if (c.contrasena !== actual) throw new ErrorStoica('La contraseña actual no es correcta.', 'auth/wrong-password');
+      const v = validarContrasena(nueva);
+      if (!v.ok) throw new ErrorStoica(v.error, 'auth/weak-password');
+      c.contrasena = nueva;
+    },
     async salir() {
       await espera(40);
       sesion = null;
@@ -358,7 +368,10 @@ export function crearDriverMemoria(): Driver {
     },
     async guardar(ruta, datos, opciones) {
       yo();
-      escribir(ruta, datos, !!opciones?.combinar);
+      // Igual que en Firebase: el `id` de un documento leído no se guarda como campo.
+      const { id: _id, ...sinId } = datos as typeof datos & { id?: unknown };
+      void _id;
+      escribir(ruta, sinId, !!opciones?.combinar);
     },
     async borrar(ruta) {
       yo();

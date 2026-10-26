@@ -5,6 +5,9 @@ import { initializeApp, type FirebaseApp } from 'firebase/app';
 import {
   browserPopupRedirectResolver,
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
   GoogleAuthProvider,
   indexedDBLocalPersistence,
   browserLocalPersistence,
@@ -41,6 +44,14 @@ import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import type { Perfil } from '@core/perfil';
 import { traducirError } from './errores';
 import { ErrorStoica, type Consulta, type Driver, type UsuarioSesion } from './tipos';
+
+/** Los documentos leídos traen su `id`; no es un campo guardado y las reglas lo rechazan. */
+function sinId<T extends object>(datos: T): T {
+  if (!('id' in datos)) return datos;
+  const { id: _id, ...resto } = datos as T & { id?: unknown };
+  void _id;
+  return resto as T;
+}
 
 /** Espera al servidor como mucho unos segundos: sin conexión, la escritura queda en cola y se envía sola. */
 const sinBloquear = (p: Promise<unknown>, ms = 3500) => Promise.race([p, new Promise((r) => setTimeout(r, ms))]);
@@ -127,6 +138,18 @@ export function crearDriverFirebase(): Driver {
     recuperarContrasena: (correo) => envolver(async () => {
       await sendPasswordResetEmail(auth, correo.trim());
     }),
+    async cambiarContrasena(actual, nueva) {
+      const u = auth.currentUser;
+      if (!u?.email) throw new ErrorStoica('Tu cuenta no usa contraseña.', 'auth/operation-not-allowed');
+      try {
+        await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, actual));
+      } catch (e) {
+        const c = (e as { code?: string }).code;
+        if (c === 'auth/invalid-credential' || c === 'auth/wrong-password') throw new ErrorStoica('La contraseña actual no es correcta.', 'auth/wrong-password');
+        throw traducirError(e);
+      }
+      await envolver(() => updatePassword(u, nueva));
+    },
     salir: () => envolver(async () => {
       nombrePendiente = '';
       await signOut(auth);
@@ -181,7 +204,7 @@ export function crearDriverFirebase(): Driver {
       }
     },
     guardar: (ruta, datos, opciones) => envolver(async () => {
-      await sinBloquear(setDoc(doc(db, ruta), datos, { merge: !!opciones?.combinar }));
+      await sinBloquear(setDoc(doc(db, ruta), sinId(datos), { merge: !!opciones?.combinar }));
     }),
     borrar: (ruta) => envolver(async () => {
       await sinBloquear(deleteDoc(doc(db, ruta)));

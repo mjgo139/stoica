@@ -53,6 +53,8 @@ export interface Driver {
   registrar(nombre: string, correo: string, contrasena: string): Promise<void>;
   entrarConGoogle(): Promise<void>;
   recuperarContrasena(correo: string): Promise<void>;
+  /** Cambia la contraseña de quien entra con correo. Pide la actual para confirmar que es la persona. */
+  cambiarContrasena(actual: string, nueva: string): Promise<void>;
   salir(): Promise<void>;
   observarPerfil(uid: string, cb: (p: Perfil | null) => void, alFallar: (e: unknown) => void): Cancelar;
   crearPerfil(uid: string, perfil: Perfil): Promise<void>;

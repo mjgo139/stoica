@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { CambiosPerfil } from '@core/perfil';
 import { inicial } from '@core/perfil';
-import { limpiarNombre, validarNombre, type Tema } from '@core/validaciones';
+import { limpiarNombre, validarContrasena, validarNombre, type Tema } from '@core/validaciones';
 import { useSesion } from '@/app/sesion';
 import { esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
@@ -37,6 +37,7 @@ export function Perfil() {
   const [editando, setEditando] = useState(false);
   const [nombre, setNombre] = useState(perfil.nombre);
   const [error, setError] = useState('');
+  const [cambiandoClave, setCambiandoClave] = useState(false);
 
   const guardarNombre = (e: FormEvent) => {
     e.preventDefault();
@@ -127,6 +128,12 @@ export function Perfil() {
             <span>Sesión</span>
           </div>
           <BotonInstalar estilo="fila" />
+          {usuario.proveedor !== 'google' && (
+            <button type="button" className="fila" onClick={() => setCambiandoClave(true)}>
+              <Icono nombre="llave" />
+              <span style={{ flex: 1 }}>Cambiar contraseña</span>
+            </button>
+          )}
           <button type="button" className="fila" onClick={salir} style={{ color: 'var(--cor)' }}>
             <Icono nombre="salir" />
             <span style={{ flex: 1 }}>Cerrar sesión</span>
@@ -152,6 +159,82 @@ export function Perfil() {
           </button>
         </form>
       </Hoja>
+      <HojaContrasena abierta={cambiandoClave} alCerrar={() => setCambiandoClave(false)} correo={usuario.correo} />
     </div>
+  );
+}
+
+/** Cambiar la contraseña: pide la actual (Firebase lo exige para confirmar que sos vos) y la nueva dos veces. */
+function HojaContrasena({ abierta, alCerrar, correo }: { abierta: boolean; alCerrar: () => void; correo: string }) {
+  const mostrar = useAvisos((s) => s.mostrar);
+  const [actual, setActual] = useState('');
+  const [nueva, setNueva] = useState('');
+  const [repetir, setRepetir] = useState('');
+  const [error, setError] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+
+  const cerrar = () => {
+    setActual('');
+    setNueva('');
+    setRepetir('');
+    setError('');
+    alCerrar();
+  };
+
+  const guardar = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!actual) return setError('Escribí tu contraseña actual.');
+    const v = validarContrasena(nueva);
+    if (!v.ok) return setError(v.error);
+    if (nueva !== repetir) return setError('Las dos contraseñas nuevas no coinciden.');
+    if (nueva === actual) return setError('La nueva tiene que ser distinta a la actual.');
+    setOcupado(true);
+    try {
+      await (await obtenerDriver()).cambiarContrasena(actual, nueva);
+      mostrar('Contraseña cambiada.');
+      cerrar();
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const olvide = async () => {
+    try {
+      await (await obtenerDriver()).recuperarContrasena(correo);
+      mostrar(`Te mandamos un correo a ${correo} para crear una contraseña nueva.`);
+      cerrar();
+    } catch (err) {
+      setError(mensajeDeError(err));
+    }
+  };
+
+  return (
+    <Hoja titulo="Cambiar contraseña" abierta={abierta} alCerrar={cerrar}>
+      <form onSubmit={guardar} noValidate>
+        <label className="lbl cap" htmlFor="clave-actual">
+          Contraseña actual
+        </label>
+        <input id="clave-actual" className="inp" type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} />
+        <label className="lbl cap" htmlFor="clave-nueva" style={{ marginTop: 14 }}>
+          Contraseña nueva
+        </label>
+        <input id="clave-nueva" className="inp" type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} />
+        <label className="lbl cap" htmlFor="clave-repetir" style={{ marginTop: 14 }}>
+          Repetí la nueva
+        </label>
+        <input id="clave-repetir" className="inp" type="password" autoComplete="new-password" value={repetir} onChange={(e) => setRepetir(e.target.value)} />
+        <div className="err" role="alert">
+          {error}
+        </div>
+        <button className="btn" type="submit" style={{ marginTop: 8 }} disabled={ocupado}>
+          {ocupado ? 'Guardando…' : 'Guardar contraseña'}
+        </button>
+        <button type="button" className="ghost" style={{ width: '100%', marginTop: 10 }} onClick={olvide}>
+          No recuerdo la actual: mandame un correo
+        </button>
+      </form>
+    </Hoja>
   );
 }

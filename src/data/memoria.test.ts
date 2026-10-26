@@ -22,6 +22,17 @@ describe('driver en memoria (modo prueba)', () => {
     expect(sesiones.at(-1)).toBeNull();
   });
 
+  it('cambia la contraseña solo con la actual correcta', async () => {
+    const d = crearDriverMemoria();
+    await d.registrar('Cleantes', 'cleantes@assos.gr', 'secreto1');
+    await expect(d.cambiarContrasena('mala', 'nueva22')).rejects.toThrow('La contraseña actual no es correcta.');
+    await expect(d.cambiarContrasena('secreto1', '123')).rejects.toBeInstanceOf(ErrorStoica);
+    await d.cambiarContrasena('secreto1', 'nueva22');
+    await d.salir();
+    await expect(d.entrar('cleantes@assos.gr', 'secreto1')).rejects.toBeInstanceOf(ErrorStoica);
+    await d.entrar('cleantes@assos.gr', 'nueva22');
+  });
+
   it('rechaza credenciales malas y correos repetidos', async () => {
     const d = crearDriverMemoria();
     await expect(d.entrar('prueba@stoica.app', 'mal')).rejects.toBeInstanceOf(ErrorStoica);

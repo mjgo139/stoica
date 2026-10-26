@@ -231,6 +231,31 @@ test.describe('v0.5–v1.0', () => {
     await captura(page, '18-perfil');
   });
 
+  test('perfil: cambiar la contraseña', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await ir(page, '/perfil');
+    await page.getByRole('button', { name: 'Cambiar contraseña' }).click();
+    const hoja = page.getByRole('dialog', { name: 'Cambiar contraseña' });
+    await hoja.getByLabel('Contraseña actual').fill('equivocada');
+    await hoja.getByLabel('Contraseña nueva').fill('estoico2');
+    await hoja.getByLabel('Repetí la nueva').fill('estoico2');
+    await hoja.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await expect(hoja.getByRole('alert')).toHaveText('La contraseña actual no es correcta.');
+    await hoja.getByLabel('Contraseña actual').fill('stoica');
+    await hoja.getByLabel('Repetí la nueva').fill('otra');
+    await hoja.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await expect(hoja.getByRole('alert')).toHaveText('Las dos contraseñas nuevas no coinciden.');
+    await hoja.getByLabel('Repetí la nueva').fill('estoico2');
+    await hoja.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await expect(page.getByText('Contraseña cambiada.')).toBeVisible();
+    // Sale y entra con la nueva
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await page.getByLabel('Correo').fill('prueba@stoica.app');
+    await page.getByLabel('Contraseña').fill('estoico2');
+    await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();
+  });
+
   test('admin: métricas, cuentas, suspender', async ({ page }) => {
     await entrarConEjemplo(page);
     await ir(page, '/admin');
