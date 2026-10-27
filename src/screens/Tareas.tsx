@@ -59,6 +59,7 @@ export function Tareas() {
   const [editando, setEditando] = useState<ConId<Tarea> | 'nueva' | null>(null);
   const [nuevoProyecto, setNuevoProyecto] = useState(false);
   const [verTerminados, setVerTerminados] = useState(false);
+  const [nuevaEnProyecto, setNuevaEnProyecto] = useState<string | null>(null);
   const navegar = useNavigate();
 
   const hecha = (t: Tarea, dia: string) => tareaHecha(t, dia, hechas);
@@ -74,91 +75,66 @@ export function Tareas() {
 
   const fila = (t: ConId<Tarea>, dia: string) => <FilaTarea key={t.id} t={t} dia={dia} hoy={hoy} alEditar={() => setEditando(t)} />;
 
-  const tarjetaProyecto = (p: ConId<Proyecto>) => {
-    const a = avanceProyecto(tareas.filter((t) => t.proyectoId === p.id), hoy, hechas);
-    const pct = a.total ? Math.round((a.hechas / a.total) * 100) : 0;
-    return (
-      <Link key={p.id} to={`/tareas/proyecto/${p.id}`} className="srow" style={{ display: 'block' }}>
-        <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <strong className={`v-${p.virtud} vt`} style={{ flex: 1, fontSize: 15.5 }}>
-            {p.nombre}
-          </strong>
-          <span className="num mu2" style={{ fontSize: 13 }}>
-            {a.hechas}/{a.total}
-          </span>
-        </span>
-        <span className="barra-prog" style={{ display: 'block', marginTop: 8 }}>
-          <i style={{ width: `${pct}%`, background: a.total && a.hechas === a.total ? 'var(--ok)' : 'var(--gold)' }} />
-        </span>
-        {p.fechaLimite && (
-          <span className="mu2" style={{ display: 'block', fontSize: 12, fontWeight: 600, marginTop: 6, color: p.fechaLimite < hoy && a.hechas < a.total ? 'var(--miss)' : undefined }}>
-            Hasta el {fechaCorta(p.fechaLimite)}
-          </span>
-        )}
-      </Link>
-    );
-  };
+  const tarjetaProyecto = (p: ConId<Proyecto>) => <DesgloseProyecto key={p.id} p={p} hoy={hoy} alEditar={(t) => setEditando(t)} alAgregar={() => setNuevaEnProyecto(p.id)} />;
 
   return (
     <div className="entra">
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
         <div style={{ flex: 1, minWidth: 200 }}>
           <div className="cap gold">Lo que hay que hacer</div>
           <h1 className="titulo">Tareas</h1>
           <p className="lead">Ocupate de lo que depende de ti. Lo demás, soltalo.</p>
         </div>
-        <button type="button" className="btn" style={{ width: 'auto', padding: '0 24px' }} onClick={() => setEditando('nueva')}>
-          <Icono nombre="mas" tam={16} /> Nueva tarea
-        </button>
+        <div className="acciones-tareas">
+          <Link to="/tareas/enfoque" className="btn btn-enfoque v-sabiduria" aria-label="Enfoque: temporizador para una tarea, un descanso o meditar">
+            <Icono nombre="enfoque" tam={18} /> Enfoque
+          </Link>
+          <button type="button" className="btn" style={{ width: 'auto', padding: '0 24px' }} onClick={() => setEditando('nueva')}>
+            <Icono nombre="mas" tam={16} /> Nueva tarea
+          </button>
+        </div>
       </div>
 
       <div className="cols c64" style={{ marginTop: 24 }}>
-        <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Hoy · {fechaLargaDeClave(hoy)}</span>
-          </div>
-          {dependen.length === 0 && <p className="vacio-mini">Nada pendiente para hoy que dependa de vos.</p>}
-          {dependen.map((t) => fila(t, hoy))}
-          {vencidas.length > 0 && (
-            <>
-              <div className="grp cap" style={{ color: 'var(--miss)' }}>
-                <span>Atrasadas</span>
-              </div>
-              {vencidas.map((t) => fila(t, t.fecha!))}
-            </>
-          )}
-          {proximas.length > 0 && (
-            <>
-              <div className="grp cap">
-                <span>Próximas</span>
-              </div>
-              {proximas.map((t) => fila(t, t.fecha!))}
-            </>
-          )}
-          {sinFecha.length > 0 && (
-            <>
-              <div className="grp cap">
-                <span>Sin fecha</span>
-              </div>
-              {sinFecha.map((t) => fila(t, hoy))}
-            </>
-          )}
-        </div>
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
-          <Link to="/tareas/enfoque" className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit' }}>
-            <span className="hic v-sabiduria" style={{ width: 44, height: 44 }}>
-              <Icono nombre="enfoque" tam={22} />
-            </span>
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span className="nm">Enfoque</span>
-              <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500 }}>
-                Temporizador para una tarea, un descanso o meditar.
-              </span>
-            </span>
-            <span className="gold" style={{ fontSize: 22 }} aria-hidden="true">
-              ›
-            </span>
-          </Link>
+          <div className="panel">
+            <div className="grp cap" style={{ marginTop: 0 }}>
+              <span>Hoy · {fechaLargaDeClave(hoy)}</span>
+            </div>
+            {dependen.length === 0 && <p className="vacio-mini">Nada pendiente para hoy que dependa de vos.</p>}
+            {dependen.map((t) => fila(t, hoy))}
+            {vencidas.length > 0 && (
+              <>
+                <div className="grp cap" style={{ color: 'var(--miss)' }}>
+                  <span>Atrasadas</span>
+                </div>
+                {vencidas.map((t) => fila(t, t.fecha!))}
+              </>
+            )}
+            {proximas.length > 0 && (
+              <>
+                <div className="grp cap">
+                  <span>Próximas</span>
+                </div>
+                {proximas.map((t) => fila(t, t.fecha!))}
+              </>
+            )}
+            {sinFecha.length > 0 && (
+              <>
+                <div className="grp cap">
+                  <span>Sin fecha</span>
+                </div>
+                {sinFecha.map((t) => fila(t, hoy))}
+              </>
+            )}
+          </div>
           <div className="panel">
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
@@ -179,6 +155,8 @@ export function Tareas() {
               </>
             )}
           </div>
+        </div>
+        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
               <span>No depende de ti</span>
@@ -191,7 +169,15 @@ export function Tareas() {
             ) : (
               noDependen.map((t) => (
                 <button key={t.id} type="button" className="srow" onClick={() => setEditando(t)}>
-                  <span className="rombo" style={{ width: 10, height: 10, borderColor: 'var(--mu3)', margin: '0 6px' }} />
+                  <span
+                    className="rombo"
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderColor: 'var(--mu3)',
+                      margin: '0 6px',
+                    }}
+                  />
                   <span style={{ flex: 1, fontWeight: 600 }}>{t.titulo}</span>
                   <span className="cap mu2" style={{ fontSize: 10 }}>
                     Soltar
@@ -204,7 +190,87 @@ export function Tareas() {
       </div>
 
       <EditorTarea tarea={editando === 'nueva' ? null : editando} abierta={editando !== null} alCerrar={() => setEditando(null)} hoy={hoy} />
+      <EditorTarea key={nuevaEnProyecto ?? 'ninguno'} tarea={null} abierta={nuevaEnProyecto !== null} alCerrar={() => setNuevaEnProyecto(null)} hoy={hoy} proyectoFijo={nuevaEnProyecto ?? undefined} />
       <EditorProyecto proyecto={null} abierto={nuevoProyecto} alCerrar={() => setNuevoProyecto(false)} alCrear={(id) => navegar(`/tareas/proyecto/${id}`)} />
+    </div>
+  );
+}
+
+/** Proyecto desplegado: avance, tareas pendientes (se marcan acá mismo) y las hechas a un toque. */
+function DesgloseProyecto({ p, hoy, alEditar, alAgregar }: { p: ConId<Proyecto>; hoy: string; alEditar: (t: ConId<Tarea>) => void; alAgregar: () => void }) {
+  const todas = useDatos((s) => s.tareas);
+  const hechas = useDatos((s) => s.tareasHechas);
+  const [abierto, setAbierto] = useState(!p.archivado);
+  const [verHechas, setVerHechas] = useState(false);
+  const tareas = todas.filter((t) => t.proyectoId === p.id);
+  const diaDe = (t: Tarea) => (t.repetir === 'diaria' ? hoy : (t.fecha ?? hoy));
+  const orden = (a: Tarea, b: Tarea) => (a.fecha ?? '9999').localeCompare(b.fecha ?? '9999') || a.creado - b.creado;
+  const pendientes = tareas.filter((t) => !tareaHecha(t, diaDe(t), hechas)).sort(orden);
+  const listas = tareas.filter((t) => tareaHecha(t, diaDe(t), hechas)).sort(orden);
+  const a = avanceProyecto(tareas, hoy, hechas);
+  const pct = a.total ? Math.round((a.hechas / a.total) * 100) : 0;
+  const completo = a.total > 0 && a.hechas === a.total;
+  return (
+    <div className="desglose" data-proyecto={p.nombre}>
+      <button type="button" className="desglose-cab" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
+        <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <strong className={`v-${p.virtud} vt`} style={{ flex: 1, fontSize: 15.5, textAlign: 'left' }}>
+            {p.nombre}
+          </strong>
+          <span className="num mu2" style={{ fontSize: 13 }}>
+            {a.hechas}/{a.total}
+          </span>
+          <span className={`flecha ${abierto ? 'abierta' : ''}`} aria-hidden="true">
+            ›
+          </span>
+        </span>
+        <span className="barra-prog" style={{ display: 'block', marginTop: 8 }}>
+          <i
+            style={{
+              width: `${pct}%`,
+              background: completo ? 'var(--ok)' : 'var(--gold)',
+            }}
+          />
+        </span>
+        <span
+          className="mu2"
+          style={{
+            display: 'block',
+            fontSize: 12,
+            fontWeight: 600,
+            marginTop: 6,
+            textAlign: 'left',
+            color: p.fechaLimite && p.fechaLimite < hoy && !completo ? 'var(--miss)' : undefined,
+          }}
+        >
+          {a.total === 0 ? 'Sin tareas todavía' : completo ? 'Todo hecho' : `${pct}% · faltan ${a.total - a.hechas}`}
+          {p.fechaLimite ? ` · hasta el ${fechaCorta(p.fechaLimite)}` : ''}
+        </span>
+      </button>
+      {abierto && (
+        <div className="desglose-cuerpo">
+          {pendientes.map((t) => (
+            <FilaTarea key={t.id} t={t} dia={diaDe(t)} hoy={hoy} alEditar={() => alEditar(t)} conProyecto={false} />
+          ))}
+          {pendientes.length === 0 && a.total > 0 && <p className="vacio-mini">No quedan tareas pendientes.</p>}
+          {verHechas && listas.map((t) => <FilaTarea key={t.id} t={t} dia={diaDe(t)} hoy={hoy} alEditar={() => alEditar(t)} conProyecto={false} />)}
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
+            {!p.archivado && (
+              <button type="button" className="link" style={{ paddingLeft: 0 }} onClick={alAgregar}>
+                + Tarea
+              </button>
+            )}
+            {listas.length > 0 && (
+              <button type="button" className="link" style={{ paddingLeft: 0 }} onClick={() => setVerHechas(!verHechas)}>
+                {verHechas ? 'Ocultar hechas' : `Ver hechas (${listas.length})`}
+              </button>
+            )}
+            <Link to={`/tareas/proyecto/${p.id}`} className="link" style={{ paddingLeft: 0, paddingRight: 0, marginLeft: 'auto' }}>
+              Abrir proyecto ›
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -395,7 +461,14 @@ export function EditorProyecto({ proyecto, abierto, alCerrar, alCrear }: { proye
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
     if (!proyecto && total >= LIMITES_ABUSO.proyectosMax) return setError(`Podés tener hasta ${LIMITES_ABUSO.proyectosMax} proyectos.`);
-    const p = { id: proyecto?.id, creado: proyecto?.creado, archivado: proyecto?.archivado, nombre: limpiarNombre(nombre), virtud, fechaLimite: conFecha ? fecha : null };
+    const p = {
+      id: proyecto?.id,
+      creado: proyecto?.creado,
+      archivado: proyecto?.archivado,
+      nombre: limpiarNombre(nombre),
+      virtud,
+      fechaLimite: conFecha ? fecha : null,
+    };
     const err = validarProyecto(p);
     if (err) return setError(err);
     const id = await guardarProyecto(p);
@@ -416,7 +489,14 @@ export function EditorProyecto({ proyecto, abierto, alCerrar, alCrear }: { proye
         <div className="lbl cap">Virtud</div>
         <div className="chips">
           {VIRTUDES.map((v) => (
-            <button key={v} type="button" aria-pressed={virtud === v} className={`chip v-${v} ${virtud === v ? 'on' : ''}`} style={virtud === v ? { background: 'var(--vc)', borderColor: 'var(--vc)' } : { color: 'var(--vc)' }} onClick={() => setVirtud(v)}>
+            <button
+              key={v}
+              type="button"
+              aria-pressed={virtud === v}
+              className={`chip v-${v} ${virtud === v ? 'on' : ''}`}
+              style={virtud === v ? { background: 'var(--vc)', borderColor: 'var(--vc)' } : { color: 'var(--vc)' }}
+              onClick={() => setVirtud(v)}
+            >
               {NOMBRE_VIRTUD[v]}
             </button>
           ))}

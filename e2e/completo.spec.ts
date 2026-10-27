@@ -186,8 +186,22 @@ test.describe('v0.4 · tareas, enfoque, examen', () => {
   test('proyectos: ver avance, agregar y completar tareas, crear uno nuevo', async ({ page }) => {
     await entrarConEjemplo(page);
     await ir(page, '/tareas');
-    await expect(page.getByRole('link', { name: /Mudanza/ })).toContainText('1/3');
-    await page.getByRole('link', { name: /Mudanza/ }).click();
+    // Desglose en Tareas: las tareas del proyecto se ven y se marcan ahí mismo
+    const mudanza = page.locator('[data-proyecto="Mudanza"]');
+    await expect(mudanza).toContainText('1/3');
+    await expect(mudanza.locator('[data-tarea="Embalar la biblioteca"]')).toBeVisible();
+    await mudanza.getByRole('button', { name: 'Marcar Embalar la biblioteca' }).click();
+    await expect(mudanza).toContainText('2/3');
+    await mudanza.getByRole('button', { name: 'Ver hechas (2)' }).click();
+    await mudanza.getByRole('button', { name: 'Desmarcar Embalar la biblioteca' }).click();
+    await expect(mudanza).toContainText('1/3');
+    await mudanza.getByRole('button', { name: /^Mudanza/ }).click();
+    await expect(mudanza.locator('[data-tarea]')).toHaveCount(0);
+    await mudanza.getByRole('button', { name: /^Mudanza/ }).click();
+    await captura(page, '23-desglose');
+    // El botón de Enfoque está arriba, junto a Nueva tarea
+    await expect(page.getByRole('link', { name: /Enfoque/ })).toBeVisible();
+    await mudanza.getByRole('link', { name: 'Abrir proyecto ›' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Mudanza' })).toBeVisible();
     await page.getByRole('button', { name: 'Marcar Embalar la biblioteca' }).click();
     await expect(page.getByText('2 de 3 tareas')).toBeVisible();
