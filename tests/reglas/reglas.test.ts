@@ -146,7 +146,7 @@ describe('users/{uid}/habits', () => {
   });
   it('valida la forma del hábito', async () => {
     const db = usuario('ana');
-    for (const malo of [{ tipo: 'otro' }, { virtud: 'fama' }, { momento: 3 }, { dias: [] }, { meta: 0 }, { meta: 5000 }, { recordatorio: '7am' }, { recordatorioSlot: 200 }, { variables: [1, 2, 3, 4, 5] }, { nombre: '' }, { inicio: 'ayer' }, { actualizadoPor: 'beto' }, { secreto: 1 }]) {
+    for (const malo of [{ tipo: 'otro' }, { virtud: 'fama' }, { momento: 3 }, { dias: [] }, { meta: 0 }, { meta: 5000 }, { recordatorio: '7am' }, { recordatorioSlot: 200 }, { variables: [1, 2, 3, 4, 5, 6, 7] }, { nombre: '' }, { inicio: 'ayer' }, { actualizadoPor: 'beto' }, { secreto: 1 }]) {
       await assertFails(setDoc(doc(db, 'users/ana/habits/h1'), habito('ana', malo)));
     }
   });
