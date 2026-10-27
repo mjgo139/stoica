@@ -6,7 +6,7 @@ import { cumplido, habitoParaDesafio, LIMITES_HABITO, NOMBRE_VIRTUD, validarHabi
 import { inicial } from '@core/perfil';
 import { aRomano } from '@core/romanos';
 import { limpiarNombre } from '@core/validaciones';
-import { borrarDesafio, crearDesafio, editarDesafio, elegirCompartidos, eliminarGrupo, reaccionar, renombrarGrupo, salirDeGrupo, sumarmeADesafio, useComunidad } from '@/app/comunidad';
+import { crearDesafio, editarDesafio, elegirCompartidos, eliminarGrupo, reaccionar, renombrarGrupo, salirDeGrupo, sumarmeADesafio, useComunidad } from '@/app/comunidad';
 import { alternarSiNo, guardarHabito, registrosDe, sumar, uidActual, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
 import { HojaLista } from '@/screens/habitos/HojaLista';
 import { HojaMedir } from '@/screens/habitos/HojaMedir';
@@ -328,7 +328,12 @@ export function TarjetaDesafio({ d, grupoId, hoy, conPlan = false }: { d: ConId<
       <span style={{ display: 'flex', alignItems: 'center', marginTop: 10, gap: 8 }}>
         <span className="mu2" style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>
           {progresos.length} {progresos.length === 1 ? 'participa' : 'participan'}
-          {conPlan && ' · 📷 Fotos y chat'}
+          {conPlan && (
+            <>
+              {' · '}
+              <Icono nombre="camara" tam={14} className="uic en-linea" /> Fotos y chat
+            </>
+          )}
         </span>
         <span className="gold" style={{ fontWeight: 700, fontSize: 13.5 }}>
           {mio ? 'Abrir' : e.estado === 'terminado' ? 'Ver' : 'Ver y sumarme'} ›
@@ -338,25 +343,15 @@ export function TarjetaDesafio({ d, grupoId, hoy, conPlan = false }: { d: ConId<
   );
 }
 
-/** Dentro del desafío: ranking completo y, para quien lo creó, editar o borrar. */
-export function RankingDesafio({ d, grupoId, alBorrar }: { d: ConId<Desafio>; grupoId: string; alBorrar?: () => void }) {
+/** Dentro del desafío: ranking completo. */
+export function RankingDesafio({ d, grupoId }: { d: ConId<Desafio>; grupoId: string }) {
   const uid = uidActual();
   const progresos = useConsulta<Progreso>({ ruta: `groups/${grupoId}/challenges/${d.id}/progress` }).datos;
   const ranking = [...progresos].sort((a, b) => b.cumplidos - a.cumplidos);
-  const [menu, setMenu] = useState(false);
-  const [editando, setEditando] = useState(false);
-  const [borrando, setBorrando] = useState(false);
   return (
     <div className="panel" data-ranking>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
-          <span>Ranking · {ranking.length}</span>
-        </div>
-        {d.creador === uid && (
-          <button type="button" className="ico" aria-label="Opciones del desafío" onClick={() => setMenu(true)} style={{ fontSize: 20, fontWeight: 800, marginTop: -6 }}>
-            ⋯
-          </button>
-        )}
+      <div className="grp cap" style={{ marginTop: 0 }}>
+        <span>Ranking · {ranking.length}</span>
       </div>
       {ranking.length === 0 && <p className="vacio-mini">Nadie se sumó todavía.</p>}
       {ranking.map((p, i) => (
@@ -373,16 +368,6 @@ export function RankingDesafio({ d, grupoId, alBorrar }: { d: ConId<Desafio>; gr
           </span>
         </div>
       ))}
-      <Hoja titulo="Opciones del desafío" abierta={menu} alCerrar={() => setMenu(false)}>
-        <button type="button" className="ghost" style={{ width: '100%', marginTop: 10 }} onClick={() => (setMenu(false), setEditando(true))}>
-          Editar desafío
-        </button>
-        <button type="button" className="ghost peligro" style={{ width: '100%', marginTop: 10 }} onClick={() => (setMenu(false), setBorrando(true))}>
-          Borrar desafío
-        </button>
-      </Hoja>
-      <HojaDesafio abierta={editando} alCerrar={() => setEditando(false)} grupoId={grupoId} hoy={d.inicio} existente={d} />
-      <Confirmar abierto={borrando} titulo="¿Borrar el desafío?" texto="Se borra para todo el grupo, con sus fotos y mensajes." accion="Borrar" peligro alCerrar={() => setBorrando(false)} alConfirmar={() => (setBorrando(false), borrarDesafio(grupoId, d.id), alBorrar?.())} />
     </div>
   );
 }
@@ -535,7 +520,7 @@ function HojaCompartir({ abierta, alCerrar, grupoId, actuales }: { abierta: bool
   );
 }
 
-function HojaDesafio({ abierta, alCerrar, grupoId, hoy, existente }: { abierta: boolean; alCerrar: () => void; grupoId: string; hoy: string; existente?: ConId<Desafio> }) {
+export function HojaDesafio({ abierta, alCerrar, grupoId, hoy, existente }: { abierta: boolean; alCerrar: () => void; grupoId: string; hoy: string; existente?: ConId<Desafio> }) {
   const [titulo, setTitulo] = useState('');
   const [virtud, setVirtud] = useState<Virtud>('templanza');
   const [duracion, setDuracion] = useState('21');

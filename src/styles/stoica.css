@@ -391,3 +391,6 @@ button:active:not(:disabled) { transform: scale(.97); }
 .casilla:hover { background: var(--hover); }
 .casilla:has(input:checked) { border-color: var(--gold); }
 @media (max-width: 520px) { .acciones-tareas { width: 100%; } .acciones-tareas > * { flex: 1; padding: 0 12px !important; } }
+
+/* Ícono dentro de un texto */
+.uic.en-linea { display: inline-block; vertical-align: -2px; margin-right: 2px; }

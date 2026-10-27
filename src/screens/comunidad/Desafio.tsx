@@ -14,7 +14,8 @@ import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
-import { HojaElegirHabito, MarcaMia, RankingDesafio } from './Grupo';
+import { HojaDesafio, HojaElegirHabito, MarcaMia, RankingDesafio } from './Grupo';
+import { borrarDesafio } from '@/app/comunidad';
 import { TarjetaHabito } from '../habitos/Lista';
 import { registrosDe, useDatos } from '@/app/datos';
 import type { Desafio as TipoDesafio } from '@core/comunidad';
@@ -31,6 +32,9 @@ export function Desafio() {
   const listo = useComunidad((s) => s.listo);
   const plan = usePlan(estado?.grupo);
   const d = estado?.desafios.find((x) => x.id === cid);
+  const uid = uidActual();
+  const [editando, setEditando] = useState(false);
+  const [borrando, setBorrando] = useState(false);
 
   if (!estado || !d) {
     return listo ? (
@@ -46,6 +50,8 @@ export function Desafio() {
     ) : null;
   }
   const e = estadoDesafio(d, hoy);
+  // Edita quien creó el desafío o quien creó el grupo (para ordenar desafíos de otros).
+  const puedeEditar = d.creador === uid || estado.grupo.creador === uid;
   return (
     <div className="entra" style={{ maxWidth: 820, marginInline: 'auto' }}>
       <Link to={`/comunidad/${gid}`} className="link" style={{ paddingLeft: 0, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
@@ -54,10 +60,28 @@ export function Desafio() {
       <div className={`cap v-${d.virtud} vt`}>
         Desafío · {NOMBRE_VIRTUD[d.virtud]} · {e.estado === 'activo' ? `Día ${e.dia} de ${d.duracion}` : e.estado === 'proximo' ? `Empieza en ${e.quedan} días` : 'Terminado'}
       </div>
-      <h1 className="titulo">{d.titulo}</h1>
-      <p className="mu" style={{ fontWeight: 500, marginTop: 4 }}>
-        Meta: {d.meta} de {d.duracion} días · {fechaCorta(d.inicio)} al {fechaCorta(finDesafio(d))}
-      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <h1 className="titulo">{d.titulo}</h1>
+          <p className="mu" style={{ fontWeight: 500, marginTop: 4 }}>
+            Meta: {d.meta} de {d.duracion} días · {fechaCorta(d.inicio)} al {fechaCorta(finDesafio(d))}
+          </p>
+        </div>
+        {puedeEditar ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="ghost" onClick={() => setEditando(true)}>
+              Editar
+            </button>
+            <button type="button" className="ghost peligro" onClick={() => setBorrando(true)}>
+              Borrar
+            </button>
+          </div>
+        ) : (
+          <p className="mu2" style={{ fontSize: 12.5, fontWeight: 600, margin: 0 }}>
+            Lo edita quien lo creó o quien creó el grupo.
+          </p>
+        )}
+      </div>
 
       <div className="cols c64" style={{ marginTop: 20 }}>
         <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
@@ -65,9 +89,23 @@ export function Desafio() {
           <Muro gid={gid} cid={cid} plan={plan} />
         </div>
         <div style={{ alignSelf: 'start' }}>
-          <RankingDesafio d={d} grupoId={gid} alBorrar={() => navegar(`/comunidad/${gid}`, { replace: true })} />
+          <RankingDesafio d={d} grupoId={gid} />
         </div>
       </div>
+      <HojaDesafio abierta={editando} alCerrar={() => setEditando(false)} grupoId={gid} hoy={d.inicio} existente={d} />
+      <Confirmar
+        abierto={borrando}
+        titulo="¿Borrar el desafío?"
+        texto="Se borra para todo el grupo, con el ranking, las fotos y los mensajes. Los hábitos de cada uno no se tocan."
+        accion="Borrar"
+        peligro
+        alCerrar={() => setBorrando(false)}
+        alConfirmar={() => {
+          setBorrando(false);
+          navegar(`/comunidad/${gid}`, { replace: true });
+          void borrarDesafio(gid, d.id);
+        }}
+      />
     </div>
   );
 }
@@ -282,7 +320,7 @@ function Fotos({ gid, cid, fotos, puedeSubir, participa }: { gid: string; cid: s
         {elegidas.length < COLLAGE_MAX && (
           <div className="g2" style={{ marginTop: 12 }}>
             <button type="button" className="ghost" onClick={() => camara.current?.click()}>
-              📷 {elegidas.length ? 'Sacar otra' : 'Sacar foto'}
+              <Icono nombre="camara" tam={18} /> {elegidas.length ? 'Sacar otra' : 'Sacar foto'}
             </button>
             <button type="button" className="ghost" onClick={() => galeria.current?.click()}>
               {elegidas.length ? '+ De la galería' : 'Elegir de la galería'}
@@ -404,7 +442,7 @@ function Chat({ gid, cid, mensajes, puedeEscribir, participa }: { gid: string; c
                 </span>
                 {m.tipo === 'foto' && (
                   <span className="mu2" style={{ display: 'block', fontSize: 12.5, fontWeight: 600 }}>
-                    📷 Subió la foto del día
+                    <Icono nombre="camara" tam={14} className="uic en-linea" /> Subió la foto del día
                   </span>
                 )}
                 {m.texto && <span style={{ display: 'block', fontSize: 14.5, fontWeight: 500, overflowWrap: 'anywhere' }}>{m.texto}</span>}
@@ -428,7 +466,7 @@ function Chat({ gid, cid, mensajes, puedeEscribir, participa }: { gid: string; c
       <Hoja titulo="Mensaje" abierta={!!elegido} alCerrar={() => setElegido(null)}>
         {elegido && (
           <>
-            <p style={{ fontWeight: 500, marginTop: 8, overflowWrap: 'anywhere' }}>{elegido.texto || '📷 Foto del día'}</p>
+            <p style={{ fontWeight: 500, marginTop: 8, overflowWrap: 'anywhere' }}>{elegido.texto || 'Foto del día'}</p>
             <AccionesPublicacion gid={gid} cid={cid} p={elegido} alTerminar={() => setElegido(null)} />
           </>
         )}

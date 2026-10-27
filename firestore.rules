@@ -322,6 +322,9 @@ service cloud.firestore {
       function esMiembro() {
         return autenticado() && request.auth.uid in miembros();
       }
+      function creoElGrupo() {
+        return autenticado() && get(/databases/$(database)/documents/groups/$(gid)).data.creador == request.auth.uid;
+      }
 
       // El grupo (nombre, código, integrantes) lo escribe solo el servidor.
       allow read: if autenticado() && request.auth.uid in resource.data.miembros;
@@ -369,11 +372,11 @@ service cloud.firestore {
         }
         allow read: if esMiembro();
         allow create: if esMiembro() && desafioValido() && nuevo().creador == request.auth.uid;
-        // Quien lo creó edita nombre, virtud y meta; la duración solo se alarga y el inicio no cambia.
-        allow update: if esMiembro() && desafioValido() && resource.data.creador == request.auth.uid
+        // Quien lo creó (o quien creó el grupo) edita nombre, virtud y meta; la duración solo se alarga y el inicio no cambia.
+        allow update: if esMiembro() && desafioValido() && (resource.data.creador == request.auth.uid || creoElGrupo())
           && !cambiaron().hasAny(['creador', 'inicio'])
           && nuevo().duracion >= resource.data.duracion;
-        allow delete: if esMiembro() && resource.data.creador == request.auth.uid;
+        allow delete: if esMiembro() && (resource.data.creador == request.auth.uid || creoElGrupo());
 
         // Fotos y mensajes (plan de pago). Los ven todos los integrantes; escriben quienes se sumaron.
         // Las fotos las crea solo el servidor; los mensajes, la app mientras el plan esté activo.

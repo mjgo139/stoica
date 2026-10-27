@@ -373,8 +373,7 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.locator('[data-mi-habito]')).toContainText('Gratitud');
 
     // Quien lo creó lo edita: la duración solo se alarga
-    await page.getByRole('button', { name: 'Opciones del desafío' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Editar desafío' }).click();
+    await page.getByRole('button', { name: 'Editar', exact: true }).click();
     await page.getByLabel('Nombre').fill('15 días de gratitud');
     await page.getByLabel('Duración (días)').fill('5');
     await page.getByRole('dialog').getByRole('button', { name: 'Guardar cambios' }).click();
@@ -382,6 +381,10 @@ test.describe('v0.5–v1.0', () => {
     await page.getByLabel('Duración (días)').fill('30');
     await page.getByRole('dialog').getByRole('button', { name: 'Guardar cambios' }).click();
     await expect(page.getByRole('heading', { level: 1, name: '15 días de gratitud' })).toBeVisible();
+    // Y lo borra: vuelve al grupo y el desafío ya no está (el hábito queda)
+    await page.getByRole('button', { name: 'Borrar', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Borrar' }).click();
+    await expect(page.locator('[data-desafio="15 días de gratitud"]')).toHaveCount(0);
     await ir(page, '/habitos');
     await expect(page.getByText('Gratitud').first()).toBeVisible();
     await ir(page, '/comunidad');

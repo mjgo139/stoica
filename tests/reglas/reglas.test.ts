@@ -320,7 +320,7 @@ describe('groups · comunidad', () => {
     await assertSucceeds(deleteDoc(doc(db, `groups/g1/reactions/${HOY}_ana_beto`)));
   });
 
-  it('desafíos: los crea un integrante; los edita o borra solo quien los creó', async () => {
+  it('desafíos: los crea un integrante; los edita o borra quien los creó o quien creó el grupo', async () => {
     await assertSucceeds(setDoc(doc(usuario('beto'), 'groups/g1/challenges/c1'), desafio('beto')));
     await assertFails(setDoc(doc(usuario('carla'), 'groups/g1/challenges/c2'), desafio('carla')));
     await assertFails(setDoc(doc(usuario('beto'), 'groups/g1/challenges/c3'), desafio('beto', { duracion: 2 })));
@@ -330,9 +330,14 @@ describe('groups · comunidad', () => {
     await assertSucceeds(updateDoc(doc(usuario('beto'), 'groups/g1/challenges/c1'), { titulo: '30 días', virtud: 'coraje', duracion: 30, meta: 25, actualizado: ahora(), actualizadoPor: 'beto' }));
     await assertFails(updateDoc(doc(usuario('beto'), 'groups/g1/challenges/c1'), { duracion: 10, meta: 5, actualizado: ahora(), actualizadoPor: 'beto' }));
     await assertFails(updateDoc(doc(usuario('beto'), 'groups/g1/challenges/c1'), { inicio: MANANA, actualizado: ahora(), actualizadoPor: 'beto' }));
-    await assertFails(updateDoc(doc(usuario('ana'), 'groups/g1/challenges/c1'), { titulo: 'Mío', actualizado: ahora(), actualizadoPor: 'ana' }));
-    await assertFails(deleteDoc(doc(usuario('ana'), 'groups/g1/challenges/c1')));
+    // Ana creó el grupo: puede ordenar el desafío de Beto
+    await assertSucceeds(updateDoc(doc(usuario('ana'), 'groups/g1/challenges/c1'), { titulo: 'Renombrado', actualizado: ahora(), actualizadoPor: 'ana' }));
     await assertSucceeds(deleteDoc(doc(usuario('beto'), 'groups/g1/challenges/c1')));
+    // Beto no puede tocar el desafío de Ana (no creó el grupo)
+    await assertSucceeds(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c4'), desafio('ana')));
+    await assertFails(updateDoc(doc(usuario('beto'), 'groups/g1/challenges/c4'), { titulo: 'Mío', actualizado: ahora(), actualizadoPor: 'beto' }));
+    await assertFails(deleteDoc(doc(usuario('beto'), 'groups/g1/challenges/c4')));
+    await assertSucceeds(deleteDoc(doc(usuario('ana'), 'groups/g1/challenges/c4')));
   });
 
   it('progreso: cada uno el suyo', async () => {
