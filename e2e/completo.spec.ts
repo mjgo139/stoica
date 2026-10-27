@@ -195,9 +195,13 @@ test.describe('v0.4 · tareas, enfoque, examen', () => {
     await mudanza.getByRole('button', { name: 'Ver hechas (2)' }).click();
     await mudanza.getByRole('button', { name: 'Desmarcar Embalar la biblioteca' }).click();
     await expect(mudanza).toContainText('1/3');
-    await mudanza.getByRole('button', { name: /^Mudanza/ }).click();
+    // Plegar y desplegar tocando justo en la flecha del borde (antes el toque se perdía)
+    const cabecera = mudanza.getByRole('button', { name: /^Mudanza/ });
+    const caja = (await cabecera.boundingBox())!;
+    await cabecera.click({ position: { x: caja.width - 4, y: 12 }, delay: 120 });
     await expect(mudanza.locator('[data-tarea]')).toHaveCount(0);
-    await mudanza.getByRole('button', { name: /^Mudanza/ }).click();
+    await cabecera.click({ position: { x: caja.width - 4, y: 12 }, delay: 120 });
+    await expect(mudanza.locator('[data-tarea]').first()).toBeVisible();
     await captura(page, '23-desglose');
     // El botón de Enfoque está arriba, junto a Nueva tarea
     await expect(page.getByRole('link', { name: /Enfoque/ })).toBeVisible();

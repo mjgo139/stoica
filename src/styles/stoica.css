@@ -170,7 +170,8 @@ svg.laurel { display: inline-block; vertical-align: middle; }
 /* ---------- Movimiento ---------- */
 button, a, .ghost, .btn, .fila, .card { transition: background-color .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease), opacity .18s var(--ease), transform .12s var(--ease); }
 button:active:not(:disabled) { transform: scale(.97); }
-.fila:active:not(:disabled) { transform: none; opacity: .75; }
+/* Botones anchos (filas, cabeceras): no se achican al presionar, porque el borde se corre y un toque en la orilla se pierde. */
+button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(:disabled), button.item-main:active:not(:disabled), button.srow:active:not(:disabled), .casilla:active { transform: none; opacity: .75; }
 @keyframes entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sube { from { transform: translateY(100%); } to { transform: none; } }
@@ -379,7 +380,7 @@ button:active:not(:disabled) { transform: scale(.97); }
 .desglose { border-bottom: 1px solid var(--ln2); padding: 12px 0; }
 .desglose:last-of-type { border-bottom: 0; }
 .desglose-cab { display: block; width: 100%; text-align: left; }
-.desglose .flecha { color: var(--gold); font-size: 20px; line-height: 1; transition: transform .2s var(--ease); display: inline-block; }
+.desglose .flecha { color: var(--gold); font-size: 22px; padding: 0 2px 0 8px; line-height: 1; transition: transform .2s var(--ease); display: inline-block; }
 .desglose .flecha.abierta { transform: rotate(90deg); }
 .desglose-cuerpo { margin-top: 12px; padding: 2px 16px 4px; border: 1px solid var(--ln2); border-radius: 14px; background: var(--bg); }
 .desglose-pie { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; border-top: 1px solid var(--ln2); }
