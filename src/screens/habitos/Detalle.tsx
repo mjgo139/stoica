@@ -311,7 +311,7 @@ function Calendario({ h, regs, hoy }: { h: Habito; regs: Map<string, Registro>; 
           return (
             <span key={d} className={`celda ${e} ${d === hoy ? 'hoy' : ''}`} aria-label={`${fechaLargaDeClave(d)}: ${e === 'ok' ? 'cumplido' : e === 'mal' ? 'no cumplido' : e === 'pendiente' ? 'pendiente' : e === 'inactivo' ? 'sin práctica' : 'futuro'}`}>
               {partesDeClave(d).dia}
-              <span className="mk">{e === 'ok' ? '✓' : e === 'mal' ? '×' : ''}</span>
+              <span className="mk">{e === 'ok' ? '✓' : (e === 'mal' || e === 'pendiente') && h.tipo === 'lista' && (regs.get(d)?.valor ?? 0) > 0 ? `${regs.get(d)!.valor}/${h.variables.length}` : e === 'mal' ? '×' : ''}</span>
             </span>
           );
         })}
@@ -436,7 +436,7 @@ function Nota({ h, r, hoy }: { h: Habito; r: Registro | undefined; hoy: string }
 function PanelItems({ h, regs, hoy }: { h: Habito; regs: Map<string, Registro>; hoy: string }) {
   const filas = porcentajeItems(h, regs, sumarDias(hoy, -29), hoy);
   return (
-    <div className="card" style={{ marginTop: 18 }} data-items>
+    <div className="panel" style={{ marginTop: 18 }} data-items>
       <div className="grp cap" style={{ marginTop: 0 }}>
         <span>Por ítem · últimos 30 días</span>
       </div>
