@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fechaCorta, fechaLargaDeClave, MOMENTOS, sumarDias } from '@core/fechas';
-import { NOMBRE_VIRTUD, VIRTUDES, type Momento, type Virtud } from '@core/habitos';
+import { type Momento } from '@core/habitos';
 import { avanceProyecto, tareaDelDia, tareaHecha, tareaVencida, validarProyecto, validarTarea, type Proyecto, type Tarea } from '@core/rutina';
 import { LIMITES_ABUSO } from '@core/limites';
 import { limpiarNombre } from '@core/validaciones';
@@ -30,7 +30,7 @@ export function FilaTarea({ t, dia, hoy, alEditar, conProyecto = true }: { t: Co
             {cuando}
             {t.hora ? ` · ${t.hora}` : ` · ${MOMENTOS[t.momento].split(' · ')[1]}`}
             {proyecto && (
-              <span className={`v-${proyecto.virtud} vt`}>
+              <span className="gold">
                 {' · '}
                 {proyecto.nombre}
               </span>
@@ -103,7 +103,7 @@ export function Tareas() {
       </div>
 
       <div className="cols c64" style={{ marginTop: 24 }}>
-        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+        <div className="pila">
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
               <span>Hoy · {fechaLargaDeClave(hoy)}</span>
@@ -156,7 +156,7 @@ export function Tareas() {
             )}
           </div>
         </div>
-        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+        <div className="pila">
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
               <span>No depende de ti</span>
@@ -214,7 +214,7 @@ function DesgloseProyecto({ p, hoy, alEditar, alAgregar }: { p: ConId<Proyecto>;
     <div className="desglose" data-proyecto={p.nombre}>
       <button type="button" className="desglose-cab" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
         <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <strong className={`v-${p.virtud} vt`} style={{ flex: 1, fontSize: 15.5, textAlign: 'left' }}>
+          <strong style={{ flex: 1, fontSize: 15.5, textAlign: 'left', color: 'var(--tx)' }}>
             {p.nombre}
           </strong>
           <span className="num mu2" style={{ fontSize: 13 }}>
@@ -437,12 +437,11 @@ export function EditorTarea({ tarea, abierta, alCerrar, hoy, proyectoFijo }: { t
   );
 }
 
-/** Crear o editar un proyecto (nombre, virtud y fecha límite opcional). */
+/** Crear o editar un proyecto (nombre y fecha límite opcional). La virtud no aplica a proyectos: se guarda la que tenía. */
 export function EditorProyecto({ proyecto, abierto, alCerrar, alCrear }: { proyecto: ConId<Proyecto> | null; abierto: boolean; alCerrar: () => void; alCrear?: (id: string) => void }) {
   const total = useDatos((s) => s.proyectos.length);
   const mostrar = useAvisos((s) => s.mostrar);
   const [nombre, setNombre] = useState('');
-  const [virtud, setVirtud] = useState<Virtud>('sabiduria');
   const [conFecha, setConFecha] = useState(false);
   const [fecha, setFecha] = useState('');
   const [error, setError] = useState('');
@@ -451,7 +450,6 @@ export function EditorProyecto({ proyecto, abierto, alCerrar, alCrear }: { proye
   if (abierto && !antes) {
     setAntes(true);
     setNombre(proyecto?.nombre ?? '');
-    setVirtud(proyecto?.virtud ?? 'sabiduria');
     setConFecha(!!proyecto?.fechaLimite);
     setFecha(proyecto?.fechaLimite ?? sumarDias(hoy, 14));
     setError('');
@@ -466,7 +464,7 @@ export function EditorProyecto({ proyecto, abierto, alCerrar, alCrear }: { proye
       creado: proyecto?.creado,
       archivado: proyecto?.archivado,
       nombre: limpiarNombre(nombre),
-      virtud,
+      virtud: proyecto?.virtud ?? ('sabiduria' as const),
       fechaLimite: conFecha ? fecha : null,
     };
     const err = validarProyecto(p);
@@ -486,21 +484,6 @@ export function EditorProyecto({ proyecto, abierto, alCerrar, alCrear }: { proye
           Nombre del proyecto
         </label>
         <input id="p-nombre" className="inp" maxLength={60} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Por ejemplo: Mudanza" />
-        <div className="lbl cap">Virtud</div>
-        <div className="chips">
-          {VIRTUDES.map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={virtud === v}
-              className={`chip v-${v} ${virtud === v ? 'on' : ''}`}
-              style={virtud === v ? { background: 'var(--vc)', borderColor: 'var(--vc)' } : { color: 'var(--vc)' }}
-              onClick={() => setVirtud(v)}
-            >
-              {NOMBRE_VIRTUD[v]}
-            </button>
-          ))}
-        </div>
         <label className="casilla" style={{ marginTop: 14 }}>
           <input type="checkbox" checked={conFecha} onChange={(e) => setConFecha(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--gold)' }} />
           <span>Tiene fecha límite</span>

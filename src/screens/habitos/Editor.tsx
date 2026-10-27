@@ -6,7 +6,10 @@ import {
   aNumero,
   itemLista,
   horasRecordatorio,
+  DETALLE_VIRTUD,
   DIRECCIONES,
+  EJEMPLOS_VIRTUD,
+  GRUPO_CORTO,
   GRUPOS_ICONOS,
   LIMITES_HABITO,
   NOMBRE_TIPO,
@@ -333,24 +336,17 @@ export function Editor() {
             </button>
           ))}
         </div>
+        <div className={`explica-virtud v-${f.virtud}`} aria-live="polite" data-explica-virtud>
+          <b className="vt">{NOMBRE_VIRTUD[f.virtud]}:</b> {DETALLE_VIRTUD[f.virtud].toLowerCase()}.
+          <span className="mu" style={{ display: 'block', marginTop: 4 }}>
+            Encaja con: {EJEMPLOS_VIRTUD[f.virtud]}.
+          </span>
+        </div>
 
         <div className="fl" style={{ marginTop: 20 }}>
           Ícono
         </div>
-        {GRUPOS_ICONOS.map(([grupo, lista]) => (
-          <div key={grupo} style={{ marginBottom: 10 }}>
-            <div className="mu2" style={{ fontSize: 12, fontWeight: 700, margin: '6px 0' }}>
-              {grupo}
-            </div>
-            <div className="icgrid" role="radiogroup" aria-label={grupo}>
-              {lista.map(([idIcono, nombre]) => (
-                <button key={idIcono} type="button" role="radio" aria-checked={f.icono === idIcono} aria-label={nombre} title={nombre} className={f.icono === idIcono ? 'on' : ''} onClick={() => poner({ icono: idIcono })}>
-                  <Glifo icono={idIcono} tam={22} />
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+        <SelectorIcono icono={f.icono} virtud={f.virtud} alElegir={(icono) => poner({ icono })} />
       </div>
 
       <div className="panel" style={{ marginTop: 18 }}>
@@ -406,7 +402,7 @@ export function Plantillas({ alElegir, compacta = false }: { alElegir?: (p: Plan
   return (
     <div>
       <div className="fl">Empezar desde una plantilla</div>
-      <div className="chips">
+      <div className="chips plantillas">
         {PLANTILLAS.slice(0, compacta ? 6 : undefined).map((p) => (
           <button key={p.id} type="button" className="chip" title={p.detalle} onClick={() => (alElegir ? alElegir(p) : navegar(`/habitos/nuevo?plantilla=${p.id}`))}>
             <Glifo icono={p.datos.icono} tam={16} />
@@ -414,6 +410,39 @@ export function Plantillas({ alElegir, compacta = false }: { alElegir?: (p: Plan
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Ícono: una pestaña por grupo y sus 6 íconos (en lugar de los 30 juntos). */
+function SelectorIcono({ icono, virtud, alElegir }: { icono: string; virtud: Virtud; alElegir: (icono: string) => void }) {
+  const grupoDe = (id: string) => GRUPOS_ICONOS.find(([, l]) => l.some(([x]) => x === id))?.[0] ?? GRUPOS_ICONOS[0][0];
+  const [grupo, setGrupo] = useState(() => grupoDe(icono));
+  // Si el ícono cambia desde afuera (plantilla, edición), mostrar su grupo.
+  useEffect(() => setGrupo(grupoDe(icono)), [icono]);
+  const lista = GRUPOS_ICONOS.find(([g]) => g === grupo)?.[1] ?? [];
+  const nombreActual = GRUPOS_ICONOS.flatMap(([, l]) => l).find(([x]) => x === icono)?.[1];
+  return (
+    <div>
+      <div className="pestanas-iconos" role="tablist" aria-label="Grupos de íconos">
+        {GRUPOS_ICONOS.map(([g]) => (
+          <button key={g} type="button" role="tab" aria-selected={grupo === g} className={`chip ${grupo === g ? 'on' : ''}`} onClick={() => setGrupo(g)}>
+            {GRUPO_CORTO[g] ?? g}
+          </button>
+        ))}
+      </div>
+      <div className="icgrid" role="radiogroup" aria-label={grupo} style={{ marginTop: 10 }}>
+        {lista.map(([idIcono, nombre]) => (
+          <button key={idIcono} type="button" role="radio" aria-checked={icono === idIcono} aria-label={nombre} title={nombre} className={icono === idIcono ? `on v-${virtud}` : ''} onClick={() => alElegir(idIcono)}>
+            <Glifo icono={idIcono} tam={22} />
+          </button>
+        ))}
+      </div>
+      {nombreActual && (
+        <p className="mu2" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 8 }}>
+          Elegido: {nombreActual}
+        </p>
+      )}
     </div>
   );
 }

@@ -84,7 +84,7 @@ export function Desafio() {
       </div>
 
       <div className="cols c64" style={{ marginTop: 20 }}>
-        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+        <div className="pila">
           <MiHabito d={d} gid={gid} hoy={hoy} terminado={e.estado === 'terminado'} />
           <Muro gid={gid} cid={cid} plan={plan} />
         </div>

@@ -133,18 +133,18 @@ export function AdminPlan() {
         <div className="grp cap">
           <span>Sin usar ({sinUsar.length})</span>
         </div>
-        {sinUsar.length === 0 ? <p className="vacio-mini">No hay códigos disponibles.</p> : <table className="tabla"><tbody>{sinUsar.map(fila)}</tbody></table>}
+        {sinUsar.length === 0 ? <p className="vacio-mini">No hay códigos disponibles.</p> : <div className="tabla-desliza"><table className="tabla"><tbody>{sinUsar.map(fila)}</tbody></table></div>}
         {usados.length > 0 && (
           <>
             <button type="button" className="link" style={{ paddingLeft: 0, marginTop: 8 }} onClick={() => setVerUsados(!verUsados)}>
               {verUsados ? 'Ocultar usados' : `Ver usados (${usados.length})`}
             </button>
-            {verUsados && <table className="tabla"><tbody>{usados.map(fila)}</tbody></table>}
+            {verUsados && <div className="tabla-desliza"><table className="tabla"><tbody>{usados.map(fila)}</tbody></table></div>}
           </>
         )}
       </div>
 
-      <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+      <div className="pila">
         <div className="panel">
           <div className="grp cap" style={{ marginTop: 0 }}>
             <span>Al vencer el plan</span>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fechaCorta } from '@core/fechas';
-import { NOMBRE_VIRTUD } from '@core/habitos';
 import { avanceProyecto, tareaHecha, type Tarea } from '@core/rutina';
 import { archivarProyecto, borrarProyecto, useDatos, useHoy } from '@/app/datos';
 import { Confirmar } from '@/ui/Hoja';
@@ -53,8 +52,8 @@ export function Proyecto() {
       </Link>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div className={`cap v-${p.virtud} vt`}>
-            Proyecto · {NOMBRE_VIRTUD[p.virtud]}
+          <div className="cap gold">
+            Proyecto
             {p.archivado && ' · Terminado'}
           </div>
           <h1 className="titulo">{p.nombre}</h1>

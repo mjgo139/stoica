@@ -187,6 +187,7 @@ export function Admin() {
         </div>
         {error && <p className="err">{error}</p>}
         <div style={{ overflowX: 'auto', marginTop: 10 }}>
+          <div className="tabla-desliza">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr className="cap mu2" style={{ fontSize: 10.5, textAlign: 'left' }}>
@@ -240,6 +241,7 @@ export function Admin() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

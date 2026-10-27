@@ -8,6 +8,22 @@ import { limpiarNombre } from './validaciones.js';
 export const VIRTUDES = ['sabiduria', 'coraje', 'justicia', 'templanza'] as const;
 export type Virtud = (typeof VIRTUDES)[number];
 export const NOMBRE_VIRTUD: Record<Virtud, string> = { sabiduria: 'Sabiduría', coraje: 'Coraje', justicia: 'Justicia', templanza: 'Templanza' };
+/** Para ayudar a elegir: qué tipo de hábitos encajan con cada virtud. */
+export const EJEMPLOS_VIRTUD: Record<Virtud, string> = {
+  sabiduria: 'leer, estudiar, meditar, escribir un diario, aprender un idioma',
+  coraje: 'entrenar, ducha fría, madrugar, hacer lo que venís postergando',
+  justicia: 'tiempo con la familia, ayudar a alguien, cumplir tu palabra, ser puntual',
+  templanza: 'comer bien, tomar agua, sin azúcar, menos pantallas, ahorrar',
+};
+/** Nombre corto de cada grupo de íconos (para las pestañas en el celular). */
+export const GRUPO_CORTO: Record<string, string> = {
+  'Cuerpo y movimiento': 'Cuerpo',
+  'Salud y medidas': 'Salud',
+  'Alimentación y hogar': 'Comida y hogar',
+  Mente: 'Mente',
+  Disciplina: 'Disciplina',
+};
+
 export const DETALLE_VIRTUD: Record<Virtud, string> = {
   sabiduria: 'Pensar con claridad, aprender, discernir',
   coraje: 'Hacer lo difícil, sostener el esfuerzo',

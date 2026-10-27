@@ -32,7 +32,7 @@ export function Examen() {
           </div>
           <Formulario key={dia} examen={actual} />
         </div>
-        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+        <div className="pila">
           <Balance hoy={hoy} />
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
@@ -47,7 +47,7 @@ export function Examen() {
                   <span className="cap gold" style={{ fontSize: 10.5, width: 64 }}>
                     {fechaCorta(e.fecha)}
                   </span>
-                  <span className="mu" style={{ flex: 1, fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className="mu dos-lineas" style={{ flex: 1, fontWeight: 500, minWidth: 0 }}>
                     {e.respuestas.p1 || e.respuestas.p2 || e.respuestas.p3}
                   </span>
                 </button>

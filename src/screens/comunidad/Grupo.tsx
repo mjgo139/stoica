@@ -110,7 +110,7 @@ export function Grupo() {
             </div>
           )}
         </div>
-        <div style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
+        <div className="pila">
           <div className="panel">
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
@@ -301,7 +301,7 @@ export function TarjetaDesafio({ d, grupoId, hoy, conPlan = false }: { d: ConId<
   const otros = [...progresos].filter((p) => p.id !== uid).sort((a, b) => b.cumplidos - a.cumplidos).slice(0, 2);
   const barra = (p: ConId<Progreso>, nombre: string) => (
     <span key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-      <span style={{ width: 96, fontWeight: 600, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre}</span>
+      <span className="nombre-barra">{nombre}</span>
       <span className="barra-prog" style={{ flex: 1 }}>
         <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
       </span>
@@ -359,7 +359,7 @@ export function RankingDesafio({ d, grupoId }: { d: ConId<Desafio>; grupoId: str
           <span className="num mu2" style={{ width: 18, fontSize: 13 }}>
             {i + 1}
           </span>
-          <span style={{ width: 100, fontWeight: 600, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.id === uid ? 'Vos' : p.nombre}</span>
+          <span className="nombre-barra">{p.id === uid ? 'Vos' : p.nombre}</span>
           <span className="barra-prog" style={{ flex: 1 }}>
             <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
           </span>

@@ -146,8 +146,9 @@ svg.laurel { display: inline-block; vertical-align: middle; }
 .nav-tab > .items { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(var(--tabs, 5), minmax(0, 1fr)); padding: 4px 6px 10px; }
 .nav-tab a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-size: 11.5px; font-weight: 600; min-height: 58px; position: relative; color: var(--mu2); text-decoration: none; }
 .nav-tab a.on { color: var(--gold); }
-.nav-tab a .et { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 400px) { .nav-tab a { font-size: 10.5px; } }
+.nav-tab a .et { max-width: 100%; white-space: nowrap; }
+@media (max-width: 400px) { .nav-tab > .items { padding-inline: 2px; } .nav-tab a { font-size: 10px; letter-spacing: -.01em; } }
+@media (max-width: 350px) { .nav-tab a { font-size: 9.2px; letter-spacing: -.02em; } }
 .nav-tab a.on::before { content: ''; position: absolute; top: 0; width: 22px; height: 2px; border-radius: 1px; background: var(--gold); }
 .nav-tab svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .nav-tab .marca, .nav-tab .yo { display: none; }
@@ -391,7 +392,26 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .casilla { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; border: 1px solid var(--ln3); border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; }
 .casilla:hover { background: var(--hover); }
 .casilla:has(input:checked) { border-color: var(--gold); }
-@media (max-width: 520px) { .acciones-tareas { width: 100%; } .acciones-tareas > * { flex: 1; padding: 0 12px !important; } }
+@media (max-width: 520px) { .acciones-tareas { width: 100%; } .acciones-tareas > * { flex: 1; padding: 0 10px !important; white-space: nowrap; letter-spacing: .04em; font-size: 13px; gap: 8px; } }
 
 /* Ícono dentro de un texto */
 .uic.en-linea { display: inline-block; vertical-align: -2px; margin-right: 2px; }
+
+/* Editor de hábito: explicación de la virtud y pestañas de íconos */
+.explica-virtud { margin-top: 10px; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--vc) 9%, transparent); border: 1px solid color-mix(in srgb, var(--vc) 25%, transparent); font-size: 13.5px; font-weight: 500; line-height: 1.45; }
+.pestanas-iconos { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-inline: -2px; padding-inline: 2px; }
+.pestanas-iconos::-webkit-scrollbar { display: none; }
+.pestanas-iconos .chip { flex: none; min-height: 34px; padding: 0 12px; font-size: 12.5px; }
+.icgrid button.on.v-sabiduria, .icgrid button.on.v-coraje, .icgrid button.on.v-justicia, .icgrid button.on.v-templanza { color: var(--vc); box-shadow: inset 0 0 0 1.5px var(--vc); background: color-mix(in srgb, var(--vc) 10%, transparent); }
+
+/* Columnas apiladas: nunca más anchas que la pantalla */
+.pila { display: grid; gap: 18px; align-content: start; grid-template-columns: minmax(0, 1fr); }
+.cols > * { min-width: 0; }
+/* Textos largos: hasta dos líneas en lugar de cortarse en una */
+.dos-lineas { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.nombre-barra { width: 96px; flex: none; font-weight: 600; font-size: 13.5px; line-height: 1.25; overflow-wrap: anywhere; }
+/* Pestañas de íconos: en varias líneas si no entran (nada escondido) */
+.pestanas-iconos { flex-wrap: wrap; overflow: visible; }
+/* Tablas anchas (Admin): se deslizan dentro de su caja */
+.tabla-desliza { overflow-x: auto; margin-inline: -4px; padding-inline: 4px; }
+@media (max-width: 420px) { .plantillas { gap: 6px; } .plantillas .chip { min-height: 32px; padding: 0 10px; font-size: 12.5px; gap: 6px; } }

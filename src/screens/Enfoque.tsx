@@ -137,7 +137,7 @@ export function Enfoque() {
                 {t ? (t.pausadoEn ? 'En pausa' : NOMBRE_ENFOQUE[t.tipo]) : NOMBRE_ENFOQUE[tipo]}
               </div>
               {t?.etiqueta && (
-                <div className="mu" style={{ fontWeight: 600, marginTop: 4, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div className="mu dos-lineas" style={{ fontWeight: 600, marginTop: 4, maxWidth: 220, marginInline: 'auto' }}>
                   {t.etiqueta}
                 </div>
               )}
@@ -186,7 +186,7 @@ export function Enfoque() {
               <span className="cap gold" style={{ fontSize: 10.5, width: 92 }}>
                 {NOMBRE_ENFOQUE[s.tipo]}
               </span>
-              <span style={{ flex: 1, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.etiqueta || '—'}</span>
+              <span className="dos-lineas" style={{ flex: 1, fontWeight: 600, minWidth: 0 }}>{s.etiqueta || '—'}</span>
               <span className="mu" style={{ fontWeight: 600, fontSize: 13 }}>
                 {s.minutos} min · {fechaCorta(s.fecha)}
               </span>

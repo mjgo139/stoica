@@ -71,6 +71,7 @@ test.describe('v0.2–v0.3 · hábitos', () => {
     await page.getByRole('radio', { name: 'Cantidad' }).click();
     await page.getByLabel('Meta por día').fill('30');
     await page.getByLabel('Unidad').fill('minutos');
+    await page.getByRole('tab', { name: 'Cuerpo' }).click();
     await page.getByRole('radio', { name: 'Caminar' }).click();
     await page.getByRole('button', { name: '+ Agregar aviso' }).click();
     await page.getByLabel('Hora del recordatorio 1', { exact: true }).fill('06:47');
@@ -149,6 +150,25 @@ test.describe('v0.2–v0.3 · hábitos', () => {
     await rutina.getByRole('button', { name: 'Cama' }).click();
     await rutina.getByRole('button', { name: 'Agua' }).click();
     await expect(rutina).toContainText('cumplido');
+  });
+
+  test('editor: la virtud se explica al elegirla y los íconos van por grupo', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await ir(page, '/habitos/nuevo');
+    const explica = page.locator('[data-explica-virtud]');
+    await expect(explica).toContainText('Sabiduría');
+    await page.getByRole('radio', { name: 'Coraje' }).click();
+    await expect(explica).toContainText('hacer lo difícil');
+    await expect(explica).toContainText('entrenar');
+    // Solo se ven los 6 íconos del grupo elegido
+    await page.getByRole('tab', { name: 'Salud' }).click();
+    await expect(page.getByRole('radiogroup', { name: 'Salud y medidas' }).getByRole('radio')).toHaveCount(6);
+    await page.getByRole('radio', { name: 'Corazón' }).click();
+    await expect(page.getByText('Elegido: Corazón')).toBeVisible();
+    // Los proyectos ya no piden virtud
+    await ir(page, '/tareas');
+    await page.getByRole('button', { name: '+ Nuevo' }).click();
+    await expect(page.getByRole('dialog')).not.toContainText('Virtud');
   });
 
   test('hito: Victoria sobre ti mismo al llegar a 3 días', async ({ page }) => {
