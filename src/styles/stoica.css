@@ -381,6 +381,13 @@ button:active:not(:disabled) { transform: scale(.97); }
 .desglose-cab { display: block; width: 100%; text-align: left; }
 .desglose .flecha { color: var(--gold); font-size: 20px; line-height: 1; transition: transform .2s var(--ease); display: inline-block; }
 .desglose .flecha.abierta { transform: rotate(90deg); }
-.desglose-cuerpo { margin-top: 6px; padding-left: 12px; border-left: 2px solid var(--ln2); }
-.desglose-cuerpo .item:last-of-type { border-bottom: 0; }
+.desglose-cuerpo { margin-top: 12px; padding: 2px 16px 4px; border: 1px solid var(--ln2); border-radius: 14px; background: var(--bg); }
+.desglose-pie { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; border-top: 1px solid var(--ln2); }
+.desglose-cuerpo > .desglose-pie:first-child { border-top: 0; }
+.desglose-pie .link { display: inline-flex; align-items: center; padding: 0; }
+.desglose-cuerpo .item:has(+ .desglose-pie), .desglose-cuerpo .vacio-mini + .desglose-pie { border-bottom: 0; }
+/* Casilla de opción (checkbox) en las hojas: una caja cerrada, sin franja al pasar el mouse */
+.casilla { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; border: 1px solid var(--ln3); border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.casilla:hover { background: var(--hover); }
+.casilla:has(input:checked) { border-color: var(--gold); }
 @media (max-width: 520px) { .acciones-tareas { width: 100%; } .acciones-tareas > * { flex: 1; padding: 0 12px !important; } }

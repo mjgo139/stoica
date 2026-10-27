@@ -254,18 +254,18 @@ function DesgloseProyecto({ p, hoy, alEditar, alAgregar }: { p: ConId<Proyecto>;
           ))}
           {pendientes.length === 0 && a.total > 0 && <p className="vacio-mini">No quedan tareas pendientes.</p>}
           {verHechas && listas.map((t) => <FilaTarea key={t.id} t={t} dia={diaDe(t)} hoy={hoy} alEditar={() => alEditar(t)} conProyecto={false} />)}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
+          <div className="desglose-pie">
             {!p.archivado && (
-              <button type="button" className="link" style={{ paddingLeft: 0 }} onClick={alAgregar}>
+              <button type="button" className="link" onClick={alAgregar}>
                 + Tarea
               </button>
             )}
             {listas.length > 0 && (
-              <button type="button" className="link" style={{ paddingLeft: 0 }} onClick={() => setVerHechas(!verHechas)}>
+              <button type="button" className="link" onClick={() => setVerHechas(!verHechas)}>
                 {verHechas ? 'Ocultar hechas' : `Ver hechas (${listas.length})`}
               </button>
             )}
-            <Link to={`/tareas/proyecto/${p.id}`} className="link" style={{ paddingLeft: 0, paddingRight: 0, marginLeft: 'auto' }}>
+            <Link to={`/tareas/proyecto/${p.id}`} className="link" style={{ marginLeft: 'auto' }}>
               Abrir proyecto ›
             </Link>
           </div>
@@ -370,7 +370,7 @@ export function EditorTarea({ tarea, abierta, alCerrar, hoy, proyectoFijo }: { t
           ))}
         </div>
         {cuando === 'fecha' && <input type="date" className="fi" style={{ marginTop: 10 }} value={fecha} min={hoy} onChange={(e) => setFecha(e.target.value)} aria-label="Fecha" />}
-        <label className="fila" style={{ marginTop: 6 }}>
+        <label className="casilla" style={{ marginTop: 12 }}>
           <input type="checkbox" checked={diaria} onChange={(e) => setDiaria(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--gold)' }} />
           <span>Repetir todos los días</span>
         </label>
@@ -501,7 +501,7 @@ export function EditorProyecto({ proyecto, abierto, alCerrar, alCrear }: { proye
             </button>
           ))}
         </div>
-        <label className="fila" style={{ marginTop: 10 }}>
+        <label className="casilla" style={{ marginTop: 14 }}>
           <input type="checkbox" checked={conFecha} onChange={(e) => setConFecha(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--gold)' }} />
           <span>Tiene fecha límite</span>
         </label>
