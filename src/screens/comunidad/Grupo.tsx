@@ -8,6 +8,7 @@ import { aRomano } from '@core/romanos';
 import { limpiarNombre } from '@core/validaciones';
 import { borrarDesafio, crearDesafio, editarDesafio, elegirCompartidos, eliminarGrupo, reaccionar, renombrarGrupo, salirDeGrupo, sumarmeADesafio, useComunidad } from '@/app/comunidad';
 import { alternarSiNo, guardarHabito, registrosDe, sumar, uidActual, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
+import { HojaLista } from '@/screens/habitos/HojaLista';
 import { HojaMedir } from '@/screens/habitos/HojaMedir';
 import { useConsulta } from '@/data/hooks';
 import type { ConId } from '@/data/tipos';
@@ -259,14 +260,14 @@ export function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string;
     setRebote((n) => n + 1);
     if (h.tipo === 'sino') alternarSiNo(h, hoy);
     else if (h.tipo === 'cantidad') sumar(h, hoy, 1);
-    else setMidiendo(true);
+    else setMidiendo(true); // medición o lista: se abre una hoja
   };
-  const etiqueta = !h ? nombre : h.tipo === 'sino' ? `${ok ? 'Desmarcar' : 'Marcar'} ${nombre}` : h.tipo === 'cantidad' ? (ok ? `${nombre}: cumplido` : `Sumar uno a ${nombre}`) : `Registrar ${nombre}`;
+  const etiqueta = !h ? nombre : h.tipo === 'sino' ? `${ok ? 'Desmarcar' : 'Marcar'} ${nombre}` : h.tipo === 'cantidad' ? (ok ? `${nombre}: cumplido` : `Sumar uno a ${nombre}`) : h.tipo === 'lista' ? `Marcar ítems de ${nombre}` : `Registrar ${nombre}`;
   return (
     <>
-      {h?.tipo === 'cantidad' && (
+      {(h?.tipo === 'cantidad' || h?.tipo === 'lista') && (
         <span className="mu2 num" style={{ fontSize: 13 }}>
-          {r?.valor ?? 0}/{h.meta}
+          {r?.valor ?? 0}/{h.tipo === 'lista' ? h.variables.length : h.meta}
         </span>
       )}
       <button
@@ -286,6 +287,7 @@ export function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string;
         </span>
       </button>
       {h?.tipo === 'medicion' && <HojaMedir h={h} fecha={hoy} abierta={midiendo} alCerrar={() => setMidiendo(false)} />}
+      {h?.tipo === 'lista' && <HojaLista h={h} fecha={hoy} abierta={midiendo} alCerrar={() => setMidiendo(false)} />}
     </>
   );
 }

@@ -29,7 +29,7 @@ export interface Metricas {
   /** % de cuentas con más de 7 días que volvieron en los últimos 7 días. */
   retencion7: number;
   suspendidas: number;
-  porTipo: { sino: number; cantidad: number; medicion: number };
+  porTipo: { sino: number; cantidad: number; medicion: number; lista?: number };
   porPlataforma: Record<string, number>;
   calculado: number;
 }

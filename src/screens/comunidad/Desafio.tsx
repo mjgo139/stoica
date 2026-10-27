@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, type Progreso } from '@core/comunidad';
 import { fechaCorta } from '@core/fechas';
@@ -7,7 +7,8 @@ import { inicial } from '@core/perfil';
 import { MENSAJE_MAX, type EstadoPlan, type Publicacion } from '@core/plan';
 import { useComunidad } from '@/app/comunidad';
 import { uidActual, useHoy } from '@/app/datos';
-import { borrarPublicacion, enviarMensaje, reportarPublicacion, subirFoto } from '@/app/plan';
+import { armarCollage, borrarPublicacion, enviarMensaje, reportarPublicacion, subirFoto } from '@/app/plan';
+import { COLLAGE_MAX, disenosPara, type DisenoCollage } from '@core/collage';
 import { useConsulta } from '@/data/hooks';
 import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
@@ -163,24 +164,47 @@ function Fotos({ gid, cid, fotos, puedeSubir, participa }: { gid: string; cid: s
   const hoy = useHoy();
   const uid = uidActual();
   const mostrar = useAvisos((s) => s.mostrar);
-  const entrada = useRef<HTMLInputElement>(null);
+  const galeria = useRef<HTMLInputElement>(null);
+  const camara = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [viendo, setViendo] = useState<ConId<Publicacion> | null>(null);
   const [leyenda, setLeyenda] = useState('');
-  const [elegida, setElegida] = useState<File | null>(null);
+  const [abierta, setAbierta] = useState(false);
+  const [elegidas, setElegidas] = useState<File[]>([]);
+  const [diseno, setDiseno] = useState<DisenoCollage>('lado');
   const mia = fotos.find((f) => f.de === uid && f.dia === hoy);
-  const vista = useMemo(() => (elegida ? URL.createObjectURL(elegida) : ''), [elegida]);
-  useEffect(() => () => (vista ? URL.revokeObjectURL(vista) : undefined), [vista]);
+  const disenos = disenosPara(elegidas.length);
+  const disenoValido = disenos.some((d) => d.id === diseno) ? diseno : (disenos[0]?.id ?? 'lado');
+  const vista = useVistaPrevia(elegidas, disenoValido);
+
+  const agregar = (lista: FileList | null) => {
+    const nuevas = [...(lista ?? [])].filter((f) => f.type.startsWith('image/'));
+    if (!nuevas.length) return;
+    const juntas = [...elegidas, ...nuevas];
+    if (juntas.length > COLLAGE_MAX) mostrar(`Un collage lleva hasta ${COLLAGE_MAX} fotos: usé las primeras ${COLLAGE_MAX}.`);
+    setElegidas(juntas.slice(0, COLLAGE_MAX));
+    setAbierta(true);
+  };
+  const cerrar = () => {
+    setAbierta(false);
+    setElegidas([]);
+    setLeyenda('');
+  };
 
   const subir = async () => {
-    if (!elegida) return;
+    if (!elegidas.length) return;
     setSubiendo(true);
-    const err = await subirFoto(gid, cid, elegida, leyenda);
+    let err: string | null;
+    try {
+      const archivo = elegidas.length === 1 ? elegidas[0] : await armarCollage(elegidas, disenoValido);
+      err = await subirFoto(gid, cid, archivo, leyenda);
+    } catch {
+      err = 'No se pudo armar el collage. Probá con otras fotos.';
+    }
     setSubiendo(false);
     if (err) return mostrar(err);
-    setElegida(null);
-    setLeyenda('');
-    mostrar('Foto del día compartida.');
+    cerrar();
+    mostrar(elegidas.length > 1 ? 'Collage del día compartido.' : 'Foto del día compartida.');
   };
 
   return (
@@ -190,19 +214,32 @@ function Fotos({ gid, cid, fotos, puedeSubir, participa }: { gid: string; cid: s
           <span>Fotos del día</span>
         </div>
         {puedeSubir && (
-          <button type="button" className="link" onClick={() => entrada.current?.click()}>
+          <button type="button" className="link" onClick={() => setAbierta(true)}>
             {mia ? 'Cambiar mi foto de hoy' : '+ Foto de hoy'}
           </button>
         )}
       </div>
       <input
-        ref={entrada}
+        ref={galeria}
         type="file"
         accept="image/*"
+        multiple
         hidden
         aria-label="Elegir foto"
         onChange={(e) => {
-          setElegida(e.target.files?.[0] ?? null);
+          agregar(e.target.files);
+          e.target.value = '';
+        }}
+      />
+      <input
+        ref={camara}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        aria-label="Sacar foto con la cámara"
+        onChange={(e) => {
+          agregar(e.target.files);
           e.target.value = '';
         }}
       />
@@ -218,21 +255,100 @@ function Fotos({ gid, cid, fotos, puedeSubir, participa }: { gid: string; cid: s
         </div>
       )}
 
-      <Hoja titulo="Foto de hoy" abierta={!!elegida} alCerrar={() => setElegida(null)}>
-        {vista && <img src={vista} alt="Vista previa" style={{ width: '100%', maxHeight: 340, objectFit: 'contain', borderRadius: 12, marginTop: 8, background: 'var(--ln)' }} />}
-        <label className="lbl cap" htmlFor="leyenda">
-          Comentario (opcional)
-        </label>
-        <input id="leyenda" className="inp" maxLength={MENSAJE_MAX} value={leyenda} onChange={(e) => setLeyenda(e.target.value)} placeholder="Día cumplido" />
-        <p className="mu" style={{ fontSize: 12.5, fontWeight: 500 }}>
-          La ven solo los integrantes del grupo. Se achica antes de subirla y se le quita la ubicación.
-        </p>
-        <button type="button" className="btn" disabled={subiendo} onClick={subir}>
-          {subiendo ? 'Subiendo…' : 'Compartir'}
-        </button>
+      <Hoja titulo={elegidas.length > 1 ? 'Collage de hoy' : 'Foto de hoy'} abierta={abierta} alCerrar={cerrar}>
+        {vista ? (
+          <img src={vista} alt="Vista previa" data-vista-previa style={{ width: '100%', maxHeight: 340, objectFit: 'contain', borderRadius: 12, marginTop: 8, background: 'var(--ln)' }} />
+        ) : (
+          <p className="mu" style={{ fontWeight: 500, marginTop: 4 }}>
+            Sacá una foto o elegí de la galería. Con 2 a {COLLAGE_MAX} fotos se arma un collage.
+          </p>
+        )}
+        {elegidas.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }} aria-label="Fotos elegidas">
+            {elegidas.map((f, i) => (
+              <Miniatura key={`${f.name}-${i}`} archivo={f} indice={i + 1} alQuitar={() => setElegidas(elegidas.filter((_, j) => j !== i))} />
+            ))}
+          </div>
+        )}
+        {disenos.length > 0 && (
+          <div className="seg3" role="radiogroup" aria-label="Diseño del collage" style={{ marginTop: 12 }}>
+            {disenos.map((d) => (
+              <button key={d.id} type="button" role="radio" aria-checked={disenoValido === d.id} className={disenoValido === d.id ? 'on' : ''} onClick={() => setDiseno(d.id)}>
+                {d.nombre}
+              </button>
+            ))}
+          </div>
+        )}
+        {elegidas.length < COLLAGE_MAX && (
+          <div className="g2" style={{ marginTop: 12 }}>
+            <button type="button" className="ghost" onClick={() => camara.current?.click()}>
+              📷 {elegidas.length ? 'Sacar otra' : 'Sacar foto'}
+            </button>
+            <button type="button" className="ghost" onClick={() => galeria.current?.click()}>
+              {elegidas.length ? '+ De la galería' : 'Elegir de la galería'}
+            </button>
+          </div>
+        )}
+        {elegidas.length > 0 && (
+          <>
+            <label className="lbl cap" htmlFor="leyenda" style={{ marginTop: 14 }}>
+              Comentario (opcional)
+            </label>
+            <input id="leyenda" className="inp" maxLength={MENSAJE_MAX} value={leyenda} onChange={(e) => setLeyenda(e.target.value)} placeholder="Día cumplido" />
+            <p className="mu" style={{ fontSize: 12.5, fontWeight: 500 }}>
+              La ven solo los integrantes del grupo. Se achica antes de subirla y se le quita la ubicación.
+            </p>
+            <button type="button" className="btn" disabled={subiendo} onClick={subir}>
+              {subiendo ? 'Subiendo…' : 'Compartir'}
+            </button>
+          </>
+        )}
       </Hoja>
       <VerFoto gid={gid} cid={cid} foto={viendo} alCerrar={() => setViendo(null)} />
     </div>
+  );
+}
+
+/** Vista previa: la foto sola, o el collage armado en chico (se rehace al cambiar fotos o diseño). */
+function useVistaPrevia(fotos: File[], diseno: DisenoCollage): string {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    let vivo = true;
+    let actual = '';
+    if (!fotos.length) {
+      setUrl('');
+      return;
+    }
+    const hacer = fotos.length === 1 ? Promise.resolve<Blob>(fotos[0]) : armarCollage(fotos, diseno, 540);
+    hacer
+      .then((b) => {
+        if (!vivo) return;
+        actual = URL.createObjectURL(b);
+        setUrl(actual);
+      })
+      .catch(() => vivo && setUrl(''));
+    return () => {
+      vivo = false;
+      if (actual) URL.revokeObjectURL(actual);
+    };
+  }, [fotos, diseno]);
+  return url;
+}
+
+function Miniatura({ archivo, indice, alQuitar }: { archivo: File; indice: number; alQuitar: () => void }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    const u = URL.createObjectURL(archivo);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [archivo]);
+  return (
+    <span style={{ position: 'relative', width: 64, height: 64, borderRadius: 10, overflow: 'hidden', background: 'var(--ln)', flex: 'none' }}>
+      {url && <img src={url} alt={`Foto ${indice}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+      <button type="button" aria-label={`Quitar foto ${indice}`} onClick={alQuitar} style={{ position: 'absolute', top: 2, right: 2, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,.6)', color: '#fff', fontSize: 14, lineHeight: '22px', textAlign: 'center' }}>
+        ×
+      </button>
+    </span>
   );
 }
 

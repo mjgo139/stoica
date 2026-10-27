@@ -114,6 +114,43 @@ test.describe('v0.2–v0.3 · hábitos', () => {
     await expect(page.getByText('Tiempo con la familia')).toHaveCount(0);
   });
 
+  test('lista: comer bien con almuerzo, merienda y cena', async ({ page }) => {
+    await entrarConEjemplo(page);
+    const comer = page.locator('[data-habito="Comer bien"]');
+    await expect(comer).toContainText('1/3');
+    await comer.getByRole('button', { name: 'Merienda' }).click();
+    await expect(comer.getByRole('button', { name: 'Merienda' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(comer).toContainText('2/3');
+    await comer.getByRole('button', { name: 'Cena' }).click();
+    // Completar la lista puede llegar a un hito
+    const victoria = page.getByRole('alertdialog', { name: 'Victoria sobre ti mismo' });
+    await expect(victoria).toBeVisible();
+    await victoria.getByRole('button', { name: 'Seguir' }).click();
+    await expect(comer).toContainText('cumplido');
+    await comer.getByRole('button', { name: 'Cena' }).click();
+    await expect(comer).toContainText('faltan 1');
+    await captura(page, '10c-lista');
+
+    // Detalle: porcentaje por ítem
+    await ir(page, '/habitos/h-comer');
+    await expect(page.locator('[data-items]')).toContainText('Merienda');
+
+    // Crear una lista desde cero: alcanza con 2 de 3
+    await ir(page, '/habitos/nuevo');
+    await page.getByLabel('Nombre').fill('Rutina de mañana');
+    await page.getByRole('radio', { name: 'Lista' }).click();
+    await page.getByLabel('Ítem 1', { exact: true }).fill('Cama');
+    await page.getByLabel('Ítem 2', { exact: true }).fill('Agua');
+    await page.getByRole('button', { name: '+ Agregar ítem' }).click();
+    await page.getByLabel('Ítem 3', { exact: true }).fill('Estirar');
+    await page.getByLabel('Para cumplir el día').selectOption({ label: 'Al menos 2 de 3' });
+    await page.getByRole('button', { name: /Crear hábito|Guardar/ }).click();
+    const rutina = page.locator('[data-habito="Rutina de mañana"]');
+    await rutina.getByRole('button', { name: 'Cama' }).click();
+    await rutina.getByRole('button', { name: 'Agua' }).click();
+    await expect(rutina).toContainText('cumplido');
+  });
+
   test('hito: Victoria sobre ti mismo al llegar a 3 días', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('tab', { name: 'Crear cuenta' }).click();
@@ -400,6 +437,23 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Compartir' }).click();
     await expect(page.locator('[data-muro="fotos"]').getByRole('button', { name: /Foto de Marco Aurelio/ })).toBeVisible();
     await captura(page, '25-desafio-plan');
+
+    // Collage: varias fotos de la galería, elegir diseño, quitar una y compartir. La cámara es un botón aparte.
+    await expect(page.locator('[data-muro="fotos"]').getByLabel('Sacar foto con la cámara')).toHaveAttribute('capture', 'environment');
+    await page.locator('[data-muro="fotos"]').getByRole('button', { name: 'Cambiar mi foto de hoy' }).click();
+    const hojaFoto = page.getByRole('dialog', { name: 'Foto de hoy' });
+    await expect(hojaFoto.getByRole('button', { name: 'Elegir de la galería' })).toBeVisible();
+    await expect(hojaFoto.getByRole('button', { name: /Sacar foto/ })).toBeVisible();
+    const varias = ['a', 'b', 'c', 'd'].map((n) => ({ name: `${n}.png`, mimeType: 'image/png', buffer: png }));
+    await page.locator('[data-muro="fotos"]').getByLabel('Elegir foto').setInputFiles(varias);
+    const hojaCollage = page.getByRole('dialog', { name: 'Collage de hoy' });
+    await expect(hojaCollage.getByRole('radio', { name: 'Cuadrícula' })).toHaveAttribute('aria-checked', 'true');
+    await hojaCollage.getByRole('button', { name: 'Quitar foto 4' }).click();
+    await hojaCollage.getByRole('radio', { name: 'Grande arriba' }).click();
+    await expect(hojaCollage.locator('[data-vista-previa]')).toBeVisible();
+    await captura(page, '25b-collage');
+    await hojaCollage.getByRole('button', { name: 'Compartir' }).click();
+    await expect(page.getByText('Collage del día compartido.')).toBeVisible();
 
     // El código ya no sirve otra vez
     await ir(page, '/comunidad/g-portico');

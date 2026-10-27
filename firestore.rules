@@ -107,14 +107,14 @@ service cloud.firestore {
           let d = nuevo();
           return d.keys().hasOnly(['nombre', 'tipo', 'virtud', 'icono', 'momento', 'dias', 'meta', 'unidad', 'variables', 'recordatorio', 'recordatorioSlot', 'recordatorios', 'avisos', 'inicio', 'archivado', 'orden', 'racha', 'mejorRacha', 'creado', 'actualizado', 'actualizadoPor'])
             && texto(d.nombre, 1, 40)
-            && d.tipo in ['sino', 'cantidad', 'medicion']
+            && d.tipo in ['sino', 'cantidad', 'medicion', 'lista']
             && d.virtud in ['sabiduria', 'coraje', 'justicia', 'templanza']
             && texto(d.icono, 1, 20)
             && momento(d.momento)
             && d.dias is list && d.dias.size() >= 1 && d.dias.size() <= 7
             && entero(d.meta, 1, 1000)
             && texto(d.unidad, 0, 16)
-            && d.variables is list && d.variables.size() <= 4
+            && d.variables is list && d.variables.size() <= 6
             && (d.recordatorio == null || hora(d.recordatorio))
             && (d.recordatorioSlot == null || entero(d.recordatorioSlot, 0, 95))
             && (!('recordatorios' in d) || (d.recordatorios is list && d.recordatorios.size() <= 3
@@ -148,7 +148,7 @@ service cloud.firestore {
             && lid == d.habitId + '_' + d.fecha
             && d.hecho is bool
             && numero(d.valor, 0, 10000)
-            && d.medidas is map && d.medidas.size() <= 4
+            && d.medidas is map && d.medidas.size() <= 6
             && texto(d.nota, 0, 500)
             && firmado(uid);
         }

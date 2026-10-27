@@ -177,7 +177,7 @@ describe('users/{uid}/logs', () => {
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { valor: -1 })));
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { valor: 20000 })));
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { nota: 'x'.repeat(501) })));
-    await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { medidas: { a: 1, b: 2, c: 3, d: 4, e: 5 } })));
+    await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { medidas: { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 } })));
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { hecho: 'si' })));
   });
   it('el admin no puede leer registros ni mediciones', async () => {
@@ -492,6 +492,24 @@ describe('v1.1 · avisos a cualquier hora y proyectos', () => {
     await assertSucceeds(setDoc(doc(db, 'users/ana/borrados/projects_p1'), { col: 'projects', docId: 'p1', actualizado: ahora(), actualizadoPor: 'ana' }));
     await assertSucceeds(deleteDoc(doc(db, 'users/ana/projects/p1')));
     await assertFails(setDoc(doc(usuario('ana', 'usuario', { bloqueado: true }), 'users/ana/projects/p3'), p));
+  });
+});
+
+describe('v1.2 · hábitos de tipo lista', () => {
+  const item = (id: string, nombre: string) => ({ id, nombre, unidad: '', inicial: 0, meta: 0, direccion: 'mantener' });
+  const seis = ['a', 'b', 'c', 'd', 'e', 'f'].map((x) => item(x, x.toUpperCase()));
+  it('acepta una lista de hasta 6 ítems y su registro del día', async () => {
+    const db = usuario('ana');
+    await assertSucceeds(setDoc(doc(db, 'users/ana/habits/h1'), habito('ana', { tipo: 'lista', icono: 'food', meta: 3, variables: seis })));
+    await assertSucceeds(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { hecho: false, valor: 6, medidas: { a: 1, b: 1, c: 1, d: 1, e: 1, f: 1 } })));
+  });
+  it('rechaza más de 6 ítems y un tipo desconocido', async () => {
+    const db = usuario('ana');
+    await assertFails(setDoc(doc(db, 'users/ana/habits/h1'), habito('ana', { tipo: 'lista', variables: [...seis, item('g', 'G')] })));
+    await assertFails(setDoc(doc(db, 'users/ana/habits/h1'), habito('ana', { tipo: 'checklist' })));
+  });
+  it('un registro leído con su id no se puede guardar tal cual (la app lo quita)', async () => {
+    await assertFails(setDoc(doc(usuario('ana'), `users/ana/logs/h1_${HOY}`), registro('ana', { id: `h1_${HOY}` })));
   });
 });
 

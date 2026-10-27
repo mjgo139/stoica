@@ -4,6 +4,7 @@
  * casi no cuestan y pierden los datos ocultos de la cámara (como la ubicación).
  */
 import { DIAS_GRACIA_DEFECTO, FOTO_LADO, FOTO_MAX_BYTES, MINI_LADO, MINI_MAX_BYTES, validarMensaje, diasGraciaValidos, type ConfigPlan } from '@core/plan';
+import { celdasCollage, recorteCubrir, type DisenoCollage } from '@core/collage';
 import { limpiarNombre } from '@core/validaciones';
 import { obtenerDriver } from '@/data';
 import { useDocumento } from '@/data/hooks';
@@ -85,7 +86,7 @@ export async function reducirImagen(archivo: Blob, lado: number, max: number): P
   throw new Error('La foto es demasiado pesada.');
 }
 
-export async function subirFoto(grupoId: string, desafioId: string, archivo: File, texto: string): Promise<string | null> {
+export async function subirFoto(grupoId: string, desafioId: string, archivo: Blob, texto: string): Promise<string | null> {
   if (!archivo.type.startsWith('image/')) return 'Elegí una imagen.';
   try {
     const [foto, mini] = await Promise.all([reducirImagen(archivo, FOTO_LADO, FOTO_MAX_BYTES), reducirImagen(archivo, MINI_LADO, MINI_MAX_BYTES)]);
@@ -94,4 +95,26 @@ export async function subirFoto(grupoId: string, desafioId: string, archivo: Fil
   } catch (e) {
     return e instanceof Error && e.message === 'La foto es demasiado pesada.' ? e.message : mensajeDeError(e);
   }
+}
+
+/**
+ * Junta 2 a 4 fotos en un cuadrado (se sube como una sola foto: mismo costo que una).
+ * Cada foto se recorta al centro para llenar su lugar, sin deformarse.
+ */
+export async function armarCollage(fotos: Blob[], diseno: DisenoCollage, lado = FOTO_LADO): Promise<Blob> {
+  const lienzo = document.createElement('canvas');
+  lienzo.width = lado;
+  lienzo.height = lado;
+  const ctx = lienzo.getContext('2d')!;
+  ctx.fillStyle = '#f6f1e7';
+  ctx.fillRect(0, 0, lado, lado);
+  const celdas = celdasCollage(fotos.length, diseno, lado, Math.round(lado / 135));
+  for (let i = 0; i < celdas.length; i++) {
+    const bmp = await createImageBitmap(fotos[i], { imageOrientation: 'from-image' } as ImageBitmapOptions);
+    const c = celdas[i];
+    const r = recorteCubrir(bmp.width, bmp.height, c);
+    ctx.drawImage(bmp, r.sx, r.sy, r.sAncho, r.sAlto, c.x, c.y, c.ancho, c.alto);
+    bmp.close?.();
+  }
+  return new Promise((ok, mal) => lienzo.toBlob((b) => (b ? ok(b) : mal(new Error('No se pudo armar el collage.'))), 'image/jpeg', 0.9));
 }

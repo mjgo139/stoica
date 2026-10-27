@@ -6,6 +6,8 @@ import {
   cumplido,
   estadoDia,
   formatoNumero,
+  itemsHechos,
+  porcentajeItems,
   mejorRacha,
   NOMBRE_TIPO,
   NOMBRE_VIRTUD,
@@ -19,7 +21,7 @@ import {
   type Variable,
 } from '@core/habitos';
 import { aRomano } from '@core/romanos';
-import { alternarSiNo, archivarHabito, borrarHabito, guardarNota, sumar, uidActual, useDatos, useHoy } from '@/app/datos';
+import { alternarItemLista, alternarSiNo, archivarHabito, borrarHabito, guardarNota, sumar, uidActual, useDatos, useHoy } from '@/app/datos';
 import { useConsulta } from '@/data/hooks';
 import { IconoHabito, Trazo } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
@@ -117,6 +119,7 @@ export function Detalle() {
               <div className="r">desde {fechaCorta(h.inicio)}</div>
             </div>
           </div>
+          {h.tipo === 'lista' && <PanelItems h={h} regs={regs} hoy={hoy} />}
           {h.tipo === 'medicion' && h.variables.map((v) => <PanelVariable key={v.id} v={v} serie={serieDeVariable(v.id, [...regs.values()])} hoy={hoy} />)}
           <Nota h={h} r={rHoy} hoy={hoy} />
         </div>
@@ -215,6 +218,36 @@ function CajaHoy({ h, r, ok, hoy }: { h: Habito; r: Registro | undefined; ok: bo
           </div>
           <div className="mu" style={{ fontWeight: 600 }}>
             {h.unidad || 'unidades'} · {ok ? '¡meta cumplida!' : `faltan ${h.meta - valor}`}
+          </div>
+        </>
+      )}
+      {h.tipo === 'lista' && (
+        <>
+          <div className="lista-items" role="group" aria-label={`Ítems de ${h.nombre}`} style={{ justifyContent: 'center', padding: 0, marginTop: 18 }}>
+            {h.variables.map((v) => {
+              const si = itemsHechos(h, r).includes(v.id);
+              return (
+                <button key={v.id} type="button" className={`chip-item grande ${si ? 'ok' : ''}`} aria-pressed={si} onClick={() => alternarItemLista(h, hoy, v.id)}>
+                  <i aria-hidden="true">
+                    <svg width="10" height="10" viewBox="0 0 24 24">
+                      <path d="M5 12l4 4 10-10" />
+                    </svg>
+                  </i>
+                  {v.nombre}
+                </button>
+              );
+            })}
+          </div>
+          <div className="num" style={{ fontSize: 34, marginTop: 14 }}>
+            {valor}
+            <span className="mu2" style={{ fontSize: 20 }}>
+              {' '}
+              / {h.variables.length}
+            </span>
+          </div>
+          <div className="mu" style={{ fontWeight: 600 }}>
+            {ok ? '¡día cumplido!' : `faltan ${Math.max(0, h.meta - valor)} para cumplir`}
+            {h.meta < h.variables.length ? ` · alcanza con ${h.meta}` : ''}
           </div>
         </>
       )}
@@ -395,6 +428,29 @@ function Nota({ h, r, hoy }: { h: Habito; r: Registro | undefined; hoy: string }
         onChange={(e) => setTexto(e.target.value)}
         onBlur={() => texto !== (r?.nota ?? '') && guardarNota(h, hoy, texto)}
       />
+    </div>
+  );
+}
+
+/** Lista: qué ítem cuesta más (porcentaje de los últimos 30 días). */
+function PanelItems({ h, regs, hoy }: { h: Habito; regs: Map<string, Registro>; hoy: string }) {
+  const filas = porcentajeItems(h, regs, sumarDias(hoy, -29), hoy);
+  return (
+    <div className="card" style={{ marginTop: 18 }} data-items>
+      <div className="grp cap" style={{ marginTop: 0 }}>
+        <span>Por ítem · últimos 30 días</span>
+      </div>
+      {filas.map((f) => (
+        <div key={f.id} style={{ padding: '8px 0' }}>
+          <div style={{ display: 'flex', fontWeight: 600 }}>
+            <span style={{ flex: 1 }}>{f.nombre}</span>
+            <span className="num">{f.porcentaje}%</span>
+          </div>
+          <div className="barra-prog" style={{ marginTop: 6 }}>
+            <i style={{ width: `${f.porcentaje}%`, background: f.porcentaje >= 80 ? 'var(--ok)' : 'var(--gold)' }} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

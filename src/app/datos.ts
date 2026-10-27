@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
 import { claveDia, minutoUTC, sumarDias } from '@core/fechas';
 import {
+  alternarItem,
   hitoAlcanzado,
   horasRecordatorio,
   idRegistro,
@@ -218,6 +219,12 @@ export async function sumar(h: Habito, fecha: string, delta: number) {
   const r = registrosDe(useDatos.getState().registros, h.id).get(fecha);
   const valor = Math.max(0, Math.min(10000, (r?.valor ?? 0) + delta));
   await guardarRegistro(h, fecha, { valor });
+}
+
+/** Lista: marca o desmarca un ítem (por ejemplo, Almuerzo) y recalcula cuántos van. */
+export async function alternarItemLista(h: Habito, fecha: string, itemId: string) {
+  const r = registrosDe(useDatos.getState().registros, h.id).get(fecha);
+  await guardarRegistro(h, fecha, alternarItem(h, r, itemId));
 }
 
 export async function fijarValor(h: Habito, fecha: string, valor: number) {

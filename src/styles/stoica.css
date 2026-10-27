@@ -254,6 +254,20 @@ button:active:not(:disabled) { transform: scale(.97); }
 .plus svg, .menos svg { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
 .menos { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--ln3); color: var(--mu); display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .contador { display: flex; align-items: center; gap: 8px; flex: none; }
+/* Lista: varios sí/no en un hábito */
+.item.con-lista { flex-wrap: wrap; row-gap: 10px; }
+.lista-cuenta { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
+.lista-items { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; padding-left: 58px; }
+.chip-item { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px 0 12px; border-radius: 18px; border: 1.5px solid var(--ln3); color: var(--tx); font-size: 13.5px; font-weight: 600; background: transparent; }
+.chip-item i { width: 14px; height: 14px; transform: rotate(45deg); border: 1.5px solid var(--chk); border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.chip-item svg { transform: rotate(-45deg); opacity: 0; fill: none; stroke: var(--on); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.chip-item.ok { background: var(--okbg); border-color: var(--okbd); color: var(--oktx); }
+.chip-item.ok i { background: var(--ok); border-color: var(--ok); }
+.chip-item.ok svg { opacity: 1; }
+.chip-item.mal { border-color: var(--missbd); }
+.chip-item:disabled { opacity: .55; }
+.chip-item.grande { min-height: 44px; font-size: 15px; padding: 0 18px 0 14px; }
+@media (max-width: 420px) { .lista-items { padding-left: 0; } }
 .contador .val { min-height: 44px; padding: 0 2px; white-space: nowrap; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; }
 .segs { display: flex; gap: 3px; margin-top: 8px; max-width: 170px; }
 .segs i { flex: 1; height: 5px; border-radius: 2px; background: var(--ln3); }

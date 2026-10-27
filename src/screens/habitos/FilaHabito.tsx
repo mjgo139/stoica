@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { cumplido, NOMBRE_VIRTUD, formatoNumero, type Habito, type Registro } from '@core/habitos';
+import { cumplido, itemsHechos, NOMBRE_VIRTUD, formatoNumero, type Habito, type Registro } from '@core/habitos';
 import { aRomano } from '@core/romanos';
-import { alternarSiNo, sumar } from '@/app/datos';
+import { alternarItemLista, alternarSiNo, sumar } from '@/app/datos';
 import { IconoHabito, Trazo } from '@/ui/IconoHabito';
 import { HojaMedir } from './HojaMedir';
 
@@ -30,7 +30,7 @@ export function FilaHabito({ h, r, fecha, racha, perdido, editable }: Props) {
   );
 
   return (
-    <div className={`item ${ok ? 'is-done' : ''}`} data-habito={h.nombre}>
+    <div className={`item ${ok ? 'is-done' : ''} ${h.tipo === 'lista' ? 'con-lista' : ''}`} data-habito={h.nombre}>
       <Link to={`/habitos/${h.id}`} className="item-main">
         <IconoHabito icono={h.icono} virtud={h.virtud} />
         <span style={{ minWidth: 0, flex: 1 }}>
@@ -100,6 +100,8 @@ export function FilaHabito({ h, r, fecha, racha, perdido, editable }: Props) {
         </div>
       )}
 
+      {h.tipo === 'lista' && <ListaDelDia h={h} r={r} fecha={fecha} ok={ok} perdido={perdido} editable={editable} />}
+
       {h.tipo === 'medicion' && (
         <>
           <button type="button" className={`pill ${ok ? 'ok' : perdido ? 'mal' : ''}`} disabled={!editable} onClick={() => setMidiendo(true)} aria-label={`Registrar ${h.nombre}`}>
@@ -109,5 +111,45 @@ export function FilaHabito({ h, r, fecha, racha, perdido, editable }: Props) {
         </>
       )}
     </div>
+  );
+}
+
+/** Lista: el contador a la derecha y, debajo, un botón por ítem (Almuerzo, Merienda, Cena…). */
+export function ListaDelDia({ h, r, fecha, ok, perdido, editable }: { h: Habito; r: Registro | undefined; fecha: string; ok: boolean; perdido: boolean; editable: boolean }) {
+  const hechos = itemsHechos(h, r);
+  return (
+    <>
+      <span className="val lista-cuenta">
+        <span className="num" style={{ fontSize: 18, color: ok ? 'var(--ok)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
+          {hechos.length}
+          <span className="mu2" style={{ fontSize: 13 }}>/{h.variables.length}</span>
+        </span>
+        <span className="mu2" style={{ fontSize: 11, fontWeight: 600 }}>
+          {ok ? 'cumplido' : `faltan ${Math.max(0, h.meta - hechos.length)}`}
+        </span>
+      </span>
+      <div className="lista-items" role="group" aria-label={`Ítems de ${h.nombre}`}>
+        {h.variables.map((v) => {
+          const si = hechos.includes(v.id);
+          return (
+            <button
+              key={v.id}
+              type="button"
+              className={`chip-item ${si ? 'ok' : perdido ? 'mal' : ''}`}
+              aria-pressed={si}
+              disabled={!editable}
+              onClick={() => alternarItemLista(h, fecha, v.id)}
+            >
+              <i aria-hidden="true">
+                <svg width="10" height="10" viewBox="0 0 24 24">
+                  <path d="M5 12l4 4 10-10" />
+                </svg>
+              </i>
+              {v.nombre}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }

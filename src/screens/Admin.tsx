@@ -95,7 +95,7 @@ export function Admin() {
     </div>
   );
 
-  const totalTipos = m ? m.porTipo.sino + m.porTipo.cantidad + m.porTipo.medicion : 0;
+  const totalTipos = m ? m.porTipo.sino + m.porTipo.cantidad + m.porTipo.medicion + (m.porTipo.lista ?? 0) : 0;
 
   return (
     <div className="entra">
@@ -133,6 +133,7 @@ export function Admin() {
                 ['Sí / No', m.porTipo.sino],
                 ['Cantidad', m.porTipo.cantidad],
                 ['Medición', m.porTipo.medicion],
+                ['Lista', m.porTipo.lista ?? 0],
               ] as Array<[string, number]>
             ).map(([n, v]) => (
               <div key={n} style={{ padding: '8px 0' }}>

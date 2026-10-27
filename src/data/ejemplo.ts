@@ -65,6 +65,17 @@ export function sembrarEjemplo(escribir: Escribir, crearCuenta: CrearCuenta) {
     }),
     base({ id: 'h-leer', nombre: 'Leer', tipo: 'cantidad', virtud: 'sabiduria', icono: 'read', momento: 2, meta: 20, unidad: 'páginas', orden: 4 }),
     base({ id: 'h-familia', nombre: 'Tiempo con la familia', virtud: 'justicia', icono: 'family', momento: 2, orden: 5 }),
+    base({
+      id: 'h-comer',
+      nombre: 'Comer bien',
+      tipo: 'lista',
+      virtud: 'templanza',
+      icono: 'food',
+      momento: 1,
+      orden: 6,
+      meta: 3,
+      variables: (['Almuerzo', 'Merienda', 'Cena'] as const).map((n) => ({ id: n.toLowerCase(), nombre: n, unidad: '', inicial: 0, meta: 0, direccion: 'mantener' as const })),
+    }),
   ];
   for (const h of habitos) escribir(`users/${yo}/habits/${h.id}`, h as never);
 
@@ -85,7 +96,11 @@ export function sembrarEjemplo(escribir: Escribir, crearCuenta: CrearCuenta) {
     }
     if (azar() > 0.35) reg(habitos[4], f, { valor: azar() > 0.4 ? 20 : 12 });
     if (azar() > 0.2) reg(habitos[5], f, { hecho: true });
+    // Lista sin azar (para no mover los demás datos): la merienda es la que más cuesta.
+    const comidas = { almuerzo: 1, ...(i % 3 !== 0 ? { merienda: 1 } : {}), ...(i % 5 !== 0 ? { cena: 1 } : {}) };
+    reg(habitos[6], f, { medidas: comidas, valor: Object.keys(comidas).length, hecho: Object.keys(comidas).length === 3 });
   }
+  reg(habitos[6], hoy, { medidas: { almuerzo: 1 }, valor: 1 });
   reg(habitos[0], hoy, { hecho: true });
   reg(habitos[2], hoy, { valor: 3 });
 

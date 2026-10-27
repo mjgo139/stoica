@@ -251,8 +251,8 @@ export const adminBorrarCuenta = onCall(llamable, async (req) => {
 async function guardarMetricas() {
   const cuentas = (await db().collection('accounts').get()).docs.map((d) => d.data() as Cuenta);
   const contar = async (tipo: string) => (await db().collectionGroup('habits').where('tipo', '==', tipo).count().get()).data().count;
-  const [sino, cantidad, medicion] = await Promise.all([contar('sino'), contar('cantidad'), contar('medicion')]);
-  const m = calcularMetricas(cuentas, { sino, cantidad, medicion }, Date.now(), ZONA_POR_DEFECTO);
+  const [sino, cantidad, medicion, lista] = await Promise.all([contar('sino'), contar('cantidad'), contar('medicion'), contar('lista')]);
+  const m = calcularMetricas(cuentas, { sino, cantidad, medicion, lista }, Date.now(), ZONA_POR_DEFECTO);
   await db().doc(`metrics/${m.fecha}`).set(m);
   return m;
 }

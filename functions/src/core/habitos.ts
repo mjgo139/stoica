@@ -15,9 +15,9 @@ export const DETALLE_VIRTUD: Record<Virtud, string> = {
   templanza: 'Moderación, autocontrol, medida',
 };
 
-export const TIPOS = ['sino', 'cantidad', 'medicion'] as const;
+export const TIPOS = ['sino', 'cantidad', 'medicion', 'lista'] as const;
 export type TipoHabito = (typeof TIPOS)[number];
-export const NOMBRE_TIPO: Record<TipoHabito, string> = { sino: 'Sí / No', cantidad: 'Cantidad', medicion: 'Medición' };
+export const NOMBRE_TIPO: Record<TipoHabito, string> = { sino: 'Sí / No', cantidad: 'Cantidad', medicion: 'Medición', lista: 'Lista' };
 
 export const DIRECCIONES = ['bajar', 'subir', 'mantener'] as const;
 export type Direccion = (typeof DIRECCIONES)[number];
@@ -52,9 +52,9 @@ export interface Habito {
   momento: Momento;
   /** Días de la semana activos (0 = domingo). */
   dias: number[];
-  meta: number; // cantidad: meta diaria; otros: 1
+  meta: number; // cantidad: meta diaria; lista: cuántos ítems alcanzan; otros: 1
   unidad: string; // cantidad: "vasos", "páginas"
-  variables: Variable[]; // medición
+  variables: Variable[]; // medición: variables; lista: ítems de sí/no (solo importan id y nombre)
   recordatorio: string | null; // "HH:MM" local (el primero; se mantiene por compatibilidad)
   recordatorioSlot: number | null; // franja UTC de 15 min (versiones anteriores; las nuevas usan `avisos`)
   /** Hasta 3 horas locales "HH:MM", a cualquier minuto. */
@@ -76,8 +76,8 @@ export interface Registro {
   habitId: string;
   fecha: string;
   hecho: boolean; // sino
-  valor: number; // cantidad
-  medidas: Record<string, number>; // medición: {variableId: valor}
+  valor: number; // cantidad; lista: cuántos ítems se cumplieron
+  medidas: Record<string, number>; // medición: {variableId: valor}; lista: {itemId: 1}
   nota: string;
   actualizado: number;
   actualizadoPor: string;
@@ -93,7 +93,7 @@ export function horasRecordatorio(h: Pick<Habito, 'recordatorio'> & { recordator
   return [...hs].sort();
 }
 
-export const LIMITES_HABITO = { nombreMax: 40, unidadMax: 16, metaMax: 1000, variablesMax: 4, notaMax: 500, habitosMax: 40, valorMax: 100000 } as const;
+export const LIMITES_HABITO = { nombreMax: 40, unidadMax: 16, metaMax: 1000, variablesMax: 4, itemsMin: 2, itemsMax: 6, itemNombreMax: 24, notaMax: 500, habitosMax: 40, valorMax: 100000 } as const;
 
 export const HITOS = [3, 7, 14, 21, 30, 60, 100, 180, 365, 500, 1000] as const;
 
@@ -108,15 +108,37 @@ export function esDiaActivo(h: Pick<Habito, 'dias' | 'inicio'>, clave: string): 
 export function cumplido(h: Pick<Habito, 'tipo' | 'meta'>, r: Partial<Registro> | undefined | null): boolean {
   if (!r) return false;
   if (h.tipo === 'sino') return r.hecho === true;
-  if (h.tipo === 'cantidad') return (r.valor ?? 0) >= Math.max(1, h.meta);
+  if (h.tipo === 'cantidad' || h.tipo === 'lista') return (r.valor ?? 0) >= Math.max(1, h.meta);
   return !!r.medidas && Object.keys(r.medidas).length > 0;
 }
 
 /** Progreso 0..1 del día (cantidad muestra cuánto va). */
 export function progreso(h: Pick<Habito, 'tipo' | 'meta'>, r: Partial<Registro> | undefined | null): number {
   if (!r) return 0;
-  if (h.tipo === 'cantidad') return Math.min(1, (r.valor ?? 0) / Math.max(1, h.meta));
+  if (h.tipo === 'cantidad' || h.tipo === 'lista') return Math.min(1, (r.valor ?? 0) / Math.max(1, h.meta));
   return cumplido(h, r) ? 1 : 0;
+}
+
+// ---------- Listas (varios sí/no en un hábito) ----------
+/** Ítem nuevo de una lista: se guarda con la forma de una variable, sin unidad ni meta. */
+export function itemLista(id: string, nombre: string): Variable {
+  return { id, nombre, unidad: '', inicial: 0, meta: 0, direccion: 'mantener' };
+}
+
+/** Ítems de la lista cumplidos ese día (solo cuentan los que siguen en el hábito). */
+export function itemsHechos(h: Pick<Habito, 'variables'>, r: Partial<Registro> | undefined | null): string[] {
+  if (!r?.medidas) return [];
+  return h.variables.filter((v) => r.medidas![v.id] === 1).map((v) => v.id);
+}
+
+/** Cambia un ítem y devuelve lo que hay que guardar en el registro (medidas, cuántos, hecho). */
+export function alternarItem(h: Pick<Habito, 'variables' | 'meta'>, r: Partial<Registro> | undefined | null, itemId: string): Pick<Registro, 'medidas' | 'valor' | 'hecho'> {
+  const medidas: Record<string, number> = {};
+  for (const id of itemsHechos(h, r)) medidas[id] = 1;
+  if (medidas[itemId]) delete medidas[itemId];
+  else medidas[itemId] = 1;
+  const valor = Object.keys(medidas).length;
+  return { medidas, valor, hecho: valor >= Math.max(1, h.meta) };
 }
 
 export type MapaRegistros = Map<string, Registro> | Record<string, Registro>;
@@ -168,6 +190,23 @@ export function porcentaje(h: Habito, registros: MapaRegistros, desde: string, h
     if (ok) hechos++;
   }
   return activos === 0 ? 0 : Math.round((hechos / activos) * 100);
+}
+
+/** Lista: porcentaje de días activos en que se cumplió cada ítem (hoy solo cuenta si ya se marcó). */
+export function porcentajeItems(h: Habito, registros: MapaRegistros, desde: string, hasta: string): Array<{ id: string; nombre: string; porcentaje: number }> {
+  const inicio = desde < h.inicio ? h.inicio : desde;
+  return h.variables.map((v) => {
+    let activos = 0;
+    let hechos = 0;
+    for (let dia = inicio; dia <= hasta; dia = sumarDias(dia, 1)) {
+      if (!esDiaActivo(h, dia)) continue;
+      const si = leer(registros, dia)?.medidas?.[v.id] === 1;
+      if (dia === hasta && !si) continue;
+      activos++;
+      if (si) hechos++;
+    }
+    return { id: v.id, nombre: v.nombre, porcentaje: activos === 0 ? 0 : Math.round((hechos / activos) * 100) };
+  });
 }
 
 /** Estado de un día para el calendario. */
@@ -282,6 +321,17 @@ export function validarHabito(h: Partial<Habito>): ErrorValidacion {
     if (!Number.isInteger(h.meta) || (h.meta ?? 0) < 1 || (h.meta ?? 0) > LIMITES_HABITO.metaMax) return `La meta diaria tiene que ser un número entero entre 1 y ${LIMITES_HABITO.metaMax}.`;
     if ((h.unidad ?? '').length > LIMITES_HABITO.unidadMax) return 'La unidad es muy larga.';
   }
+  if (h.tipo === 'lista') {
+    const vs = h.variables ?? [];
+    if (vs.length < LIMITES_HABITO.itemsMin) return `Una lista necesita al menos ${LIMITES_HABITO.itemsMin} ítems (por ejemplo, Almuerzo y Cena).`;
+    if (vs.length > LIMITES_HABITO.itemsMax) return `Una lista puede tener hasta ${LIMITES_HABITO.itemsMax} ítems.`;
+    for (const v of vs) {
+      if (!limpiarNombre(v.nombre)) return 'Cada ítem de la lista necesita un nombre.';
+      if (v.nombre.length > LIMITES_HABITO.itemNombreMax) return `El nombre de un ítem puede tener hasta ${LIMITES_HABITO.itemNombreMax} letras.`;
+    }
+    if (new Set(vs.map((v) => limpiarNombre(v.nombre).toLowerCase())).size !== vs.length) return 'Hay dos ítems con el mismo nombre.';
+    if (!Number.isInteger(h.meta) || (h.meta ?? 0) < 1 || (h.meta ?? 0) > vs.length) return `Elegí cuántos ítems alcanzan para cumplir (entre 1 y ${vs.length}).`;
+  }
   if (h.tipo === 'medicion') {
     const vs = h.variables ?? [];
     if (vs.length === 0) return 'Agregá al menos una variable para medir (por ejemplo, peso).';
@@ -327,6 +377,7 @@ export const PLANTILLAS: Plantilla[] = [
   { id: 'pantallas', nombre: 'Sin pantallas de noche', detalle: 'Sí / No · al anochecer', datos: { nombre: 'Sin pantallas de noche', tipo: 'sino', virtud: 'templanza', icono: 'nophone', momento: 2, meta: 1, unidad: '', variables: [] } },
   { id: 'familia', nombre: 'Tiempo con la familia', detalle: 'Sí / No · al anochecer', datos: { nombre: 'Tiempo con la familia', tipo: 'sino', virtud: 'justicia', icono: 'family', momento: 2, meta: 1, unidad: '', variables: [] } },
   { id: 'escribir', nombre: 'Escribir un diario', detalle: 'Sí / No · al anochecer', datos: { nombre: 'Escribir', tipo: 'sino', virtud: 'sabiduria', icono: 'write', momento: 2, meta: 1, unidad: '', variables: [] } },
+  { id: 'comer', nombre: 'Comer bien', detalle: 'Lista · almuerzo, merienda y cena', datos: { nombre: 'Comer bien', tipo: 'lista', virtud: 'templanza', icono: 'food', momento: 1, meta: 3, unidad: '', variables: [{ nombre: 'Almuerzo', unidad: '', direccion: 'mantener' }, { nombre: 'Merienda', unidad: '', direccion: 'mantener' }, { nombre: 'Cena', unidad: '', direccion: 'mantener' }] } },
   { id: 'caminar', nombre: 'Caminar', detalle: 'Cantidad · 30 minutos', datos: { nombre: 'Caminar', tipo: 'cantidad', virtud: 'coraje', icono: 'walk', momento: 1, meta: 30, unidad: 'minutos', variables: [] } },
 ];
 
@@ -356,6 +407,7 @@ const CLAVES_DESAFIO: Array<[RegExp, string]> = [
   [/diario|escrib/, 'escribir'],
   [/agua/, 'agua'],
   [/peso|adelgaz/, 'peso'],
+  [/comer|comida|aliment/, 'comer'],
 ];
 
 /**

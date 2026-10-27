@@ -253,7 +253,7 @@ export function crearDriverMemoria(): Driver {
     },
     adminCalcularMetricas() {
       if (!esAdmin()) throw new ErrorStoica('Solo el admin puede hacer esto.', 'permission-denied');
-      const porTipo = { sino: 0, cantidad: 0, medicion: 0 };
+      const porTipo = { sino: 0, cantidad: 0, medicion: 0, lista: 0 };
       for (const [ruta, m] of colecciones) {
         if (!/^users\/[^/]+\/habits$/.test(ruta)) continue;
         for (const h of m.values()) porTipo[h.tipo as keyof typeof porTipo]++;

@@ -4,6 +4,7 @@ import { DIAS_CORTOS, MOMENTOS } from '@core/fechas';
 import { Horas } from '@/ui/Horas';
 import {
   aNumero,
+  itemLista,
   horasRecordatorio,
   DIRECCIONES,
   GRUPOS_ICONOS,
@@ -46,12 +47,17 @@ interface Form {
   meta: string;
   unidad: string;
   variables: VarForm[];
+  /** Lista: ítems de sí/no y cuántos alcanzan (0 = todos). */
+  items: Array<{ id: string; nombre: string }>;
+  metaLista: number;
   recordatorios: string[];
 }
 
 const TODOS = [0, 1, 2, 3, 4, 5, 6];
-const vacio: Form = { nombre: '', tipo: 'sino', virtud: 'sabiduria', icono: 'med', momento: 0, dias: TODOS, meta: '8', unidad: '', variables: [], recordatorios: [] };
+const vacio: Form = { nombre: '', tipo: 'sino', virtud: 'sabiduria', icono: 'med', momento: 0, dias: TODOS, meta: '8', unidad: '', variables: [], items: [], metaLista: 0, recordatorios: [] };
 const nuevaVariable = (i: number): VarForm => ({ id: `v${Date.now().toString(36)}${i}`, nombre: '', unidad: '', inicial: '', meta: '', direccion: 'bajar' });
+const nuevoItem = (i: number) => ({ id: `i${Date.now().toString(36)}${i}`, nombre: '' });
+const idDeNombre = (n: string, i: number) => n.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '').slice(0, 20) || `i${i}`;
 const aTexto = (n: number) => String(n).replace('.', ',');
 
 const NOMBRE_DIRECCION: Record<Direccion, string> = { bajar: 'Bajar', subir: 'Subir', mantener: 'Mantener' };
@@ -80,7 +86,9 @@ export function Editor() {
       dias: existente.dias,
       meta: String(existente.meta),
       unidad: existente.unidad,
-      variables: existente.variables.map((v) => ({ ...v, inicial: aTexto(v.inicial), meta: aTexto(v.meta) })),
+      variables: existente.tipo === 'medicion' ? existente.variables.map((v) => ({ ...v, inicial: aTexto(v.inicial), meta: aTexto(v.meta) })) : [],
+      items: existente.tipo === 'lista' ? existente.variables.map((v) => ({ id: v.id, nombre: v.nombre })) : [],
+      metaLista: existente.tipo === 'lista' && existente.meta < existente.variables.length ? existente.meta : 0,
       recordatorios: horasRecordatorio(existente),
     });
     setCargado(true);
@@ -99,7 +107,9 @@ export function Editor() {
       ...p.datos,
       meta: String(p.datos.meta),
       dias: p.id === 'peso' ? [1, 4] : TODOS,
-      variables: p.datos.variables.map((v, i) => ({ ...nuevaVariable(i), ...v, id: v.nombre.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '') || `v${i}`, inicial: '', meta: '' })),
+      variables: p.datos.tipo === 'medicion' ? p.datos.variables.map((v, i) => ({ ...nuevaVariable(i), ...v, id: idDeNombre(v.nombre, i), inicial: '', meta: '' })) : [],
+      items: p.datos.tipo === 'lista' ? p.datos.variables.map((v, i) => ({ id: idDeNombre(v.nombre, i), nombre: v.nombre })) : [],
+      metaLista: 0,
       recordatorios: [],
     });
 
@@ -111,9 +121,14 @@ export function Editor() {
     icono: f.icono,
     momento: f.momento,
     dias: [...f.dias].sort(),
-    meta: f.tipo === 'cantidad' ? Math.round(aNumero(f.meta)) : 1,
+    meta: f.tipo === 'cantidad' ? Math.round(aNumero(f.meta)) : f.tipo === 'lista' ? (f.metaLista > 0 ? Math.min(f.metaLista, f.items.length) : f.items.length) : 1,
     unidad: f.tipo === 'cantidad' ? limpiarNombre(f.unidad) : '',
-    variables: f.tipo === 'medicion' ? f.variables.map((v) => ({ id: v.id, nombre: limpiarNombre(v.nombre), unidad: limpiarNombre(v.unidad), inicial: aNumero(v.inicial), meta: aNumero(v.meta), direccion: v.direccion })) : [],
+    variables:
+      f.tipo === 'medicion'
+        ? f.variables.map((v) => ({ id: v.id, nombre: limpiarNombre(v.nombre), unidad: limpiarNombre(v.unidad), inicial: aNumero(v.inicial), meta: aNumero(v.meta), direccion: v.direccion }))
+        : f.tipo === 'lista'
+          ? f.items.map((x) => itemLista(x.id, limpiarNombre(x.nombre)))
+          : [],
     recordatorio: f.recordatorios.filter(Boolean).sort()[0] ?? null,
     recordatorios: [...new Set(f.recordatorios.filter(Boolean))].sort(),
     inicio: existente?.inicio ?? hoyActual(),
@@ -176,7 +191,13 @@ export function Editor() {
               aria-checked={f.tipo === t}
               className={f.tipo === t ? 'on' : ''}
               disabled={!!existente && existente.tipo !== t}
-              onClick={() => poner({ tipo: t, variables: t === 'medicion' && f.variables.length === 0 ? [nuevaVariable(0)] : f.variables })}
+              onClick={() =>
+                poner({
+                  tipo: t,
+                  variables: t === 'medicion' && f.variables.length === 0 ? [nuevaVariable(0)] : f.variables,
+                  items: t === 'lista' && f.items.length === 0 ? [nuevoItem(0), nuevoItem(1)] : f.items,
+                })
+              }
             >
               {NOMBRE_TIPO[t]}
             </button>
@@ -186,6 +207,7 @@ export function Editor() {
           {f.tipo === 'sino' && 'Se marca con un rombo: lo hiciste o no.'}
           {f.tipo === 'cantidad' && 'Sumás de a uno hasta llegar a la meta del día.'}
           {f.tipo === 'medicion' && 'Registrás valores (peso, cintura…) y ves cómo avanzás hacia la meta.'}
+          {f.tipo === 'lista' && 'Varios sí/no dentro del mismo hábito (por ejemplo, Almuerzo, Merienda y Cena). Marcás cada uno por separado.'}
           {existente && ' El tipo no se puede cambiar una vez creado.'}
         </p>
 
@@ -203,6 +225,46 @@ export function Editor() {
               </label>
               <input id="h-unidad" className="fi" maxLength={LIMITES_HABITO.unidadMax} value={f.unidad} onChange={(e) => poner({ unidad: e.target.value })} placeholder="vasos, páginas…" />
             </div>
+          </div>
+        )}
+
+        {f.tipo === 'lista' && (
+          <div style={{ marginTop: 16 }}>
+            <div className="fl">Ítems de la lista</div>
+            {f.items.map((x, i) => (
+              <div key={x.id} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                <input
+                  className="fi"
+                  aria-label={`Ítem ${i + 1}`}
+                  maxLength={LIMITES_HABITO.itemNombreMax}
+                  value={x.nombre}
+                  onChange={(e) => poner({ items: f.items.map((y) => (y.id === x.id ? { ...y, nombre: e.target.value } : y)) })}
+                  placeholder={['Almuerzo', 'Merienda', 'Cena', 'Desayuno', 'Colación', 'Postre'][i] ?? 'Otro'}
+                />
+                {f.items.length > LIMITES_HABITO.itemsMin && (
+                  <button type="button" className="link" style={{ color: 'var(--cor)', flex: 'none' }} aria-label={`Quitar ítem ${i + 1}`} onClick={() => poner({ items: f.items.filter((y) => y.id !== x.id) })}>
+                    Quitar
+                  </button>
+                )}
+              </div>
+            ))}
+            {f.items.length < LIMITES_HABITO.itemsMax && (
+              <button type="button" className="ghost" onClick={() => poner({ items: [...f.items, nuevoItem(f.items.length)] })}>
+                + Agregar ítem
+              </button>
+            )}
+            <label className="fl" htmlFor="h-meta-lista" style={{ marginTop: 16 }}>
+              Para cumplir el día
+            </label>
+            <select id="h-meta-lista" className="fi" value={f.metaLista} onChange={(e) => poner({ metaLista: Number(e.target.value) })}>
+              <option value={0}>Todos los ítems</option>
+              {Array.from({ length: Math.max(0, f.items.length - 1) }, (_, i) => f.items.length - 1 - i).map((n) => (
+                <option key={n} value={n}>
+                  Al menos {n} de {f.items.length}
+                </option>
+              ))}
+            </select>
+            {existente && <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>Si quitás un ítem, los días anteriores quedan como estaban.</p>}
           </div>
         )}
 
