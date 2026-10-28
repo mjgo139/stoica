@@ -42,15 +42,32 @@ function Sello({ ok, chico = false }: { ok: boolean; chico?: boolean }) {
   );
 }
 
+/** Qué foto mirar o qué hábito fotografiar: lo maneja la pantalla del grupo (una sola hoja para todo). */
+export interface VerFotos {
+  miembro: ConId<Miembro>;
+  habitId: string;
+  habito: string;
+  esYo: boolean;
+  dia?: string;
+}
+export interface SubirFotos {
+  habitId: string;
+  habito: string;
+  sugerida: boolean;
+}
+
+/** Días con foto de un integrante en un hábito (para el puntito de la semana). */
+export function diasConFoto(fotos: Array<ConId<FotoHabito>>, de: string, habitId: string): Set<string> {
+  return new Set(fotos.filter((f) => f.de === de && f.habitId === habitId).map((f) => f.dia));
+}
+
 /**
  * Al lado de cada hábito compartido: la foto de hoy (con su estado), o el botón para subirla si es tuyo.
- * Al tocar se abre el historial de fotos de ese hábito.
+ * Al tocar la foto se abre el historial de ese hábito.
  */
-export function FotoDelHabito({ gid, plan, miembro, habitId, habito, esYo, fotos, pedido = 0 }: { gid: string; plan: EstadoPlan; miembro: ConId<Miembro>; habitId: string; habito: string; esYo: boolean; fotos: Array<ConId<FotoHabito>>; pedido?: number }) {
+export function FotoDelHabito({ plan, miembro, habitId, habito, esYo, fotos, pedido = 0, alVer, alSubir }: { plan: EstadoPlan; miembro: ConId<Miembro>; habitId: string; habito: string; esYo: boolean; fotos: Array<ConId<FotoHabito>>; pedido?: number; alVer: (v: VerFotos) => void; alSubir: (s: SubirFotos) => void }) {
   const hoy = useHoy();
-  const [viendo, setViendo] = useState(false);
-  const [subiendo, setSubiendo] = useState<false | 'normal' | 'sugerida'>(false);
-  const propias = fotos.filter((f) => f.de === miembro.id && f.habitId === habitId).sort((a, b) => (a.dia < b.dia ? 1 : -1));
+  const propias = fotos.filter((f) => f.de === miembro.id && f.habitId === habitId);
   const deHoy = propias.find((f) => f.dia === hoy);
   const puedeSubir = esYo && plan.estado === 'activo';
   // Acabás de cumplirlo desde el grupo: si todavía no hay foto de hoy, se ofrece subirla.
@@ -58,49 +75,93 @@ export function FotoDelHabito({ gid, plan, miembro, habitId, habito, esYo, fotos
   useEffect(() => {
     if (pedido === ultimoPedido.current) return;
     ultimoPedido.current = pedido;
-    if (puedeSubir && !deHoy) setSubiendo('sugerida');
-  }, [pedido, puedeSubir, deHoy]);
+    if (puedeSubir && !deHoy) alSubir({ habitId, habito, sugerida: true });
+  }, [pedido, puedeSubir, deHoy, alSubir, habitId, habito]);
   if (!planVisible(plan)) return <span className="foto-mini hueco" aria-hidden="true" />;
   const quien = esYo ? 'tu' : `de ${miembro.nombre},`;
+  if (deHoy) {
+    return (
+      <button type="button" className="foto-mini" onClick={() => alVer({ miembro, habitId, habito, esYo, dia: hoy })} aria-label={`Foto de hoy ${quien} ${habito}: ${fotoCumplida(deHoy, miembro) ? 'cumplido' : 'no cumplido'}`} data-foto-hoy={habito}>
+        <img src={deHoy.miniUrl} alt="" />
+        <Sello ok={fotoCumplida(deHoy, miembro)} chico />
+      </button>
+    );
+  }
+  if (puedeSubir) {
+    return (
+      <button type="button" className="foto-mini vacia" onClick={() => alSubir({ habitId, habito, sugerida: false })} aria-label={`Subir la foto de hoy de ${habito}`}>
+        <Icono nombre="camara" tam={16} />
+      </button>
+    );
+  }
+  if (propias.length > 0) {
+    return (
+      <button type="button" className="foto-mini vacia" onClick={() => alVer({ miembro, habitId, habito, esYo })} aria-label={`Fotos ${quien} ${habito} (${propias.length})`}>
+        <Icono nombre="camara" tam={14} />
+        <b>{propias.length}</b>
+      </button>
+    );
+  }
+  return <span className="foto-mini hueco" aria-hidden="true" />;
+}
+
+/** Arriba del grupo: las fotos de hoy de todos, para verlas de un vistazo. */
+export function FotosDeHoy({ fotos, miembros, alVer }: { fotos: Array<ConId<FotoHabito>>; miembros: Array<ConId<Miembro>>; alVer: (v: VerFotos) => void }) {
+  const hoy = useHoy();
+  const uid = uidActual();
+  const deHoy = fotos.filter((f) => f.dia === hoy).sort((a, b) => b.actualizado - a.actualizado);
+  if (!deHoy.length) return null;
   return (
-    <>
-      {deHoy ? (
-        <button type="button" className="foto-mini" onClick={() => setViendo(true)} aria-label={`Foto de hoy ${quien} ${habito}: ${fotoCumplida(deHoy, miembro) ? 'cumplido' : 'no cumplido'}`} data-foto-hoy={habito}>
-          <img src={deHoy.miniUrl} alt="" />
-          <Sello ok={fotoCumplida(deHoy, miembro)} chico />
-        </button>
-      ) : puedeSubir ? (
-        <button type="button" className="foto-mini vacia" onClick={() => setSubiendo('normal')} aria-label={`Subir la foto de hoy de ${habito}`}>
-          <Icono nombre="camara" tam={16} />
-        </button>
-      ) : propias.length > 0 ? (
-        <button type="button" className="foto-mini vacia" onClick={() => setViendo(true)} aria-label={`Fotos ${quien} ${habito} (${propias.length})`}>
-          <Icono nombre="camara" tam={14} />
-          <b>{propias.length}</b>
-        </button>
-      ) : (
-        <span className="foto-mini hueco" aria-hidden="true" />
-      )}
-      <HojaFotosHabito gid={gid} abierta={viendo} alCerrar={() => setViendo(false)} miembro={miembro} habitId={habitId} habito={habito} esYo={esYo} puedeSubir={puedeSubir} alSubir={() => (setViendo(false), setSubiendo('normal'))} />
-      {esYo && <HojaSubirFoto gid={gid} habitId={habitId} habito={habito} reemplaza={!!deHoy} abierta={!!subiendo} sugerida={subiendo === 'sugerida'} alCerrar={() => setSubiendo(false)} />}
-    </>
+    <div className="panel" data-fotos-hoy>
+      <div className="grp cap" style={{ marginTop: 0 }}>
+        <span>Fotos de hoy · {deHoy.length}</span>
+      </div>
+      <div className="fotos-hoy" role="list">
+        {deHoy.map((f) => {
+          const m = miembros.find((x) => x.id === f.de);
+          const ok = fotoCumplida(f, m);
+          const esYo = f.de === uid;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              role="listitem"
+              onClick={() => m && alVer({ miembro: m, habitId: f.habitId, habito: f.habito, esYo, dia: f.dia })}
+              aria-label={`${esYo ? 'Tu foto' : `Foto de ${f.nombre}`}: ${f.habito}, ${ok ? 'cumplido' : 'no cumplido'}`}
+            >
+              <img src={f.miniUrl} alt="" loading="lazy" />
+              <Sello ok={ok} chico />
+              <span className="q">{esYo ? 'Vos' : f.nombre.split(' ')[0]}</span>
+              <span className="h">{f.habito}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 /** Todas las fotos de un hábito de un integrante (se leen al abrir), con el estado de cada día. */
-function HojaFotosHabito({ gid, abierta, alCerrar, miembro, habitId, habito, esYo, puedeSubir, alSubir }: { gid: string; abierta: boolean; alCerrar: () => void; miembro: ConId<Miembro>; habitId: string; habito: string; esYo: boolean; puedeSubir: boolean; alSubir: () => void }) {
+export function HojaFotosHabito({ gid, plan, ver, alCerrar, alSubir }: { gid: string; plan: EstadoPlan; ver: VerFotos | null; alCerrar: () => void; alSubir: (s: SubirFotos) => void }) {
   const hoy = useHoy();
-  const { datos } = useConsulta<FotoHabito>(abierta ? { ruta: `groups/${gid}/fotos`, filtros: [['de', '==', miembro.id], ['habitId', '==', habitId]] } : null);
+  const abierta = !!ver;
+  const miembro = ver?.miembro;
+  const habitId = ver?.habitId ?? '';
+  const habito = ver?.habito ?? '';
+  const esYo = !!ver?.esYo;
+  const puedeSubir = esYo && plan.estado === 'activo';
+  const { datos } = useConsulta<FotoHabito>(abierta && miembro ? { ruta: `groups/${gid}/fotos`, filtros: [['de', '==', miembro.id], ['habitId', '==', habitId]] } : null);
   const fotos = [...datos].sort((a, b) => (a.dia < b.dia ? 1 : -1));
   const [elegida, setElegida] = useState<string | null>(null);
-  const actual = fotos.find((f) => f.id === elegida) ?? fotos[0];
+  const actual = fotos.find((f) => f.id === elegida) ?? fotos.find((f) => f.dia === ver?.dia) ?? fotos[0];
   useEffect(() => {
-    if (!abierta) setElegida(null);
-  }, [abierta]);
+    setElegida(null);
+  }, [ver]);
+  if (!miembro) return null;
   return (
     <Hoja titulo={`${habito} · ${esYo ? 'tus fotos' : miembro.nombre}`} abierta={abierta} alCerrar={alCerrar}>
       {puedeSubir && (
-        <button type="button" className="ghost" style={{ width: '100%', marginBottom: 12 }} onClick={alSubir}>
+        <button type="button" className="ghost" style={{ width: '100%', marginBottom: 12 }} onClick={() => (alCerrar(), alSubir({ habitId, habito, sugerida: false }))}>
           <Icono nombre="camara" tam={18} /> {fotos.some((f) => f.dia === hoy) ? 'Cambiar la foto de hoy' : 'Subir la foto de hoy'}
         </button>
       )}
@@ -132,8 +193,14 @@ function HojaFotosHabito({ gid, abierta, alCerrar, miembro, habitId, habito, esY
 }
 
 /** Subir (o reemplazar) la foto de hoy de un hábito: cámara o galería, y collage si son varias. */
-function HojaSubirFoto({ gid, habitId, habito, reemplaza, abierta, sugerida = false, alCerrar }: { gid: string; habitId: string; habito: string; reemplaza: boolean; abierta: boolean; sugerida?: boolean; alCerrar: () => void }) {
+export function HojaSubirFoto({ gid, subir: pedido, fotos, alCerrar }: { gid: string; subir: SubirFotos | null; fotos: Array<ConId<FotoHabito>>; alCerrar: () => void }) {
   const hoy = useHoy();
+  const uid = uidActual();
+  const abierta = !!pedido;
+  const habitId = pedido?.habitId ?? '';
+  const habito = pedido?.habito ?? '';
+  const sugerida = !!pedido?.sugerida;
+  const reemplaza = fotos.some((f) => f.de === uid && f.habitId === habitId && f.dia === hoy);
   const ok = useMiCumplido(habitId, hoy);
   const mostrar = useAvisos((s) => s.mostrar);
   const galeria = useRef<HTMLInputElement>(null);

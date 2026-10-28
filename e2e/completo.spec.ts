@@ -483,6 +483,23 @@ test.describe('v0.5–v1.0', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'Foto de hoy de Lucio Séneca, Ayuno: no cumplido' })).toBeVisible();
 
+    // Tira "Fotos de hoy" arriba del grupo
+    const tira = page.locator('[data-fotos-hoy]');
+    await expect(tira).toContainText('Fotos de hoy · 2');
+    await tira.getByRole('listitem', { name: 'Foto de Lucio Séneca: Ayuno, no cumplido' }).click();
+    await expect(page.getByRole('dialog', { name: 'Ayuno · Lucio Séneca' })).toContainText('Hoy no pude');
+    await page.keyboard.press('Escape');
+
+    // En la semana, los días con foto se tocan: ayer de Epicteto
+    const semanaEpicteto = page.getByRole('group', { name: /Epicteto, Meditar: 7 de 7 días/ });
+    const botonesDia = semanaEpicteto.getByRole('button');
+    await expect(botonesDia).toHaveCount(2);
+    await botonesDia.first().click();
+    const ayer = page.getByRole('dialog', { name: 'Meditar · Epicteto' });
+    await expect(ayer.locator('[data-foto-grande]')).not.toContainText('Hoy');
+    await expect(ayer.locator('[data-foto-grande]')).not.toContainText('Al amanecer');
+    await page.keyboard.press('Escape');
+
     // Mi foto: primero comparto Meditar; la foto queda ligada a cómo me fue hoy (cumplido)
     await page.getByRole('button', { name: 'Qué comparto' }).click();
     await page.getByRole('dialog').getByLabel('Meditar').check();
@@ -516,7 +533,8 @@ test.describe('v0.5–v1.0', () => {
     await expect(hojaCollage.locator('[data-vista-previa]')).toBeVisible();
     await captura(page, '25b-collage');
     await hojaCollage.getByRole('button', { name: 'Compartir' }).click();
-    await expect(page.getByText('Foto de Meditar compartida.')).toBeVisible();
+    // Armar el collage y achicarlo lleva unos segundos en celulares lentos
+    await expect(page.getByText('Foto de Meditar compartida.')).toBeVisible({ timeout: 15000 });
     await captura(page, '25c-grupo-con-fotos');
 
     // Al cumplir un hábito desde el grupo se ofrece la foto (si todavía no hay una de hoy)

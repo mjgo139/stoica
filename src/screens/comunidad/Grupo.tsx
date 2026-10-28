@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, REACCIONES, semanaAlDia, validarDesafio, validarNombreGrupo, type Compartido, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
 import { fechaCorta, sumarDias } from '@core/fechas';
@@ -17,7 +17,7 @@ import { IconoHabito } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
 import { SemanaMini } from '@/ui/SemanaMini';
-import { ChatGrupo, FotoDelHabito, planVisible, useFotosSemana } from './Muro';
+import { ChatGrupo, diasConFoto, FotoDelHabito, FotosDeHoy, HojaFotosHabito, HojaSubirFoto, planVisible, useFotosSemana, type SubirFotos, type VerFotos } from './Muro';
 import { PanelPlan, usePlan } from './Plan';
 import type { EstadoPlan, FotoHabito } from '@core/plan';
 
@@ -36,6 +36,9 @@ export function Grupo() {
   const [renombrando, setRenombrando] = useState(false);
   const plan = usePlan(estado?.grupo);
   const fotos = useFotosSemana(id, plan);
+  const [verFotos, setVerFotos] = useState<VerFotos | null>(null);
+  const [subirFotos, setSubirFotos] = useState<SubirFotos | null>(null);
+  const accionesFotos = useMemo(() => ({ alVer: setVerFotos, alSubir: setSubirFotos }), []);
 
   if (!estado) {
     return listo ? (
@@ -94,7 +97,10 @@ export function Grupo() {
         </button>
       </div>
 
+      <AccionesFotos.Provider value={accionesFotos}>
       <div className="cols c64" style={{ marginTop: 24 }}>
+        <div className="pila">
+        {planVisible(plan) && <FotosDeHoy fotos={fotos} miembros={miembros} alVer={setVerFotos} />}
         <div className="panel">
           <div className="grp cap" style={{ marginTop: 0 }}>
             <span>Integrantes · hoy</span>
@@ -117,6 +123,7 @@ export function Grupo() {
               Todavía no compartís nada. Tocá “Qué comparto” para elegir tus hábitos: solo se ve si lo cumpliste en la semana, la racha y el %.
             </div>
           )}
+        </div>
         </div>
         <div className="pila">
           <div className="panel">
@@ -157,6 +164,9 @@ export function Grupo() {
         </div>
       </div>
 
+      </AccionesFotos.Provider>
+      <HojaFotosHabito gid={id} plan={plan} ver={verFotos} alCerrar={() => setVerFotos(null)} alSubir={setSubirFotos} />
+      <HojaSubirFoto gid={id} subir={subirFotos} fotos={fotos} alCerrar={() => setSubirFotos(null)} />
       {estado && <HojaRenombrar abierta={renombrando} alCerrar={() => setRenombrando(false)} grupoId={id} actual={estado.grupo.nombre} />}
       <HojaCompartir abierta={hoja === 'compartir'} alCerrar={() => setHoja(null)} grupoId={id} actuales={yo?.compartidos.map((c) => c.habitId) ?? []} />
       <HojaDesafio abierta={hoja === 'desafio'} alCerrar={() => setHoja(null)} grupoId={id} hoy={hoy} />
@@ -223,7 +233,7 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
  * Fila de un hábito compartido, con la misma estructura para todos:
  * ícono · nombre, racha, % y semana · foto de hoy · rombo de hoy.
  */
-export function FilaCompartida({ c, esYo, hoy, semana, etiquetaSemana, foto, marca, extra }: { c: Compartido; esYo: boolean; hoy: string; semana: Array<boolean | null>; etiquetaSemana: string; foto?: ReactNode; marca?: ReactNode; extra?: string }) {
+export function FilaCompartida({ c, esYo, hoy, semana, etiquetaSemana, foto, marca, extra, conFoto, alTocarDia }: { c: Compartido; esYo: boolean; hoy: string; semana: Array<boolean | null>; etiquetaSemana: string; foto?: ReactNode; marca?: ReactNode; extra?: string; conFoto?: Set<string>; alTocarDia?: (dia: string) => void }) {
   return (
     <div className={`fila-compartida ${foto === undefined ? 'sin-foto' : ''}`} data-fila-habito={c.nombre}>
       <IconoHabito icono={c.icono} virtud={c.virtud} tam={32} />
@@ -245,7 +255,7 @@ export function FilaCompartida({ c, esYo, hoy, semana, etiquetaSemana, foto, mar
           {extra && <span>{extra}</span>}
         </span>
         <div style={{ marginTop: 6 }}>
-          <SemanaMini dias={semana} hoy={hoy} etiqueta={etiquetaSemana} />
+          <SemanaMini dias={semana} hoy={hoy} etiqueta={etiquetaSemana} conFoto={conFoto} alTocar={alTocarDia} />
         </div>
       </div>
       {foto !== undefined && <div className="fc-foto">{foto}</div>}
@@ -256,7 +266,11 @@ export function FilaCompartida({ c, esYo, hoy, semana, etiquetaSemana, foto, mar
 }
 
 /** En el grupo: la fila con la foto de hoy. Al cumplir tu hábito desde acá, te ofrece subir la foto. */
-function FilaDelGrupo({ c, m, esYo, alDia, hoy, grupoId, plan, fotos }: { c: Compartido; m: ConId<Miembro>; esYo: boolean; alDia: boolean; hoy: string; grupoId: string; plan: EstadoPlan; fotos: Array<ConId<FotoHabito>> }) {
+/** La pantalla del grupo abre una sola hoja de fotos (para ver o para subir). */
+const AccionesFotos = createContext<{ alVer: (v: VerFotos) => void; alSubir: (s: SubirFotos) => void }>({ alVer: () => undefined, alSubir: () => undefined });
+
+function FilaDelGrupo({ c, m, esYo, alDia, hoy, plan, fotos }: { c: Compartido; m: ConId<Miembro>; esYo: boolean; alDia: boolean; hoy: string; grupoId: string; plan: EstadoPlan; fotos: Array<ConId<FotoHabito>> }) {
+  const { alVer, alSubir } = useContext(AccionesFotos);
   const [pedido, setPedido] = useState(0);
   const pedirFoto = useCallback(() => setPedido((n) => n + 1), []);
   const miSemana = useMiSemana(esYo ? c.habitId : '', hoy);
@@ -269,7 +283,9 @@ function FilaDelGrupo({ c, m, esYo, alDia, hoy, grupoId, plan, fotos }: { c: Com
       semana={esYo && miSemana ? miSemana : semanaAlDia(c.semana, m.fecha, hoy)}
       etiquetaSemana={esYo ? `Tu semana de ${c.nombre}` : `${m.nombre}, ${c.nombre}`}
       extra={conteo}
-      foto={planVisible(plan) ? <FotoDelHabito gid={grupoId} plan={plan} miembro={m} habitId={c.habitId} habito={c.nombre} esYo={esYo} fotos={fotos} pedido={pedido} /> : undefined}
+      foto={planVisible(plan) ? <FotoDelHabito plan={plan} miembro={m} habitId={c.habitId} habito={c.nombre} esYo={esYo} fotos={fotos} pedido={pedido} alVer={alVer} alSubir={alSubir} /> : undefined}
+      conFoto={planVisible(plan) ? diasConFoto(fotos, m.id, c.habitId) : undefined}
+      alTocarDia={(dia) => alVer({ miembro: m, habitId: c.habitId, habito: c.nombre, esYo, dia })}
       marca={esYo ? <MarcaMia habitId={c.habitId} nombre={c.nombre} hoy={hoy} resumenOk={alDia && c.hoy} alCumplir={pedirFoto} /> : undefined}
     />
   );

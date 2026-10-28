@@ -444,3 +444,15 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .fila-compartida .fc-foto, .fila-compartida .fc-marca { display: flex; justify-content: center; padding-top: 0; }
 @media (max-width: 420px) { .fila-compartida { margin-left: 0; padding: 10px; column-gap: 10px; } }
 .en-desafio .fila-compartida { margin-left: 0; }
+
+/* Semana: los días con foto llevan un puntito y se tocan para verla */
+.semana-mini > button { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 18px; padding: 0; position: relative; }
+.semana-mini .con-foto::after { content: ''; position: absolute; top: -5px; right: -1px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 1.5px var(--hover); }
+.semana-mini .con-foto b { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; }
+/* Tira "Fotos de hoy" arriba del grupo */
+.fotos-hoy { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: thin; }
+.fotos-hoy button { position: relative; flex: none; width: 88px; text-align: left; display: flex; flex-direction: column; gap: 4px; }
+.fotos-hoy img { width: 88px; height: 88px; object-fit: cover; border-radius: 12px; display: block; box-shadow: 0 0 0 1px var(--ln3); }
+.fotos-hoy .sello.chico { right: -4px; top: 74px; bottom: auto; }
+.fotos-hoy .q { font-size: 12px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.fotos-hoy .h { font-size: 11px; font-weight: 600; color: var(--mu2); line-height: 1.2; overflow-wrap: anywhere; }
