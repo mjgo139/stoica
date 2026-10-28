@@ -62,13 +62,13 @@ export function PanelPlan({ grupoId, plan }: { grupoId: string; plan: EstadoPlan
       {plan.estado === 'activo' && (
         <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
           Activo hasta el <b>{fechaPlan(plan.hasta)}</b>
-          {plan.diasRestantes <= 7 && ` (quedan ${plan.diasRestantes} ${plan.diasRestantes === 1 ? 'día' : 'días'})`}. Entrá a un desafío para subir la foto del día o escribir.
+          {plan.diasRestantes <= 7 && ` (quedan ${plan.diasRestantes} ${plan.diasRestantes === 1 ? 'día' : 'días'})`}. Cada uno sube la foto de hoy desde su hábito y escriben en el chat del grupo.
         </p>
       )}
       {plan.estado === 'gracia' && <AvisoBorrado plan={plan} />}
       {(plan.estado === 'sin' || plan.estado === 'borrado') && (
         <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
-          Sumá fotos del día y un chat corto en cada desafío. Se activa con un código para todo el grupo.
+          Sumá la foto de hoy en cada hábito compartido (cumplido o no) y un chat del grupo. Se activa con un código para todo el grupo.
         </p>
       )}
       <button type="button" className={plan.estado === 'activo' ? 'ghost' : 'btn'} style={{ marginTop: 12, ...(plan.estado === 'activo' ? {} : { height: 44 }) }} onClick={() => setAbierta(true)}>

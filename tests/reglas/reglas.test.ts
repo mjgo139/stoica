@@ -347,6 +347,10 @@ describe('groups · comunidad', () => {
     await assertFails(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/progress/beto'), p('beto')));
     await assertFails(setDoc(doc(usuario('carla'), 'groups/g1/challenges/c1/progress/carla'), p('carla')));
     await assertFails(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/progress/ana'), { ...p('ana'), cumplidos: 999 }));
+    // con el resumen de su hábito (lo que se ve en el desafío)
+    const habito = { habitId: 'h1', nombre: 'Meditar', icono: 'med', virtud: 'sabiduria', hoy: true, racha: 3, porcentaje: 80, semana: [true, false, true, true, true, false, true] };
+    await assertSucceeds(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/progress/ana'), { ...p('ana'), habito, fecha: HOY }));
+    await assertFails(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/progress/ana'), { ...p('ana'), habito, fecha: 'hoy' }));
   });
 });
 
@@ -364,27 +368,19 @@ describe('memento mori en el perfil', () => {
 
 describe('plan con fotos y chat', () => {
   const grupo = (extra: Record<string, unknown> = {}) => ({ nombre: 'Pórtico', creador: 'ana', codigo: 'STOA2026', miembros: ['ana', 'beto', 'carla'], creado: 1, ...extra });
-  const desafio = { titulo: '21 días', virtud: 'sabiduria', duracion: 21, meta: 18, inicio: HOY, creador: 'ana', actualizado: 1, actualizadoPor: 'ana' };
-  const progreso = (uid: string) => ({ nombre: uid, habitId: 'h1', cumplidos: 1, actualizado: 1, actualizadoPor: uid });
-  const mensaje = (uid: string, extra: Record<string, unknown> = {}) => ({ de: uid, nombre: uid, tipo: 'texto', texto: '¡Vamos!', dia: HOY, creado: ahora(), actualizado: ahora(), actualizadoPor: uid, ...extra });
-  const ruta = 'groups/g1/challenges/c1/posts';
+  const mensaje = (uid: string, extra: Record<string, unknown> = {}) => ({ de: uid, nombre: uid, texto: '¡Vamos!', dia: HOY, creado: ahora(), actualizado: ahora(), actualizadoPor: uid, ...extra });
+  const ruta = 'groups/g1/mensajes';
+  const foto = (uid: string) => ({ de: uid, nombre: uid, habitId: 'h1', habito: 'Meditar', dia: HOY, cumplido: true, texto: '', fotoUrl: 'https://x/y.jpg', miniUrl: 'https://x/y_mini.jpg', rutas: ['a', 'b'], creado: 1, actualizado: 1, actualizadoPor: 'servidor' });
 
-  beforeEach(async () => {
-    await sembrar('groups/g1/challenges/c1', desafio);
-    await sembrar('groups/g1/challenges/c1/progress/ana', progreso('ana'));
-    await sembrar('groups/g1/challenges/c1/progress/beto', progreso('beto'));
-  });
-
-  it('con el plan activo escriben quienes se sumaron; leen todos los integrantes', async () => {
+  it('chat del grupo: con el plan activo escribe cualquier integrante; leen solo los integrantes', async () => {
     await sembrar('groups/g1', grupo({ premiumHasta: Date.now() + 864e5 }));
     await assertSucceeds(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
-    await assertSucceeds(getDoc(doc(usuario('carla'), `${ruta}/m1`)));
+    await assertSucceeds(setDoc(doc(usuario('carla'), `${ruta}/m2`), mensaje('carla')));
+    await assertSucceeds(getDoc(doc(usuario('beto'), `${ruta}/m1`)));
     await assertFails(getDoc(doc(usuario('dani'), `${ruta}/m1`)));
-    // carla está en el grupo pero no en el desafío
-    await assertFails(setDoc(doc(usuario('carla'), `${ruta}/m2`), mensaje('carla')));
-    // nadie escribe en nombre de otro, ni fotos, ni textos largos, ni campos de más
+    await assertFails(setDoc(doc(usuario('dani'), `${ruta}/m9`), mensaje('dani')));
+    // nadie escribe en nombre de otro, ni textos largos, ni campos de más
     await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('ana')));
-    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { tipo: 'foto' })));
     await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { texto: 'x'.repeat(281) })));
     await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { fotoUrl: 'https://otro.sitio/x.jpg' })));
     // no se edita; se borra solo lo propio
@@ -398,6 +394,23 @@ describe('plan con fotos y chat', () => {
     await assertFails(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
     await sembrar('groups/g1', grupo({ premiumHasta: Date.now() - 1000 }));
     await assertFails(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
+  });
+
+  it('fotos de hábitos: las crea solo el servidor, las ven los integrantes y cada uno borra las suyas', async () => {
+    await sembrar('groups/g1', grupo({ premiumHasta: Date.now() + 864e5 }));
+    await assertFails(setDoc(doc(usuario('ana'), `groups/g1/fotos/ana_h1_${HOY}`), foto('ana')));
+    await sembrar(`groups/g1/fotos/ana_h1_${HOY}`, foto('ana'));
+    await assertSucceeds(getDoc(doc(usuario('beto'), `groups/g1/fotos/ana_h1_${HOY}`)));
+    await assertFails(getDoc(doc(usuario('dani'), `groups/g1/fotos/ana_h1_${HOY}`)));
+    await assertFails(updateDoc(doc(usuario('ana'), `groups/g1/fotos/ana_h1_${HOY}`), { cumplido: false }));
+    await assertFails(deleteDoc(doc(usuario('beto'), `groups/g1/fotos/ana_h1_${HOY}`)));
+    await assertSucceeds(deleteDoc(doc(usuario('ana'), `groups/g1/fotos/ana_h1_${HOY}`)));
+  });
+
+  it('lo de la versión anterior (fotos y mensajes dentro de los desafíos) quedó cerrado', async () => {
+    await sembrar('groups/g1', grupo({ premiumHasta: Date.now() + 864e5 }));
+    await assertFails(setDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/posts/m1'), mensaje('ana', { tipo: 'texto' })));
+    await assertFails(getDoc(doc(usuario('ana'), 'groups/g1/challenges/c1/posts/m1')));
   });
 
   it('el plan, los códigos y los reportes no se tocan desde la app', async () => {

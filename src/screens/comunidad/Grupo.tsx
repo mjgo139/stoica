@@ -17,7 +17,9 @@ import { IconoHabito } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
 import { SemanaMini } from '@/ui/SemanaMini';
+import { ChatGrupo, FotoDelHabito, useFotosSemana } from './Muro';
 import { PanelPlan, usePlan } from './Plan';
+import type { EstadoPlan, FotoHabito } from '@core/plan';
 
 export function Grupo() {
   const { id = '' } = useParams();
@@ -33,6 +35,7 @@ export function Grupo() {
   const [saliendo, setSaliendo] = useState(false);
   const [renombrando, setRenombrando] = useState(false);
   const plan = usePlan(estado?.grupo);
+  const fotos = useFotosSemana(id, plan);
 
   if (!estado) {
     return listo ? (
@@ -97,11 +100,16 @@ export function Grupo() {
             <span>Integrantes · hoy</span>
           </div>
           {ordenados.map((m) => (
-            <TarjetaMiembro key={m.id} m={m} esYo={m.id === uid} grupoId={id} reacciones={reacciones} hoy={hoy} />
+            <TarjetaMiembro key={m.id} m={m} esYo={m.id === uid} grupoId={id} reacciones={reacciones} hoy={hoy} plan={plan} fotos={fotos} />
           ))}
           {sinResumen > 0 && (
             <p className="vacio-mini">
               {sinResumen} {sinResumen === 1 ? 'integrante todavía no compartió' : 'integrantes todavía no compartieron'} hábitos.
+            </p>
+          )}
+          {yo && plan.estado === 'activo' && yo.compartidos.length > 0 && (
+            <p className="mu2" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 10 }}>
+              <Icono nombre="camara" tam={14} className="uic en-linea" /> Tocá la cámara de tu hábito para subir la foto de hoy, la hayas cumplido o no.
             </p>
           )}
           {!yo && (
@@ -124,10 +132,11 @@ export function Grupo() {
             {[...desafios]
               .sort((a, b) => (a.inicio < b.inicio ? 1 : -1))
               .map((d) => (
-                <TarjetaDesafio key={d.id} d={d} grupoId={id} hoy={hoy} conPlan={plan.estado === 'activo' || plan.estado === 'gracia'} />
+                <TarjetaDesafio key={d.id} d={d} grupoId={id} hoy={hoy} />
               ))}
           </div>
           <PanelPlan grupoId={id} plan={plan} />
+          <ChatGrupo gid={id} plan={plan} />
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
               <span>Invitación</span>
@@ -166,7 +175,7 @@ export function Grupo() {
   );
 }
 
-function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy }: { m: ConId<Miembro>; esYo: boolean; grupoId: string; reacciones: Array<ConId<Reaccion>>; hoy: string }) {
+function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m: ConId<Miembro>; esYo: boolean; grupoId: string; reacciones: Array<ConId<Reaccion>>; hoy: string; plan: EstadoPlan; fotos: Array<ConId<FotoHabito>> }) {
   const uid = uidActual();
   const recibidas = reacciones.filter((r) => r.para === m.id);
   const mia = recibidas.find((r) => r.de === uid);
@@ -197,11 +206,12 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy }: { m: ConId<Miembr
           <IconoHabito icono={c.icono} virtud={c.virtud} tam={30} />
           {esYo ? (
             <Link to={`/habitos/${c.habitId}`} style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5, color: 'inherit', textDecoration: 'none' }}>
-              {c.nombre} <span className="gold">›</span>
+              {c.nombre}{'\u00a0'}<span className="gold">›</span>
             </Link>
           ) : (
             <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>{c.nombre}</span>
           )}
+          <FotoDelHabito gid={grupoId} plan={plan} miembro={m} habitId={c.habitId} habito={c.nombre} esYo={esYo} fotos={fotos} />
           <span className="num gold" style={{ fontSize: 15 }} title={`Racha de ${c.racha} días`}>
             {aRomano(c.racha)}
           </span>
@@ -293,7 +303,7 @@ export function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string;
 }
 
 /** Tarjeta de un desafío en el grupo: toda la tarjeta abre su pantalla. */
-export function TarjetaDesafio({ d, grupoId, hoy, conPlan = false }: { d: ConId<Desafio>; grupoId: string; hoy: string; conPlan?: boolean }) {
+export function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId: string; hoy: string }) {
   const uid = uidActual();
   const progresos = useConsulta<Progreso>({ ruta: `groups/${grupoId}/challenges/${d.id}/progress` }).datos;
   const mio = progresos.find((p) => p.id === uid);
@@ -328,47 +338,13 @@ export function TarjetaDesafio({ d, grupoId, hoy, conPlan = false }: { d: ConId<
       <span style={{ display: 'flex', alignItems: 'center', marginTop: 10, gap: 8 }}>
         <span className="mu2" style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>
           {progresos.length} {progresos.length === 1 ? 'participa' : 'participan'}
-          {conPlan && (
-            <>
-              {' · '}
-              <Icono nombre="camara" tam={14} className="uic en-linea" /> Fotos y chat
-            </>
-          )}
+
         </span>
         <span className="gold" style={{ fontWeight: 700, fontSize: 13.5 }}>
           {mio ? 'Abrir' : e.estado === 'terminado' ? 'Ver' : 'Ver y sumarme'} ›
         </span>
       </span>
     </Link>
-  );
-}
-
-/** Dentro del desafío: ranking completo. */
-export function RankingDesafio({ d, grupoId }: { d: ConId<Desafio>; grupoId: string }) {
-  const uid = uidActual();
-  const progresos = useConsulta<Progreso>({ ruta: `groups/${grupoId}/challenges/${d.id}/progress` }).datos;
-  const ranking = [...progresos].sort((a, b) => b.cumplidos - a.cumplidos);
-  return (
-    <div className="panel" data-ranking>
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Ranking · {ranking.length}</span>
-      </div>
-      {ranking.length === 0 && <p className="vacio-mini">Nadie se sumó todavía.</p>}
-      {ranking.map((p, i) => (
-        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-          <span className="num mu2" style={{ width: 18, fontSize: 13 }}>
-            {i + 1}
-          </span>
-          <span className="nombre-barra">{p.id === uid ? 'Vos' : p.nombre}</span>
-          <span className="barra-prog" style={{ flex: 1 }}>
-            <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
-          </span>
-          <span className="num" style={{ fontSize: 14, width: 48, textAlign: 'right' }}>
-            {p.cumplidos}/{d.meta}
-          </span>
-        </div>
-      ))}
-    </div>
   );
 }
 

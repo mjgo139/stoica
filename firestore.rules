@@ -358,6 +358,32 @@ service cloud.firestore {
           && firmado(request.auth.uid);
       }
 
+      function planActivo() {
+        return get(/databases/$(database)/documents/groups/$(gid)).data.get('premiumHasta', 0) > request.time.toMillis();
+      }
+
+      // Plan de pago: foto de hoy en cada hábito compartido. Las crea solo el servidor; cada uno borra las suyas.
+      match /fotos/{fid} {
+        allow read: if esMiembro();
+        allow create, update: if false;
+        allow delete: if esMiembro() && resource.data.de == request.auth.uid;
+      }
+
+      // Plan de pago: chat del grupo. Escribe cualquier integrante mientras el plan esté activo.
+      match /mensajes/{mid} {
+        allow read: if esMiembro();
+        allow create: if esMiembro() && planActivo() && noBloqueado()
+          && nuevo().keys().hasOnly(['de', 'nombre', 'texto', 'dia', 'creado', 'actualizado', 'actualizadoPor'])
+          && nuevo().de == request.auth.uid
+          && texto(nuevo().texto, 1, 280)
+          && texto(nuevo().nombre, 0, 40)
+          && claveDia(nuevo().dia)
+          && fechaMs(nuevo().creado)
+          && firmado(request.auth.uid);
+        allow update: if false;
+        allow delete: if esMiembro() && resource.data.de == request.auth.uid;
+      }
+
       // Desafíos con duración y meta.
       match /challenges/{cid} {
         function desafioValido() {
@@ -378,37 +404,21 @@ service cloud.firestore {
           && nuevo().duracion >= resource.data.duracion;
         allow delete: if esMiembro() && (resource.data.creador == request.auth.uid || creoElGrupo());
 
-        // Fotos y mensajes (plan de pago). Los ven todos los integrantes; escriben quienes se sumaron.
-        // Las fotos las crea solo el servidor; los mensajes, la app mientras el plan esté activo.
+        // Versión anterior: fotos y mensajes dentro del desafío. Ya no se usan (el servidor los limpia).
         match /posts/{pubId} {
-          function planActivo() {
-            return get(/databases/$(database)/documents/groups/$(gid)).data.get('premiumHasta', 0) > request.time.toMillis();
-          }
-          function participa() {
-            return exists(/databases/$(database)/documents/groups/$(gid)/challenges/$(cid)/progress/$(request.auth.uid));
-          }
-          allow read: if esMiembro();
-          allow create: if esMiembro() && planActivo() && participa()
-            && nuevo().keys().hasOnly(['de', 'nombre', 'tipo', 'texto', 'dia', 'creado', 'actualizado', 'actualizadoPor'])
-            && nuevo().de == request.auth.uid
-            && nuevo().tipo == 'texto'
-            && texto(nuevo().texto, 1, 280)
-            && texto(nuevo().nombre, 0, 40)
-            && claveDia(nuevo().dia)
-            && fechaMs(nuevo().creado)
-            && firmado(request.auth.uid);
-          allow update: if false;
-          allow delete: if esMiembro() && resource.data.de == request.auth.uid;
+          allow read, write: if false;
         }
 
         match /progress/{pid} {
           allow read: if esMiembro();
           allow delete: if esDueno(pid);
           allow create, update: if esDueno(pid) && esMiembro()
-            && nuevo().keys().hasOnly(['nombre', 'habitId', 'cumplidos', 'actualizado', 'actualizadoPor'])
+            && nuevo().keys().hasOnly(['nombre', 'habitId', 'cumplidos', 'habito', 'fecha', 'actualizado', 'actualizadoPor'])
             && texto(nuevo().nombre, 0, 40)
             && texto(nuevo().habitId, 1, 40)
             && entero(nuevo().cumplidos, 0, 365)
+            && (opcional(nuevo(), 'habito') || (nuevo().habito is map && nuevo().habito.size() <= 10))
+            && (opcional(nuevo(), 'fecha') || claveDia(nuevo().fecha))
             && firmado(pid);
         }
       }

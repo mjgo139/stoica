@@ -382,7 +382,11 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('dialog').getByRole('button', { name: /Meditar/ }).click();
     await expect(page.locator('[data-mi-habito]')).toContainText('Meditar');
     await expect(page.locator('[data-mi-habito]').getByRole('button', { name: /^(Marcar|Desmarcar) Meditar$/ })).toBeVisible();
-    await expect(page.locator('[data-ranking]').getByText('Vos', { exact: true })).toBeVisible();
+    // Cada participante con su hábito como en el grupo (racha, %, semana)
+    await expect(page.locator('[data-participante="vos"]')).toContainText('Meditar');
+    await expect(page.locator('[data-participante="Epicteto"]')).toContainText('Meditar');
+    await expect(page.locator('[data-participante="Epicteto"]').getByRole('img', { name: /Epicteto, Meditar: 7 de 7 días/ })).toBeVisible();
+    await expect(page.locator('[data-chat]')).toHaveCount(0);
     await captura(page, '20-grupo');
     await ir(page, '/comunidad/g-portico');
 
@@ -434,7 +438,7 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('8 letras');
   });
 
-  test('plan de fotos y chat: admin genera código, el grupo lo activa, chat y foto en el desafío', async ({ page }) => {
+  test('plan del grupo: código, chat del grupo y foto de hoy en cada hábito ligada a si se cumplió', async ({ page }) => {
     await entrarConEjemplo(page);
     // Admin: generar un código y ver los días de espera
     await ir(page, '/admin');
@@ -445,16 +449,15 @@ test.describe('v0.5–v1.0', () => {
     expect(codigo).toMatch(/^STOA-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     await expect(plan.getByLabel('Días de espera')).toHaveValue('7');
 
-    // Grupo sin plan: el desafío muestra la invitación
+    // Grupo sin plan: no hay fotos ni chat, solo la invitación a activarlo
     await ir(page, '/comunidad');
     await page.getByText('El Pórtico').click();
     await expect(page.locator('[data-plan="sin"]')).toBeVisible();
-    await page.locator('[data-desafio="21 días meditando"]').click();
-    await expect(page.getByRole('heading', { level: 1, name: '21 días meditando' })).toBeVisible();
-    await expect(page.locator('[data-muro="bloqueado"]')).toBeVisible();
+    await expect(page.locator('[data-chat]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Foto de hoy de Epicteto/ })).toHaveCount(0);
 
     // Código inválido y después el bueno
-    await page.locator('[data-muro="bloqueado"]').getByRole('button', { name: 'Activar con un código' }).click();
+    await page.locator('[data-plan="sin"]').getByRole('button', { name: 'Activar con un código' }).click();
     await page.getByLabel('Código de habilitación').fill('STOA-ZZZZ-ZZZZ');
     await page.getByRole('dialog').getByRole('button', { name: 'Activar' }).click();
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('no existe');
@@ -462,42 +465,66 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Activar' }).click();
     await expect(page.getByText(/fotos y chat activos hasta/)).toBeVisible();
 
-    // Chat: se ven los mensajes de los demás; sin sumarse no se escribe
-    await expect(page.locator('[data-muro="chat"]')).toContainText('Lo que depende de nosotros');
-    await expect(page.locator('[data-muro="chat"]')).toContainText('Sumate al desafío para escribir.');
-    await page.locator('[data-mi-habito]').getByRole('button', { name: /Sumarme|Elegir hábito/ }).click();
-    await page.getByRole('dialog').getByRole('button', { name: /Meditar/ }).click();
-    await page.getByLabel('Mensaje', { exact: true }).fill('¡Vamos, Pórtico!');
-    await page.getByRole('button', { name: 'Enviar' }).click();
-    await expect(page.locator('[data-muro="chat"]')).toContainText('¡Vamos, Pórtico!');
+    // Chat del grupo: se ven los mensajes y escribe cualquier integrante
+    const chat = page.locator('[data-chat]');
+    await expect(chat).toContainText('Lo que depende de nosotros');
+    await chat.getByLabel('Mensaje', { exact: true }).fill('¡Vamos, Pórtico!');
+    await chat.getByRole('button', { name: 'Enviar' }).click();
+    await expect(chat).toContainText('¡Vamos, Pórtico!');
 
-    // Foto del día (se achica en el navegador antes de subir)
+    // Fotos de los demás, con su estado: Epicteto cumplió, Séneca no
+    await page.getByRole('button', { name: 'Foto de hoy de Epicteto, Meditar: cumplido' }).click();
+    const historial = page.getByRole('dialog', { name: 'Meditar · Epicteto' });
+    await expect(historial).toContainText('Al amanecer, antes que nadie.');
+    await expect(historial).toContainText('✓ Cumplido');
+    await expect(historial.getByRole('list', { name: 'Días con foto' }).getByRole('listitem')).toHaveCount(2);
+    await expect(historial.getByRole('button', { name: 'Reportar' })).toBeVisible();
+    await captura(page, '25-fotos-de-otro');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: 'Foto de hoy de Lucio Séneca, Ayuno: no cumplido' })).toBeVisible();
+
+    // Mi foto: primero comparto Meditar; la foto queda ligada a cómo me fue hoy (cumplido)
+    await page.getByRole('button', { name: 'Qué comparto' }).click();
+    await page.getByRole('dialog').getByLabel('Meditar').check();
+    await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click();
+    await page.getByRole('button', { name: 'Subir la foto de hoy de Meditar' }).click();
+    const hojaFoto = page.getByRole('dialog', { name: 'Foto de hoy · Meditar' });
+    await expect(hojaFoto.locator('[data-estado-foto="cumplido"]')).toBeVisible();
+    await expect(hojaFoto.getByLabel('Sacar foto con la cámara')).toHaveAttribute('capture', 'environment');
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP8z4APMOGVHbHSAEEsAROxCnMTAAAAAElFTkSuQmCC', 'base64');
-    await page.locator('[data-muro="fotos"]').getByLabel('Elegir foto').setInputFiles({ name: 'dia.png', mimeType: 'image/png', buffer: png });
-    await page.getByLabel('Comentario (opcional)').fill('Día cumplido');
-    await page.getByRole('dialog').getByRole('button', { name: 'Compartir' }).click();
-    await expect(page.locator('[data-muro="fotos"]').getByRole('button', { name: /Foto de Marco Aurelio/ })).toBeVisible();
-    await captura(page, '25-desafio-plan');
+    await hojaFoto.getByLabel('Elegir foto').setInputFiles({ name: 'dia.png', mimeType: 'image/png', buffer: png });
+    await hojaFoto.getByLabel('Comentario (opcional)').fill('Diez minutos');
+    await hojaFoto.getByRole('button', { name: 'Compartir' }).click();
+    await expect(page.getByText('Foto de Meditar compartida.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Foto de hoy tu Meditar: cumplido' })).toBeVisible();
 
-    // Collage: varias fotos de la galería, elegir diseño, quitar una y compartir. La cámara es un botón aparte.
-    await expect(page.locator('[data-muro="fotos"]').getByLabel('Sacar foto con la cámara')).toHaveAttribute('capture', 'environment');
-    await page.locator('[data-muro="fotos"]').getByRole('button', { name: 'Cambiar mi foto de hoy' }).click();
-    const hojaFoto = page.getByRole('dialog', { name: 'Foto de hoy' });
-    await expect(hojaFoto.getByRole('button', { name: 'Elegir de la galería' })).toBeVisible();
-    await expect(hojaFoto.getByRole('button', { name: /Sacar foto/ })).toBeVisible();
+    // Si después lo desmarco, la foto pasa a "no cumplido"
+    await page.getByRole('button', { name: 'Desmarcar Meditar' }).click();
+    await expect(page.getByRole('button', { name: 'Foto de hoy tu Meditar: no cumplido' })).toBeVisible({ timeout: 8000 });
+
+    // Reemplazar con un collage (una sola foto por hábito y día)
+    await page.getByRole('button', { name: /Foto de hoy tu Meditar/ }).click();
+    await page.getByRole('dialog', { name: 'Meditar · tus fotos' }).getByRole('button', { name: 'Cambiar la foto de hoy' }).click();
+    const hojaCollage = page.getByRole('dialog', { name: 'Foto de hoy · Meditar' });
+    await expect(hojaCollage.locator('[data-estado-foto="no-cumplido"]')).toBeVisible();
     const varias = ['a', 'b', 'c', 'd'].map((n) => ({ name: `${n}.png`, mimeType: 'image/png', buffer: png }));
-    await page.locator('[data-muro="fotos"]').getByLabel('Elegir foto').setInputFiles(varias);
-    const hojaCollage = page.getByRole('dialog', { name: 'Collage de hoy' });
+    await hojaCollage.getByLabel('Elegir foto').setInputFiles(varias);
     await expect(hojaCollage.getByRole('radio', { name: 'Cuadrícula' })).toHaveAttribute('aria-checked', 'true');
     await hojaCollage.getByRole('button', { name: 'Quitar foto 4' }).click();
     await hojaCollage.getByRole('radio', { name: 'Grande arriba' }).click();
     await expect(hojaCollage.locator('[data-vista-previa]')).toBeVisible();
     await captura(page, '25b-collage');
     await hojaCollage.getByRole('button', { name: 'Compartir' }).click();
-    await expect(page.getByText('Collage del día compartido.')).toBeVisible();
+    await expect(page.getByText('Foto de Meditar compartida.')).toBeVisible();
+    await captura(page, '25c-grupo-con-fotos');
+
+    // En el desafío ya no hay fotos ni chat: están en el grupo
+    await page.locator('[data-desafio="21 días meditando"]').click();
+    await expect(page.locator('[data-participantes]')).toBeVisible();
+    await expect(page.locator('[data-chat]')).toHaveCount(0);
+    await ir(page, '/comunidad/g-portico');
 
     // El código ya no sirve otra vez
-    await ir(page, '/comunidad/g-portico');
     await expect(page.locator('[data-plan="activo"]')).toBeVisible();
     await page.locator('[data-plan="activo"]').getByRole('button', { name: 'Renovar con un código' }).click();
     await page.getByLabel('Código de habilitación').fill(codigo);

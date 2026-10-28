@@ -1,8 +1,9 @@
 /**
- * Plan de pago por grupo: fotos y chat dentro de cada desafío.
+ * Plan de pago por grupo: foto del día en cada hábito compartido y chat del grupo.
  * Se activa con un código que genera el admin. Al vencer hay unos días de espera (configurables)
  * en los que todo se ve pero no se puede agregar nada; después se borra definitivamente.
  */
+import { diferenciaDias } from './fechas.js';
 import { limpiarNombre } from './validaciones.js';
 
 export const MESES_PLAN = [1, 3, 6, 12] as const;
@@ -38,17 +39,33 @@ export interface ConfigPlan {
   diasGracia: number;
 }
 
-/** groups/{gid}/challenges/{cid}/posts/{pid}: mensaje o foto. */
-export interface Publicacion {
+/**
+ * groups/{gid}/fotos/{uid}_{habitId}_{dia}: la foto de hoy de un hábito compartido, ligada a si se cumplió.
+ * Una por persona, hábito y día; si sube otra, reemplaza. La escribe solo el servidor.
+ */
+export interface FotoHabito {
   de: string;
   nombre: string;
-  tipo: 'texto' | 'foto';
+  habitId: string;
+  habito: string;
+  dia: string;
+  /** Cómo estaba el hábito al subirla (lo actual se toma del resumen del integrante). */
+  cumplido: boolean;
+  texto: string;
+  fotoUrl: string;
+  miniUrl: string;
+  rutas: string[];
+  creado: number;
+  actualizado: number;
+  actualizadoPor: string;
+}
+
+/** groups/{gid}/mensajes/{id}: chat del grupo. */
+export interface MensajeGrupo {
+  de: string;
+  nombre: string;
   texto: string;
   dia: string;
-  /** Fotos: direcciones de descarga y rutas en Storage (las escribe el servidor). */
-  fotoUrl?: string;
-  miniUrl?: string;
-  rutas?: string[];
   creado: number;
   actualizado: number;
   actualizadoPor: string;
@@ -108,8 +125,21 @@ export function validarMensaje(texto: string): string | null {
   return null;
 }
 
-/** Id de la foto del día: una por persona, por desafío y por día (si sube otra, reemplaza). */
-export const idFoto = (uid: string, dia: string) => `foto_${uid}_${dia}`;
+/** Id de la foto: una por persona, por hábito y por día (si sube otra, reemplaza). */
+export const idFotoHabito = (uid: string, habitId: string, dia: string) => `${uid}_${habitId}_${dia}`;
+
+/**
+ * ¿La foto es de un día cumplido? Si el día está dentro de la semana del resumen del integrante, manda el
+ * resumen (por si marcó o desmarcó después de subirla); si no, lo que valía al subirla.
+ */
+export function fotoCumplida(foto: Pick<FotoHabito, 'habitId' | 'dia' | 'cumplido'>, resumen?: { fecha: string; compartidos: Array<{ habitId: string; hoy: boolean; semana?: boolean[] }> } | null): boolean {
+  const c = resumen?.compartidos.find((x) => x.habitId === foto.habitId);
+  if (!resumen || !c) return foto.cumplido;
+  const atras = diferenciaDias(foto.dia, resumen.fecha);
+  if (atras === 0) return c.hoy;
+  if (c.semana && atras > 0 && atras < c.semana.length) return c.semana[c.semana.length - 1 - atras];
+  return foto.cumplido;
+}
 
 export function textoMeses(m: number): string {
   return m === 1 ? '1 mes' : `${m} meses`;

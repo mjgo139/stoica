@@ -96,6 +96,10 @@ export interface Progreso {
   nombre: string;
   habitId: string;
   cumplidos: number;
+  /** Cómo va su hábito (lo mismo que se ve en el grupo), para mostrarlo en el desafío. */
+  habito?: Compartido;
+  /** Día de ese resumen (para correr la semana si no abrió la app). */
+  fecha?: string;
   actualizado: number;
   actualizadoPor: string;
 }

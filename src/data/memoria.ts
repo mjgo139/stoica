@@ -8,8 +8,9 @@ import { validarContrasena, validarCorreo } from '@core/validaciones';
 import { calcularMetricas, type Cuenta } from '@core/admin';
 import { esCodigo, generarCodigo, MAX_GRUPOS_POR_USUARIO, MAX_MIEMBROS, normalizarCodigo, validarNombreGrupo, type Grupo } from '@core/comunidad';
 import { limpiarNombre } from '@core/validaciones';
-import { esCodigoPlan, estadoPlan, extenderPlan, generarCodigoPlan, idFoto, MESES_PLAN, normalizarCodigoPlan, type CodigoPlan } from '@core/plan';
+import { esCodigoPlan, estadoPlan, extenderPlan, generarCodigoPlan, idFotoHabito, MESES_PLAN, normalizarCodigoPlan, type CodigoPlan } from '@core/plan';
 import { claveDia } from '@core/fechas';
+import { cumplido, type Habito, type Registro } from '@core/habitos';
 import { ErrorStoica, type Cancelar, type ConId, type Consulta, type Driver, type NombreFuncion, type UsuarioSesion } from './tipos';
 import { sembrarEjemplo } from './ejemplo';
 
@@ -206,34 +207,44 @@ export function crearDriverMemoria(): Driver {
       escribir(`codigos/${cod}`, { usado: true, usadoPor: uid, grupoId: d.grupoId, grupoNombre: g.nombre, usadoEn: Date.now() }, true);
       return { hasta, meses: k.meses };
     },
-    subirFotoDesafio(d) {
+    subirFotoGrupo(d) {
       const uid = yo();
       const g = leerDoc(`groups/${d.grupoId}`) as Grupo | undefined;
       if (!g || !g.miembros.includes(uid)) throw new ErrorStoica('No estás en este grupo.', 'permission-denied');
       if (estadoPlan(g.premiumHasta, Date.now()).estado !== 'activo') throw new ErrorStoica('El grupo no tiene el plan con fotos activo.', 'failed-precondition');
-      if (!leerDoc(`groups/${d.grupoId}/challenges/${d.desafioId}/progress/${uid}`)) throw new ErrorStoica('Sumate al desafío para subir fotos.', 'permission-denied');
+      const hid = String(d.habitId ?? '');
+      const m = leerDoc(`groups/${d.grupoId}/members/${uid}`) as { compartidos?: Array<{ habitId: string }> } | undefined;
+      const h = leerDoc(`users/${uid}/habits/${hid}`) as unknown as Habito | undefined;
+      if (!h || !m?.compartidos?.some((c) => c.habitId === hid)) throw new ErrorStoica('Solo podés subir fotos de los hábitos que compartís en este grupo.', 'permission-denied');
       const dia = claveDia(new Date(), 'America/Asuncion');
       const perfil = leerDoc(`users/${uid}`) as Partial<Perfil> | undefined;
-      escribir(`groups/${d.grupoId}/challenges/${d.desafioId}/posts/${idFoto(uid, dia)}`, {
+      const reg = leerDoc(`users/${uid}/logs/${hid}_${dia}`) as unknown as Registro | undefined;
+      const ruta = `groups/${d.grupoId}/fotos/${idFotoHabito(uid, hid, dia)}`;
+      const previa = leerDoc(ruta) as { creado?: number } | undefined;
+      const ok = cumplido(h, reg);
+      escribir(ruta, {
         de: uid,
         nombre: perfil?.nombre ?? '',
-        tipo: 'foto',
-        texto: String(d.texto ?? '').slice(0, 280),
+        habitId: hid,
+        habito: h.nombre,
         dia,
+        cumplido: ok,
+        texto: String(d.texto ?? '').slice(0, 280),
         fotoUrl: `data:image/jpeg;base64,${d.foto}`,
         miniUrl: `data:image/jpeg;base64,${d.mini}`,
         rutas: [],
-        creado: Date.now(),
+        creado: previa?.creado ?? Date.now(),
         actualizado: Date.now(),
         actualizadoPor: 'servidor',
       });
-      return { ok: true };
+      return { ok: true, cumplido: ok };
     },
     reportarPublicacion(d) {
-      const ruta = `groups/${d.grupoId}/challenges/${d.desafioId}/posts/${d.publicacionId}`;
+      if (d.coleccion !== 'fotos' && d.coleccion !== 'mensajes') throw new ErrorStoica('No se sabe qué reportar.', 'invalid-argument');
+      const ruta = `groups/${d.grupoId}/${d.coleccion}/${d.publicacionId}`;
       const p = leerDoc(ruta) as Record<string, unknown> | undefined;
       if (!p) throw new ErrorStoica('Esa publicación ya no existe.', 'not-found');
-      escribir(`reportes/${ruta.replace(/\//g, '_')}`, { ruta, grupoNombre: (leerDoc(`groups/${d.grupoId}`) as unknown as Grupo).nombre, autor: p.nombre, autorUid: p.de, tipo: p.tipo, texto: p.texto, miniUrl: p.miniUrl ?? null, fotoUrl: p.fotoUrl ?? null, motivo: String(d.motivo ?? ''), reportadoPor: yo(), creado: Date.now() });
+      escribir(`reportes/${ruta.replace(/\//g, '_')}`, { ruta, grupoNombre: (leerDoc(`groups/${d.grupoId}`) as unknown as Grupo).nombre, autor: p.nombre, autorUid: p.de, tipo: d.coleccion === 'fotos' ? 'foto' : 'texto', texto: d.coleccion === 'fotos' ? [p.habito, p.texto].filter(Boolean).join(' · ') : p.texto, miniUrl: p.miniUrl ?? null, fotoUrl: p.fotoUrl ?? null, motivo: String(d.motivo ?? ''), reportadoPor: yo(), creado: Date.now() });
       return { ok: true };
     },
     adminResolverReporte(d) {

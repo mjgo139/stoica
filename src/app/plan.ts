@@ -28,17 +28,17 @@ export async function canjearCodigo(grupoId: string, codigo: string): Promise<{ 
   }
 }
 
-export async function enviarMensaje(grupoId: string, desafioId: string, texto: string): Promise<string | null> {
+/** Chat del grupo (con el plan activo). Devuelve un mensaje de error, o null si salió bien. */
+export async function enviarMensaje(grupoId: string, texto: string): Promise<string | null> {
   const err = validarMensaje(texto);
   if (err) return err;
   const uid = uidActual();
   try {
     const d = await obtenerDriver();
     const ahora = Date.now();
-    await d.guardar(`groups/${grupoId}/challenges/${desafioId}/posts/${d.nuevoId()}`, {
+    await d.guardar(`groups/${grupoId}/mensajes/${d.nuevoId()}`, {
       de: uid,
       nombre: (useSesion.getState().perfil?.nombre ?? '').slice(0, 40),
-      tipo: 'texto',
       texto: limpiarNombre(texto),
       dia: hoyActual(),
       creado: ahora,
@@ -51,18 +51,20 @@ export async function enviarMensaje(grupoId: string, desafioId: string, texto: s
   }
 }
 
-export async function borrarPublicacion(grupoId: string, desafioId: string, id: string): Promise<string | null> {
+export type ColeccionPlan = 'fotos' | 'mensajes';
+
+export async function borrarPublicacion(grupoId: string, coleccion: ColeccionPlan, id: string): Promise<string | null> {
   try {
-    await (await obtenerDriver()).borrar(`groups/${grupoId}/challenges/${desafioId}/posts/${id}`);
+    await (await obtenerDriver()).borrar(`groups/${grupoId}/${coleccion}/${id}`);
     return null;
   } catch (e) {
     return mensajeDeError(e);
   }
 }
 
-export async function reportarPublicacion(grupoId: string, desafioId: string, publicacionId: string, motivo: string): Promise<string | null> {
+export async function reportarPublicacion(grupoId: string, coleccion: ColeccionPlan, publicacionId: string, motivo: string): Promise<string | null> {
   try {
-    await (await obtenerDriver()).llamar('reportarPublicacion', { grupoId, desafioId, publicacionId, motivo });
+    await (await obtenerDriver()).llamar('reportarPublicacion', { grupoId, coleccion, publicacionId, motivo });
     return null;
   } catch (e) {
     return mensajeDeError(e);
@@ -86,11 +88,12 @@ export async function reducirImagen(archivo: Blob, lado: number, max: number): P
   throw new Error('La foto es demasiado pesada.');
 }
 
-export async function subirFoto(grupoId: string, desafioId: string, archivo: Blob, texto: string): Promise<string | null> {
+/** Foto de hoy de un hábito compartido en el grupo. */
+export async function subirFoto(grupoId: string, habitId: string, archivo: Blob, texto: string): Promise<string | null> {
   if (!archivo.type.startsWith('image/')) return 'Elegí una imagen.';
   try {
     const [foto, mini] = await Promise.all([reducirImagen(archivo, FOTO_LADO, FOTO_MAX_BYTES), reducirImagen(archivo, MINI_LADO, MINI_MAX_BYTES)]);
-    await (await obtenerDriver()).llamar('subirFotoDesafio', { grupoId, desafioId, foto, mini, texto: limpiarNombre(texto) });
+    await (await obtenerDriver()).llamar('subirFotoGrupo', { grupoId, habitId, foto, mini, texto: limpiarNombre(texto) });
     return null;
   } catch (e) {
     return e instanceof Error && e.message === 'La foto es demasiado pesada.' ? e.message : mensajeDeError(e);

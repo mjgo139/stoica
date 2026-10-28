@@ -155,18 +155,28 @@ export function sembrarEjemplo(escribir: Escribir, crearCuenta: CrearCuenta) {
   escribir(`groups/${g}`, { nombre: 'El Pórtico', creador: 'u-seneca', codigo: 'STOA2026', miembros: [yo, 'u-seneca', 'u-epicteto', 'u-zenon'], creado: ahora - 10 * 864e5 });
   const m = (uid: string, nombre: string, compartidos: unknown[]) => escribir(`groups/${g}/members/${uid}`, { nombre, compartidos, fecha: hoy, actualizado: ahora, actualizadoPor: uid });
   m('u-seneca', 'Lucio Séneca', [
-    { habitId: 'a', nombre: 'Escribir cartas', icono: 'write', virtud: 'sabiduria', hoy: true, racha: 21, porcentaje: 92 },
-    { habitId: 'b', nombre: 'Ayuno', icono: 'food', virtud: 'templanza', hoy: false, racha: 4, porcentaje: 70 },
+    { habitId: 'a', nombre: 'Escribir cartas', icono: 'write', virtud: 'sabiduria', hoy: true, racha: 21, porcentaje: 92, semana: [true, true, false, true, true, true, true] },
+    { habitId: 'b', nombre: 'Ayuno', icono: 'food', virtud: 'templanza', hoy: false, racha: 4, porcentaje: 70, semana: [true, false, true, true, true, true, false] },
   ]);
-  m('u-epicteto', 'Epicteto', [{ habitId: 'a', nombre: 'Meditar', icono: 'med', virtud: 'sabiduria', hoy: true, racha: 40, porcentaje: 98 }]);
+  const semana = (patron: string) => [...patron].map((x) => x === '1');
+  const meditarEpicteto = { habitId: 'a', nombre: 'Meditar', icono: 'med', virtud: 'sabiduria', hoy: true, racha: 40, porcentaje: 98, semana: semana('1111111') };
+  const cartasSeneca = { habitId: 'a', nombre: 'Escribir cartas', icono: 'write', virtud: 'sabiduria', hoy: true, racha: 21, porcentaje: 92, semana: semana('1101111') };
+  m('u-epicteto', 'Epicteto', [meditarEpicteto]);
   m('u-zenon', 'Zenón de Citio', [{ habitId: 'a', nombre: 'Caminar', icono: 'walk', virtud: 'coraje', hoy: false, racha: 2, porcentaje: 55 }]);
   escribir(`groups/${g}/reactions/${idReaccion(hoy, 'u-seneca', yo)}`, { de: 'u-seneca', para: yo, dia: hoy, tipo: 'laurel', nombreDe: 'Lucio Séneca', actualizado: ahora, actualizadoPor: 'u-seneca' });
   escribir(`groups/${g}/challenges/c1`, { titulo: '21 días meditando', virtud: 'sabiduria', duracion: 21, meta: 18, inicio: sumarDias(hoy, -6), creador: 'u-seneca', actualizado: ahora, actualizadoPor: 'u-seneca' });
-  escribir(`groups/${g}/challenges/c1/progress/u-seneca`, { nombre: 'Lucio Séneca', habitId: 'a', cumplidos: 6, actualizado: ahora, actualizadoPor: 'u-seneca' });
-  escribir(`groups/${g}/challenges/c1/progress/u-epicteto`, { nombre: 'Epicteto', habitId: 'a', cumplidos: 7, actualizado: ahora, actualizadoPor: 'u-epicteto' });
-  // Plan con fotos y chat (inventado): mensajes guardados y un código sin usar para probar la activación.
+  escribir(`groups/${g}/challenges/c1/progress/u-seneca`, { nombre: 'Lucio Séneca', habitId: 'a', cumplidos: 6, habito: cartasSeneca, fecha: hoy, actualizado: ahora, actualizadoPor: 'u-seneca' });
+  escribir(`groups/${g}/challenges/c1/progress/u-epicteto`, { nombre: 'Epicteto', habitId: 'a', cumplidos: 7, habito: meditarEpicteto, fecha: hoy, actualizado: ahora, actualizadoPor: 'u-epicteto' });
+  // Plan con fotos y chat (inventado): mensajes del grupo, una foto de Epicteto y un código sin usar para probar la activación.
   const msj = (id: string, de: string, nombre: string, texto: string, horas: number) =>
-    escribir(`groups/${g}/challenges/c1/posts/${id}`, { de, nombre, tipo: 'texto', texto, dia: hoy, creado: ahora - horas * 36e5, actualizado: ahora - horas * 36e5, actualizadoPor: de });
+    escribir(`groups/${g}/mensajes/${id}`, { de, nombre, texto, dia: hoy, creado: ahora - horas * 36e5, actualizado: ahora - horas * 36e5, actualizadoPor: de });
+  const dibujo = (a: string, b: string) =>
+    `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><circle cx="200" cy="250" r="70" fill="#fbe3b0"/><path d="M0 300 L120 230 L210 290 L300 220 L400 280 L400 400 L0 400Z" fill="#3b2a2a"/></svg>`)}`;
+  const fotoDe = (uid: string, nombre: string, habitId: string, habito: string, dia: string, cumplido: boolean, texto: string, a: string, b: string) =>
+    escribir(`groups/${g}/fotos/${uid}_${habitId}_${dia}`, { de: uid, nombre, habitId, habito, dia, cumplido, texto, fotoUrl: dibujo(a, b), miniUrl: dibujo(a, b), rutas: [], creado: ahora - 2 * 36e5, actualizado: ahora - 2 * 36e5, actualizadoPor: 'servidor' });
+  fotoDe('u-epicteto', 'Epicteto', 'a', 'Meditar', hoy, true, 'Al amanecer, antes que nadie.', '#2c2a4a', '#e8956b');
+  fotoDe('u-epicteto', 'Epicteto', 'a', 'Meditar', sumarDias(hoy, -1), true, '', '#1f3a4d', '#9fc5c8');
+  fotoDe('u-seneca', 'Lucio Séneca', 'b', 'Ayuno', hoy, false, 'Hoy no pude: cena con amigos.', '#4a2c2a', '#c9925a');
   msj('p1', 'u-seneca', 'Lucio Séneca', 'Día 7. Diez minutos antes del amanecer, sin el celular.', 5);
   msj('p2', 'u-epicteto', 'Epicteto', 'Lo que depende de nosotros: sentarse. Lo demás llega solo.', 3);
   escribir('codigos/STOA-PRUE-BA22', { meses: 1, nota: 'Código de prueba', creado: ahora - 864e5, usado: false, usadoPor: null, grupoId: null, grupoNombre: null, usadoEn: null });

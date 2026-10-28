@@ -36,15 +36,15 @@ import {
   extenderPlan,
   FOTO_MAX_BYTES,
   generarCodigoPlan,
-  idFoto,
+  idFotoHabito,
   INTENTOS_CODIGO_HORA,
   MENSAJE_MAX,
   MESES_PLAN,
   MINI_MAX_BYTES,
   normalizarCodigoPlan,
   type CodigoPlan,
+  type FotoHabito,
   type MesesPlan,
-  type Publicacion,
 } from './core/plan.js';
 
 initializeApp();
@@ -98,8 +98,8 @@ async function quitarDeGrupo(gid: string, uid: string) {
   de.docs.forEach((d) => borrar.push(d.ref));
   para.docs.forEach((d) => borrar.push(d.ref));
   desafios.docs.forEach((d) => borrar.push(d.ref.collection('progress').doc(uid)));
-  // Sus fotos y mensajes en los desafíos (los archivos se borran con alBorrarPublicacion).
-  const propias = await Promise.all(desafios.docs.map((d) => d.ref.collection('posts').where('de', '==', uid).get()));
+  // Sus fotos y mensajes en el grupo (los archivos se borran con alBorrarFotoGrupo).
+  const propias = await Promise.all([db().collection(`groups/${gid}/fotos`).where('de', '==', uid).get(), db().collection(`groups/${gid}/mensajes`).where('de', '==', uid).get()]);
   propias.forEach((q) => q.docs.forEach((p) => borrar.push(p.ref)));
   await db().runTransaction(async (t) => {
     const snap = await t.get(ref);
@@ -275,7 +275,8 @@ export const metricasNocturnas = onSchedule({ schedule: '10 3 * * *', timeZone: 
   viejas.docs.forEach((d) => lote.delete(d.ref));
   await lote.close();
   const planes = await revisarPlanes().catch((e) => (logger.error('Revisión de planes falló', { e: String(e) }), null));
-  logger.info('Métricas del día', { fecha: m.fecha, total: m.total, limpiadas: viejas.size, planes });
+  const deDesafios = await limpiarPublicacionesDeDesafios().catch((e) => (logger.error('Limpieza de desafíos falló', { e: String(e) }), null));
+  logger.info('Métricas del día', { fecha: m.fecha, total: m.total, limpiadas: viejas.size, planes, deDesafios });
 });
 
 // ---------- Comunidad ----------
@@ -581,7 +582,7 @@ const configFirebase = (() => {
 const almacen = () => getStorage().bucket(configFirebase.storageBucket || `${configFirebase.projectId || process.env.GCLOUD_PROJECT}.firebasestorage.app`);
 
 const carpetaGrupo = (gid: string) => `grupos/${gid}/`;
-const carpetaDesafio = (gid: string, cid: string) => `grupos/${gid}/desafios/${cid}/`;
+const carpetaDesafio = (gid: string, cid: string) => `grupos/${gid}/desafios/${cid}/`; // versión anterior (fotos por desafío)
 
 async function borrarArchivos(prefijo: string) {
   try {
@@ -591,11 +592,33 @@ async function borrarArchivos(prefijo: string) {
   }
 }
 
-/** Borra todas las fotos y mensajes de los desafíos de un grupo (al vencer la espera o al eliminarlo). */
+/** Borra todas las fotos y mensajes del grupo (al vencer la espera o al eliminarlo). */
 async function borrarContenidoPlan(gid: string) {
+  await db().recursiveDelete(db().collection(`groups/${gid}/fotos`));
+  await db().recursiveDelete(db().collection(`groups/${gid}/mensajes`));
   const desafios = await db().collection(`groups/${gid}/challenges`).get();
-  for (const d of desafios.docs) await db().recursiveDelete(d.ref.collection('posts'));
+  for (const d of desafios.docs) await db().recursiveDelete(d.ref.collection('posts')); // versión anterior
   await borrarArchivos(carpetaGrupo(gid));
+}
+
+/**
+ * Una sola vez (y después no encuentra nada): borra las fotos y mensajes que quedaron dentro de los desafíos
+ * de la versión anterior. Ahora las fotos y el chat viven en el grupo.
+ */
+async function limpiarPublicacionesDeDesafios() {
+  const viejas = await db().collectionGroup('posts').limit(400).get();
+  if (viejas.empty) return 0;
+  const carpetas = new Set<string>();
+  const lote = db().bulkWriter();
+  for (const d of viejas.docs) {
+    const desafio = d.ref.parent.parent;
+    const grupo = desafio?.parent.parent;
+    if (desafio && grupo) carpetas.add(carpetaDesafio(grupo.id, desafio.id));
+    lote.delete(d.ref);
+  }
+  await lote.close();
+  for (const c of carpetas) await borrarArchivos(c);
+  return viejas.size;
 }
 
 async function exigirMiembro(uid: string, gid: string): Promise<Grupo & { premiumHasta?: number }> {
@@ -664,15 +687,21 @@ export const canjearCodigo = onCall(llamable, async (req) => {
   return r;
 });
 
-/** Sube la foto del día a un desafío (reducida en el celular). El servidor la guarda y crea la publicación. */
-export const subirFotoDesafio = onCall({ ...llamable, memory: '512MiB' }, async (req) => {
+/**
+ * Sube la foto de hoy de un hábito que la persona comparte en el grupo (reducida en el celular).
+ * Queda ligada al hábito y a si ese día se cumplió. Una por hábito y día: si sube otra, reemplaza.
+ */
+export const subirFotoGrupo = onCall({ ...llamable, memory: '512MiB' }, async (req) => {
   const uid = exigirSesion(req);
-  const { grupoId, desafioId, foto, mini, texto } = (req.data ?? {}) as { grupoId?: unknown; desafioId?: unknown; foto?: unknown; mini?: unknown; texto?: unknown };
+  const { grupoId, habitId, foto, mini, texto } = (req.data ?? {}) as { grupoId?: unknown; habitId?: unknown; foto?: unknown; mini?: unknown; texto?: unknown };
   const gid = String(grupoId ?? '');
-  const cid = String(desafioId ?? '');
+  const hid = String(habitId ?? '');
   const g = await exigirMiembro(uid, gid);
   if (estadoPlan(g.premiumHasta, Date.now(), await diasGracia()).estado !== 'activo') throw new HttpsError('failed-precondition', 'El grupo no tiene el plan con fotos activo.');
-  if (!cid || !(await db().doc(`groups/${gid}/challenges/${cid}/progress/${uid}`).get()).exists) throw new HttpsError('permission-denied', 'Sumate al desafío para subir fotos.');
+  if (!/^[\w-]{1,40}$/.test(hid)) throw new HttpsError('invalid-argument', 'Falta el hábito.');
+  const [miembro, habito, perfilSnap] = await Promise.all([db().doc(`groups/${gid}/members/${uid}`).get(), db().doc(`users/${uid}/habits/${hid}`).get(), db().doc(`users/${uid}`).get()]);
+  const compartidos = (miembro.get('compartidos') as Array<{ habitId: string }> | undefined) ?? [];
+  if (!habito.exists || !compartidos.some((c) => c.habitId === hid)) throw new HttpsError('permission-denied', 'Solo podés subir fotos de los hábitos que compartís en este grupo.');
   const jpeg = (v: unknown, max: number) => {
     const b = Buffer.from(String(v ?? ''), 'base64');
     if (b.length < 100 || b.length > max || b[0] !== 0xff || b[1] !== 0xd8) throw new HttpsError('invalid-argument', 'La foto no es válida o es muy pesada.');
@@ -681,9 +710,10 @@ export const subirFotoDesafio = onCall({ ...llamable, memory: '512MiB' }, async 
   const bFoto = jpeg(foto, FOTO_MAX_BYTES);
   const bMini = jpeg(mini, MINI_MAX_BYTES);
   const leyenda = limpiarNombre(String(texto ?? '')).slice(0, MENSAJE_MAX);
-  const perfil = (await db().doc(`users/${uid}`).get()).data() as Perfil | undefined;
+  const perfil = perfilSnap.data() as Perfil | undefined;
   const dia = claveDia(new Date(), perfil?.zonaHoraria ?? ZONA_POR_DEFECTO);
-  const base = `${carpetaDesafio(gid, cid)}${uid}_${dia}`;
+  const h = habito.data() as Habito;
+  const registro = (await db().doc(`users/${uid}/logs/${idRegistro(hid, dia)}`).get()).data() as Registro | undefined;
   const bucket = almacen();
   const guardarArchivo = async (ruta: string, datos: Buffer) => {
     const token = randomUUID();
@@ -691,58 +721,81 @@ export const subirFotoDesafio = onCall({ ...llamable, memory: '512MiB' }, async 
     return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(ruta)}?alt=media&token=${token}`;
   };
   // Nombre nuevo cada vez: si reemplaza la de hoy, la dirección vieja deja de funcionar.
-  const sufijo = Date.now().toString(36);
-  const rutas = [`${base}_${sufijo}.jpg`, `${base}_${sufijo}_mini.jpg`];
+  const base = `${carpetaGrupo(gid)}fotos/${uid}/${hid}_${dia}_${Date.now().toString(36)}`;
+  const rutas = [`${base}.jpg`, `${base}_mini.jpg`];
   const [fotoUrl, miniUrl] = await Promise.all([guardarArchivo(rutas[0], bFoto), guardarArchivo(rutas[1], bMini)]);
-  const ref = db().doc(`groups/${gid}/challenges/${cid}/posts/${idFoto(uid, dia)}`);
-  const previa = (await ref.get()).data() as Publicacion | undefined;
-  const nombre = String(perfil?.nombre ?? '').slice(0, 40);
-  const pub: Publicacion = { de: uid, nombre, tipo: 'foto', texto: leyenda, dia, fotoUrl, miniUrl, rutas, creado: previa?.creado ?? Date.now(), actualizado: Date.now(), actualizadoPor: 'servidor' };
-  await ref.set(pub);
-  if (previa?.rutas) await Promise.all(previa.rutas.map((r) => bucket.file(r).delete({ ignoreNotFound: true })));
+  const ref = db().doc(`groups/${gid}/fotos/${idFotoHabito(uid, hid, dia)}`);
+  const previa = (await ref.get()).data() as FotoHabito | undefined;
+  const f: FotoHabito = {
+    de: uid,
+    nombre: String(perfil?.nombre ?? '').slice(0, 40),
+    habitId: hid,
+    habito: String(h.nombre ?? '').slice(0, 40),
+    dia,
+    cumplido: cumplido(h, registro),
+    texto: leyenda,
+    fotoUrl,
+    miniUrl,
+    rutas,
+    creado: previa?.creado ?? Date.now(),
+    actualizado: Date.now(),
+    actualizadoPor: 'servidor',
+  };
+  await ref.set(f);
+  if (previa?.rutas) await Promise.all(previa.rutas.map((x) => bucket.file(x).delete({ ignoreNotFound: true })));
   await contarCreacion(uid);
-  return { ok: true };
+  return { ok: true, cumplido: f.cumplido };
 });
 
-/** Al borrar una publicación con foto, se borran sus archivos. */
+/** Al borrar una foto del grupo, se borran sus archivos. */
+export const alBorrarFotoGrupo = onDocumentDeleted('groups/{gid}/fotos/{fid}', async (event) => {
+  const rutas = (event.data?.get('rutas') as string[] | undefined) ?? [];
+  if (!rutas.length) return;
+  const bucket = almacen();
+  await Promise.all(rutas.map((x) => bucket.file(x).delete({ ignoreNotFound: true }).catch(() => undefined)));
+});
+
+/** Archivos de las fotos de la versión anterior (por desafío), mientras se terminan de limpiar. */
 export const alBorrarPublicacion = onDocumentDeleted('groups/{gid}/challenges/{cid}/posts/{pid}', async (event) => {
   const rutas = (event.data?.get('rutas') as string[] | undefined) ?? [];
   if (!rutas.length) return;
   const bucket = almacen();
-  await Promise.all(rutas.map((r) => bucket.file(r).delete({ ignoreNotFound: true }).catch(() => undefined)));
+  await Promise.all(rutas.map((x) => bucket.file(x).delete({ ignoreNotFound: true }).catch(() => undefined)));
 });
 
-/** Mensajes del chat: cuentan para el tope diario de creaciones de quien escribe. */
-export const vigilarPublicaciones = onDocumentCreated('groups/{gid}/challenges/{cid}/posts/{pid}', async (event) => {
+/** Mensajes del chat del grupo: cuentan para el tope diario de creaciones de quien escribe. */
+export const vigilarMensajes = onDocumentCreated('groups/{gid}/mensajes/{mid}', async (event) => {
   const de = String(event.data?.get('de') ?? '');
-  if (event.data?.get('tipo') !== 'texto' || !de) return;
+  if (!de) return;
   const c = await contarCreacion(de);
   if (c.excedido) await event.data?.ref.delete();
 });
 
-/** Al borrar un desafío, se borran sus fotos y mensajes. */
+/** Al borrar un desafío, se borra lo que pudiera quedar de la versión anterior. */
 export const alBorrarDesafio = onDocumentDeleted('groups/{gid}/challenges/{cid}', async (event) => {
   const ref = db().doc(`groups/${event.params.gid}/challenges/${event.params.cid}`);
   await db().recursiveDelete(ref.collection('posts'));
+  await db().recursiveDelete(ref.collection('progress'));
   await borrarArchivos(carpetaDesafio(event.params.gid, event.params.cid));
 });
 
 /** Cualquier integrante puede reportar una publicación: el admin ve solo lo reportado. */
 export const reportarPublicacion = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
-  const { grupoId, desafioId, publicacionId, motivo } = (req.data ?? {}) as Record<string, unknown>;
+  const { grupoId, coleccion, publicacionId, motivo } = (req.data ?? {}) as Record<string, unknown>;
   const gid = String(grupoId ?? '');
   const g = await exigirMiembro(uid, gid);
-  const ruta = `groups/${gid}/challenges/${String(desafioId ?? '')}/posts/${String(publicacionId ?? '')}`;
-  const p = (await db().doc(ruta).get()).data() as Publicacion | undefined;
+  if (coleccion !== 'fotos' && coleccion !== 'mensajes') throw new HttpsError('invalid-argument', 'No se sabe qué reportar.');
+  const ruta = `groups/${gid}/${coleccion}/${String(publicacionId ?? '')}`;
+  const p = (await db().doc(ruta).get()).data() as (Partial<FotoHabito> & { de: string; nombre: string; texto: string }) | undefined;
   if (!p) throw new HttpsError('not-found', 'Esa publicación ya no existe.');
   await db().doc(`reportes/${ruta.replace(/\//g, '_')}`).set({
     ruta,
     grupoNombre: g.nombre,
     autor: p.nombre,
     autorUid: p.de,
-    tipo: p.tipo,
-    texto: p.texto,
+    tipo: coleccion === 'fotos' ? 'foto' : 'texto',
+    texto: coleccion === 'fotos' ? [p.habito, p.texto].filter(Boolean).join(' · ') : p.texto,
     miniUrl: p.miniUrl ?? null,
     fotoUrl: p.fotoUrl ?? null,
     motivo: limpiarNombre(String(motivo ?? '')).slice(0, 140),

@@ -36,7 +36,7 @@ export type NombreFuncion =
   | 'asegurarCuenta'
   | 'adminCrearCodigos'
   | 'canjearCodigo'
-  | 'subirFotoDesafio'
+  | 'subirFotoGrupo'
   | 'reportarPublicacion'
   | 'adminResolverReporte'
   | 'renombrarGrupo'

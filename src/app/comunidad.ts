@@ -213,8 +213,9 @@ async function actualizarResumenes() {
       const h = p && habitos.find((x) => x.id === p.habitId);
       if (!p || !h) continue;
       const cumplidos = contarCumplidos(h, c, hoy);
-      if (cumplidos !== p.cumplidos || p.nombre !== nombre) {
-        const nuevo = { nombre, habitId: h.id, cumplidos, actualizado: Date.now(), actualizadoPor: uid };
+      const habito = resumirHabito(h, hoy);
+      if (cumplidos !== p.cumplidos || p.nombre !== nombre || p.fecha !== hoy || JSON.stringify(habito) !== JSON.stringify(p.habito)) {
+        const nuevo = { nombre, habitId: h.id, cumplidos, habito, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid };
         await d.guardar(`groups/${g.grupo.id}/challenges/${c.id}/progress/${uid}`, nuevo).catch(() => undefined);
         const m = new Map(g.misProgresos);
         m.set(c.id, nuevo);
@@ -294,6 +295,6 @@ export async function sumarmeADesafio(grupoId: string, d: Desafio & { id: string
   await intentar(async () => {
     const dr = await obtenerDriver();
     if (!h) await dr.borrar(ruta);
-    else await dr.guardar(ruta, { nombre: useSesion.getState().perfil?.nombre ?? '', habitId: h.id, cumplidos: contarCumplidos(h, d, hoyActual()), actualizado: Date.now(), actualizadoPor: uid });
+    else await dr.guardar(ruta, { nombre: useSesion.getState().perfil?.nombre ?? '', habitId: h.id, cumplidos: contarCumplidos(h, d, hoyActual()), habito: resumirHabito(h, hoyActual()), fecha: hoyActual(), actualizado: Date.now(), actualizadoPor: uid });
   });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diasGraciaValidos, esCodigoPlan, estadoPlan, extenderPlan, generarCodigoPlan, normalizarCodigoPlan, validarMensaje } from './plan.js';
+import { diasGraciaValidos, esCodigoPlan, estadoPlan, extenderPlan, generarCodigoPlan, normalizarCodigoPlan, validarMensaje, fotoCumplida, idFotoHabito } from './plan.js';
 
 const D = 864e5;
 const t = (s: string) => Date.parse(`${s}T12:00:00Z`);
@@ -44,4 +44,22 @@ describe('semana compartida', () => {
   it('al día: igual', () => expect(semanaAlDia(s, '2026-10-25', '2026-10-25')).toEqual(s));
   it('resumen de hace 2 días: corre y deja sin dato los últimos', () => expect(semanaAlDia(s, '2026-10-23', '2026-10-25')).toEqual([true, true, false, true, true, null, null]));
   it('sin semana (versiones anteriores): todo sin dato', () => expect(semanaAlDia(undefined, '2026-10-25', '2026-10-25')).toEqual(Array(7).fill(null)));
+});
+
+describe('foto ligada al estado del hábito', () => {
+  const resumen = { fecha: '2026-10-28', compartidos: [{ habitId: 'h1', hoy: true, semana: [true, true, false, true, true, true, true] }] };
+  it('hoy manda lo que dice el resumen (si marcó o desmarcó después de subirla)', () => {
+    expect(fotoCumplida({ habitId: 'h1', dia: '2026-10-28', cumplido: false }, resumen)).toBe(true);
+  });
+  it('días de la semana: se toma de la semana del resumen', () => {
+    expect(fotoCumplida({ habitId: 'h1', dia: '2026-10-24', cumplido: true }, resumen)).toBe(false);
+  });
+  it('más viejo, sin resumen o de otro hábito: lo que valía al subirla', () => {
+    expect(fotoCumplida({ habitId: 'h1', dia: '2026-10-01', cumplido: true }, resumen)).toBe(true);
+    expect(fotoCumplida({ habitId: 'h2', dia: '2026-10-28', cumplido: false }, resumen)).toBe(false);
+    expect(fotoCumplida({ habitId: 'h1', dia: '2026-10-28', cumplido: false }, null)).toBe(false);
+  });
+  it('id determinístico: una por persona, hábito y día', () => {
+    expect(idFotoHabito('u1', 'h1', '2026-10-28')).toBe('u1_h1_2026-10-28');
+  });
 });
