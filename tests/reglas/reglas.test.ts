@@ -354,6 +354,14 @@ describe('groups · comunidad', () => {
   });
 });
 
+describe('avisos de la actividad del grupo en el perfil', () => {
+  it('se guardan como sí/no', async () => {
+    const db = usuario('ana');
+    await assertSucceeds(setDoc(doc(db, 'users/ana'), perfil('ana', { notifCumplidos: false, notifFotos: true, notifMensajes: false })));
+    await assertFails(setDoc(doc(db, 'users/ana'), perfil('ana', { notifMensajes: 'a veces' })));
+  });
+});
+
 describe('memento mori en el perfil', () => {
   it('fecha de nacimiento, esperanza y hasta 5 contadores; privado', async () => {
     const db = usuario('ana');

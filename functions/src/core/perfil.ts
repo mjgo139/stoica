@@ -18,6 +18,10 @@ export interface Perfil {
   examenSlot: number | null; // franja UTC de 15 min (versiones anteriores)
   examenMin?: number | null; // minuto UTC del aviso del examen (cualquier minuto)
   notifReacciones: boolean;
+  /** Avisos de la actividad de los grupos (si no están, cuentan como activados). */
+  notifCumplidos?: boolean;
+  notifFotos?: boolean;
+  notifMensajes?: boolean;
   /** Memento mori (privado: nunca va a accounts ni a los grupos). */
   nacimiento?: string | null;
   esperanzaVida?: number;
@@ -28,10 +32,10 @@ export interface Perfil {
   rol?: Rol;
 }
 
-export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria' | 'notificaciones' | 'examenHora' | 'examenSlot' | 'examenMin' | 'notifReacciones' | 'nacimiento' | 'esperanzaVida' | 'contadores'>>;
+export type CambiosPerfil = Partial<Pick<Perfil, 'nombre' | 'tema' | 'mementoMori' | 'zonaHoraria' | 'notificaciones' | 'examenHora' | 'examenSlot' | 'examenMin' | 'notifReacciones' | 'notifCumplidos' | 'notifFotos' | 'notifMensajes' | 'nacimiento' | 'esperanzaVida' | 'contadores'>>;
 
 /** Campos que la app puede escribir en users/{uid}. Debe coincidir con firestore.rules. */
-export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'nacimiento', 'esperanzaVida', 'contadores', 'creado', 'actualizado', 'actualizadoPor'] as const;
+export const CAMPOS_PERFIL = ['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'notifCumplidos', 'notifFotos', 'notifMensajes', 'nacimiento', 'esperanzaVida', 'contadores', 'creado', 'actualizado', 'actualizadoPor'] as const;
 
 export function perfilInicial(uid: string, nombre: string, correo: string, zona: string, ahora: number): Perfil {
   return {
@@ -77,6 +81,9 @@ export function completarPerfil(p: Partial<Perfil>): Perfil {
     examenHora: p.examenHora === undefined ? '22:00' : p.examenHora,
     examenSlot: p.examenSlot ?? null,
     notifReacciones: p.notifReacciones ?? true,
+    ...(p.notifCumplidos !== undefined ? { notifCumplidos: p.notifCumplidos } : {}),
+    ...(p.notifFotos !== undefined ? { notifFotos: p.notifFotos } : {}),
+    ...(p.notifMensajes !== undefined ? { notifMensajes: p.notifMensajes } : {}),
     ...(p.examenMin !== undefined ? { examenMin: p.examenMin } : {}),
     nacimiento: p.nacimiento ?? null,
     esperanzaVida: p.esperanzaVida ?? ESPERANZA_DEFECTO,

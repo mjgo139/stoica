@@ -77,7 +77,7 @@ service cloud.firestore {
     match /users/{uid} {
       function perfilValido() {
         let d = nuevo();
-        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'nacimiento', 'esperanzaVida', 'contadores', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
+        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'notifCumplidos', 'notifFotos', 'notifMensajes', 'nacimiento', 'esperanzaVida', 'contadores', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
           && d.keys().hasAll(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor'])
           && texto(d.nombre, 1, 40)
           && texto(d.correo, 0, 254)
@@ -92,6 +92,9 @@ service cloud.firestore {
           && (!('esperanzaVida' in d) || entero(d.esperanzaVida, 40, 120))
           && (!('contadores' in d) || (d.contadores is list && d.contadores.size() <= 5))
           && (!('notifReacciones' in d) || d.notifReacciones is bool)
+          && (!('notifCumplidos' in d) || d.notifCumplidos is bool)
+          && (!('notifFotos' in d) || d.notifFotos is bool)
+          && (!('notifMensajes' in d) || d.notifMensajes is bool)
           && d.creado is int
           && firmado(uid);
       }

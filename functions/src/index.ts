@@ -20,7 +20,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { ROLES, type Rol } from './core/validaciones.js';
 import { calcularMetricas, type Cuenta } from './core/admin.js';
-import { esCodigo, generarCodigo, MAX_GRUPOS_POR_USUARIO, MAX_MIEMBROS, normalizarCodigo, REACCIONES, validarNombreGrupo, type Grupo, type Reaccion } from './core/comunidad.js';
+import { esCodigo, generarCodigo, MAX_GRUPOS_POR_USUARIO, MAX_MIEMBROS, normalizarCodigo, REACCIONES, validarNombreGrupo, type Grupo, type Miembro, type Reaccion } from './core/comunidad.js';
 import { claveDia, minutoActual, ZONA_POR_DEFECTO } from './core/fechas.js';
 import { cumplido, esDiaActivo, idRegistro, type Habito, type Registro } from './core/habitos.js';
 import { examenCompleto, idTareaHecha, tareaDelDia, tareaHecha, type Examen, type Tarea, type TareaHecha } from './core/rutina.js';
@@ -493,6 +493,59 @@ export const alReaccionar = onDocumentCreated('groups/{gid}/reactions/{rid}', as
 });
 
 
+// ---------- Avisos de la actividad del grupo ----------
+type CampoAvisoGrupo = 'notifCumplidos' | 'notifFotos' | 'notifMensajes';
+
+/** Marca de "ya se avisó" (la lee y escribe solo el servidor; se limpia sola a los 3 días). */
+async function primeraVez(clave: string): Promise<boolean> {
+  try {
+    await db().doc(`avisosReaccion/${clave}`).create({ creado: Date.now() });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Avisa a los demás integrantes que tengan activado ese tipo de aviso. */
+async function avisarAlGrupo(gid: string, de: string, campo: CampoAvisoGrupo, aviso: (g: Grupo, nombreDe: string) => Aviso) {
+  const g = (await db().doc(`groups/${gid}`).get()).data() as Grupo | undefined;
+  if (!g || !g.miembros.includes(de)) return 0;
+  // El nombre se toma de la cuenta (no de lo que escribe la app).
+  const nombreDe = String((await db().doc(`accounts/${de}`).get()).get('nombre') || 'Alguien').slice(0, 40);
+  const a = aviso(g, nombreDe);
+  let enviados = 0;
+  await Promise.all(
+    g.miembros
+      .filter((m) => m !== de)
+      .map(async (m) => {
+        const p = (await db().doc(`users/${m}`).get()).data() as Perfil | undefined;
+        if (!p?.notificaciones || p[campo] === false) return;
+        enviados += await avisar(m, a);
+      }),
+  );
+  return enviados;
+}
+
+/** Cuando un integrante cumple hoy un hábito que comparte, se avisa al grupo (una vez por hábito y día). */
+export const alActualizarMiembro = onDocumentUpdated('groups/{gid}/members/{uid}', async (event) => {
+  const antes = event.data?.before.data() as Miembro | undefined;
+  const despues = event.data?.after.data() as Miembro | undefined;
+  if (!despues) return;
+  const { gid, uid } = event.params;
+  for (const c of despues.compartidos ?? []) {
+    if (!c.hoy) continue;
+    const previo = antes?.fecha === despues.fecha ? antes?.compartidos?.find((x) => x.habitId === c.habitId) : undefined;
+    if (previo?.hoy) continue;
+    if (!(await primeraVez(`cumple_${gid}_${uid}_${c.habitId}_${despues.fecha}`))) continue;
+    await avisarAlGrupo(gid, uid, 'notifCumplidos', (g, nombre) => ({
+      titulo: `✓ ${nombre} cumplió ${c.nombre}`,
+      cuerpo: `${g.nombre}${c.racha > 1 ? ` · racha de ${c.racha} días` : ''}. Dejale una reacción.`,
+      url: `/comunidad/${gid}`,
+      tag: `cumple-${gid}-${uid}`,
+    }));
+  }
+});
+
 // ---------- Protección contra abuso ----------
 async function bloquear(uid: string, motivo: string) {
   await ponerClaims(uid, { bloqueado: true });
@@ -744,6 +797,15 @@ export const subirFotoGrupo = onCall({ ...llamable, memory: '512MiB' }, async (r
   await ref.set(f);
   if (previa?.rutas) await Promise.all(previa.rutas.map((x) => bucket.file(x).delete({ ignoreNotFound: true })));
   await contarCreacion(uid);
+  // Aviso al grupo solo la primera foto del día de ese hábito (si la reemplaza, no se repite).
+  if (!previa) {
+    await avisarAlGrupo(gid, uid, 'notifFotos', (g, nombre) => ({
+      titulo: `📷 ${nombre} subió una foto`,
+      cuerpo: `${f.habito} · ${f.cumplido ? 'cumplido' : 'no cumplido'}${f.texto ? `: ${f.texto}` : ''} (${g.nombre})`,
+      url: `/comunidad/${gid}`,
+      tag: `foto-${gid}-${uid}`,
+    })).catch((e) => logger.warn('No se pudo avisar la foto', { e: String(e) }));
+  }
   return { ok: true, cumplido: f.cumplido };
 });
 
@@ -768,7 +830,17 @@ export const vigilarMensajes = onDocumentCreated('groups/{gid}/mensajes/{mid}', 
   const de = String(event.data?.get('de') ?? '');
   if (!de) return;
   const c = await contarCreacion(de);
-  if (c.excedido) await event.data?.ref.delete();
+  if (c.excedido) return void (await event.data?.ref.delete());
+  // Aviso al grupo: como mucho uno cada 3 minutos por persona y grupo (si escribe varios seguidos).
+  const franja = Math.floor(Date.now() / (3 * 60_000));
+  if (!(await primeraVez(`chat_${event.params.gid}_${de}_${franja}`))) return;
+  const texto = String(event.data?.get('texto') ?? '').slice(0, 120);
+  await avisarAlGrupo(event.params.gid, de, 'notifMensajes', (g, nombre) => ({
+    titulo: `${nombre} en ${g.nombre}`,
+    cuerpo: texto,
+    url: `/comunidad/${event.params.gid}`,
+    tag: `chat-${event.params.gid}`,
+  }));
 });
 
 /** Al borrar un desafío, se borra lo que pudiera quedar de la versión anterior. */

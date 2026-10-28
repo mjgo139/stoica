@@ -191,7 +191,7 @@ function FilaParticipante({ c, esYo, alDia, hoy, fecha, nombre }: { c: Compartid
   const miSemana = useMiSemana(esYo ? c.habitId : '', hoy);
   const conteo = useConteoHoy(esYo ? c.habitId : '', hoy);
   return (
-    <div style={{ paddingLeft: 26 }}>
+    <div className="en-desafio" style={{ paddingLeft: 26 }}>
       <FilaCompartida
         c={c}
         esYo={esYo}
