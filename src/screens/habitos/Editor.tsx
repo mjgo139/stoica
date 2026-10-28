@@ -414,7 +414,7 @@ export function Plantillas({ alElegir, compacta = false }: { alElegir?: (p: Plan
   );
 }
 
-/** Ícono: una pestaña por grupo y sus 6 íconos (en lugar de los 30 juntos). */
+/** Ícono: una pestaña por grupo y sus 12 íconos (en lugar de los 60 juntos). */
 function SelectorIcono({ icono, virtud, alElegir }: { icono: string; virtud: Virtud; alElegir: (icono: string) => void }) {
   const grupoDe = (id: string) => GRUPOS_ICONOS.find(([, l]) => l.some(([x]) => x === id))?.[0] ?? GRUPOS_ICONOS[0][0];
   const [grupo, setGrupo] = useState(() => grupoDe(icono));

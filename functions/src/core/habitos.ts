@@ -40,13 +40,13 @@ export type Direccion = (typeof DIRECCIONES)[number];
 
 export type Momento = 0 | 1 | 2;
 
-/** 30 íconos en 5 grupos (los dibujos están en la web). */
+/** 60 íconos en 5 grupos de 12 (los dibujos están en la web). */
 export const GRUPOS_ICONOS: Array<[string, Array<[string, string]>]> = [
-  ['Cuerpo y movimiento', [['run', 'Correr'], ['walk', 'Caminar'], ['bike', 'Bicicleta'], ['swim', 'Nadar'], ['weights', 'Pesas'], ['yoga', 'Yoga']]],
-  ['Salud y medidas', [['scale', 'Balanza'], ['ruler', 'Medidas'], ['heart', 'Corazón'], ['pill', 'Medicación'], ['tooth', 'Dientes'], ['cold', 'Ducha fría']]],
-  ['Alimentación y hogar', [['food', 'Comer bien'], ['water', 'Agua'], ['coffee', 'Café'], ['nosugar', 'Sin azúcar'], ['plant', 'Plantas'], ['home', 'Hogar']]],
-  ['Mente', [['med', 'Meditar'], ['read', 'Leer'], ['write', 'Escribir'], ['lang', 'Idiomas'], ['music', 'Música'], ['code', 'Programar']]],
-  ['Disciplina', [['sleep', 'Dormir'], ['sun', 'Madrugar'], ['nophone', 'Sin pantallas'], ['nosmoke', 'Sin fumar'], ['money', 'Ahorrar'], ['family', 'Familia']]],
+  ['Cuerpo y movimiento', [['run', 'Correr'], ['walk', 'Caminar'], ['bike', 'Bicicleta'], ['swim', 'Nadar'], ['weights', 'Pesas'], ['yoga', 'Yoga'], ['futbol', 'Fútbol'], ['montana', 'Montaña'], ['estirar', 'Estirar'], ['saltar', 'Saltar la cuerda'], ['boxeo', 'Boxeo'], ['pasos', 'Pasos']]],
+  ['Salud y medidas', [['scale', 'Balanza'], ['ruler', 'Medidas'], ['heart', 'Corazón'], ['pill', 'Medicación'], ['tooth', 'Dientes'], ['cold', 'Ducha fría'], ['ojo', 'Vista'], ['termometro', 'Temperatura'], ['vendaje', 'Curita'], ['respirar', 'Respirar'], ['ducha', 'Ducha'], ['sinalcohol', 'Sin alcohol']]],
+  ['Alimentación y hogar', [['food', 'Comer bien'], ['water', 'Agua'], ['coffee', 'Café'], ['nosugar', 'Sin azúcar'], ['plant', 'Plantas'], ['home', 'Hogar'], ['ensalada', 'Ensalada'], ['zanahoria', 'Verduras'], ['olla', 'Cocinar'], ['escoba', 'Limpiar'], ['caja', 'Ordenar'], ['mascota', 'Mascota']]],
+  ['Mente', [['med', 'Meditar'], ['read', 'Leer'], ['write', 'Escribir'], ['lang', 'Idiomas'], ['music', 'Música'], ['code', 'Programar'], ['idea', 'Idea'], ['estudio', 'Estudiar'], ['auriculares', 'Escuchar'], ['paleta', 'Arte'], ['fotografia', 'Fotografía'], ['vela', 'Oración']]],
+  ['Disciplina', [['sleep', 'Dormir'], ['sun', 'Madrugar'], ['nophone', 'Sin pantallas'], ['nosmoke', 'Sin fumar'], ['money', 'Ahorrar'], ['family', 'Familia'], ['alarma', 'Despertador'], ['calendario', 'Planificar'], ['checklist', 'Pendientes'], ['reloj', 'Tiempo'], ['diana', 'Objetivo'], ['cama', 'Tender la cama']]],
 ];
 export const ICONOS: string[] = GRUPOS_ICONOS.flatMap(([, l]) => l.map(([id]) => id));
 

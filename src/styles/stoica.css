@@ -434,3 +434,12 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .tira-fotos button.on img { box-shadow: 0 0 0 2px var(--gold); }
 .tira-fotos .sello.chico { right: -4px; bottom: 18px; }
 .chat-lista { display: grid; gap: 10px; max-height: 420px; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+
+/* Fila de hábito compartido: grilla fija para que todo quede alineado */
+.fila-compartida { display: grid; grid-template-columns: 32px minmax(0, 1fr) 36px 32px; column-gap: 12px; align-items: start; padding: 10px 0 0 50px; }
+.fila-compartida.sin-foto { grid-template-columns: 32px minmax(0, 1fr) 32px; }
+.fila-compartida .fc-nombre { display: block; font-weight: 600; font-size: 14.5px; line-height: 1.3; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.fila-compartida .fc-datos { display: flex; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-top: 2px; font-size: 12px; font-weight: 600; color: var(--mu2); }
+.fila-compartida .fc-datos b { font-size: 13px; }
+.fila-compartida .fc-foto, .fila-compartida .fc-marca { display: flex; justify-content: center; padding-top: 0; }
+@media (max-width: 420px) { .fila-compartida { padding-left: 0; column-gap: 10px; } }

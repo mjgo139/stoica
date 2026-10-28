@@ -45,14 +45,21 @@ function Sello({ ok, chico = false }: { ok: boolean; chico?: boolean }) {
  * Al lado de cada hábito compartido: la foto de hoy (con su estado), o el botón para subirla si es tuyo.
  * Al tocar se abre el historial de fotos de ese hábito.
  */
-export function FotoDelHabito({ gid, plan, miembro, habitId, habito, esYo, fotos }: { gid: string; plan: EstadoPlan; miembro: ConId<Miembro>; habitId: string; habito: string; esYo: boolean; fotos: Array<ConId<FotoHabito>> }) {
+export function FotoDelHabito({ gid, plan, miembro, habitId, habito, esYo, fotos, pedido = 0 }: { gid: string; plan: EstadoPlan; miembro: ConId<Miembro>; habitId: string; habito: string; esYo: boolean; fotos: Array<ConId<FotoHabito>>; pedido?: number }) {
   const hoy = useHoy();
   const [viendo, setViendo] = useState(false);
-  const [subiendo, setSubiendo] = useState(false);
-  if (!planVisible(plan)) return null;
+  const [subiendo, setSubiendo] = useState<false | 'normal' | 'sugerida'>(false);
   const propias = fotos.filter((f) => f.de === miembro.id && f.habitId === habitId).sort((a, b) => (a.dia < b.dia ? 1 : -1));
   const deHoy = propias.find((f) => f.dia === hoy);
   const puedeSubir = esYo && plan.estado === 'activo';
+  // Acabás de cumplirlo desde el grupo: si todavía no hay foto de hoy, se ofrece subirla.
+  const ultimoPedido = useRef(pedido);
+  useEffect(() => {
+    if (pedido === ultimoPedido.current) return;
+    ultimoPedido.current = pedido;
+    if (puedeSubir && !deHoy) setSubiendo('sugerida');
+  }, [pedido, puedeSubir, deHoy]);
+  if (!planVisible(plan)) return <span className="foto-mini hueco" aria-hidden="true" />;
   const quien = esYo ? 'tu' : `de ${miembro.nombre},`;
   return (
     <>
@@ -62,7 +69,7 @@ export function FotoDelHabito({ gid, plan, miembro, habitId, habito, esYo, fotos
           <Sello ok={fotoCumplida(deHoy, miembro)} chico />
         </button>
       ) : puedeSubir ? (
-        <button type="button" className="foto-mini vacia" onClick={() => setSubiendo(true)} aria-label={`Subir la foto de hoy de ${habito}`}>
+        <button type="button" className="foto-mini vacia" onClick={() => setSubiendo('normal')} aria-label={`Subir la foto de hoy de ${habito}`}>
           <Icono nombre="camara" tam={16} />
         </button>
       ) : propias.length > 0 ? (
@@ -73,8 +80,8 @@ export function FotoDelHabito({ gid, plan, miembro, habitId, habito, esYo, fotos
       ) : (
         <span className="foto-mini hueco" aria-hidden="true" />
       )}
-      <HojaFotosHabito gid={gid} abierta={viendo} alCerrar={() => setViendo(false)} miembro={miembro} habitId={habitId} habito={habito} esYo={esYo} puedeSubir={puedeSubir} alSubir={() => (setViendo(false), setSubiendo(true))} />
-      {esYo && <HojaSubirFoto gid={gid} habitId={habitId} habito={habito} reemplaza={!!deHoy} abierta={subiendo} alCerrar={() => setSubiendo(false)} />}
+      <HojaFotosHabito gid={gid} abierta={viendo} alCerrar={() => setViendo(false)} miembro={miembro} habitId={habitId} habito={habito} esYo={esYo} puedeSubir={puedeSubir} alSubir={() => (setViendo(false), setSubiendo('normal'))} />
+      {esYo && <HojaSubirFoto gid={gid} habitId={habitId} habito={habito} reemplaza={!!deHoy} abierta={!!subiendo} sugerida={subiendo === 'sugerida'} alCerrar={() => setSubiendo(false)} />}
     </>
   );
 }
@@ -124,7 +131,7 @@ function HojaFotosHabito({ gid, abierta, alCerrar, miembro, habitId, habito, esY
 }
 
 /** Subir (o reemplazar) la foto de hoy de un hábito: cámara o galería, y collage si son varias. */
-function HojaSubirFoto({ gid, habitId, habito, reemplaza, abierta, alCerrar }: { gid: string; habitId: string; habito: string; reemplaza: boolean; abierta: boolean; alCerrar: () => void }) {
+function HojaSubirFoto({ gid, habitId, habito, reemplaza, abierta, sugerida = false, alCerrar }: { gid: string; habitId: string; habito: string; reemplaza: boolean; abierta: boolean; sugerida?: boolean; alCerrar: () => void }) {
   const hoy = useHoy();
   const ok = useMiCumplido(habitId, hoy);
   const mostrar = useAvisos((s) => s.mostrar);
@@ -167,7 +174,10 @@ function HojaSubirFoto({ gid, habitId, habito, reemplaza, abierta, alCerrar }: {
   };
 
   return (
-    <Hoja titulo={`Foto de hoy · ${habito}`} abierta={abierta} alCerrar={cerrar}>
+    <Hoja titulo={sugerida ? `¡${habito} cumplido!` : `Foto de hoy · ${habito}`} abierta={abierta} alCerrar={cerrar}>
+      {sugerida && elegidas.length === 0 && (
+        <p style={{ fontWeight: 600, marginTop: 0 }}>¿Querés sumar la foto de hoy para el grupo? Es opcional.</p>
+      )}
       <div className="franja-estado" data-estado-foto={ok ? 'cumplido' : 'no-cumplido'}>
         <Sello ok={ok} />
         <span>{ok ? 'La foto va con tu día cumplido.' : 'Todavía no lo marcaste: la foto va como no cumplido. Si lo marcás después, se actualiza.'}</span>
@@ -242,6 +252,11 @@ function HojaSubirFoto({ gid, habitId, habito, reemplaza, abierta, alCerrar }: {
             {subiendo ? 'Subiendo…' : 'Compartir'}
           </button>
         </>
+      )}
+      {sugerida && elegidas.length === 0 && (
+        <button type="button" className="link" style={{ width: '100%', marginTop: 10 }} onClick={cerrar}>
+          Ahora no
+        </button>
       )}
     </Hoja>
   );

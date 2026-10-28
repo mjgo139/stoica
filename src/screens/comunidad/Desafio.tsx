@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { estadoDesafio, finDesafio, semanaAlDia, type Desafio as TipoDesafio, type Progreso } from '@core/comunidad';
+import { estadoDesafio, finDesafio, semanaAlDia, type Compartido, type Desafio as TipoDesafio, type Progreso } from '@core/comunidad';
 import { fechaCorta } from '@core/fechas';
 import { NOMBRE_VIRTUD } from '@core/habitos';
 import { inicial } from '@core/perfil';
-import { aRomano } from '@core/romanos';
 import { borrarDesafio, useComunidad } from '@/app/comunidad';
 import { registrosDe, uidActual, useDatos, useHoy } from '@/app/datos';
 import { useConsulta } from '@/data/hooks';
 import type { ConId } from '@/data/tipos';
 import { Confirmar } from '@/ui/Hoja';
-import { IconoHabito } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
-import { SemanaMini } from '@/ui/SemanaMini';
 import { TarjetaHabito } from '../habitos/Lista';
-import { HojaDesafio, HojaElegirHabito, MarcaMia } from './Grupo';
+import { FilaCompartida, HojaDesafio, HojaElegirHabito, MarcaMia, useConteoHoy, useMiSemana } from './Grupo';
 
 /** Pantalla de un desafío: tu hábito y el de cada participante, como en el grupo. Las fotos y el chat están en el grupo. */
 export function Desafio() {
@@ -177,38 +174,7 @@ function Participantes({ d, gid, hoy }: { d: ConId<TipoDesafio>; gid: string; ho
               <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
             </span>
             {c ? (
-              <div style={{ padding: '10px 0 0 26px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <IconoHabito icono={c.icono} virtud={c.virtud} tam={30} />
-                  {esYo ? (
-                    <Link to={`/habitos/${c.habitId}`} style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, color: 'inherit', textDecoration: 'none' }}>
-                      {c.nombre}{'\u00a0'}<span className="gold">›</span>
-                    </Link>
-                  ) : (
-                    <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14 }}>{c.nombre}</span>
-                  )}
-                  <span className="num gold" style={{ fontSize: 15 }} title={`Racha de ${c.racha} días`}>
-                    {aRomano(c.racha)}
-                  </span>
-                  <span className="mu2" style={{ fontSize: 12, fontWeight: 700, width: 38, textAlign: 'right' }}>
-                    {c.porcentaje}%
-                  </span>
-                  {esYo ? (
-                    <MarcaMia habitId={c.habitId} nombre={c.nombre} hoy={hoy} resumenOk={alDia && c.hoy} />
-                  ) : (
-                    <span className={`dia ${alDia && c.hoy ? 'ok' : ''}`} style={{ margin: 0, width: 32, height: 32 }} aria-label={alDia && c.hoy ? 'Cumplido hoy' : 'Pendiente hoy'}>
-                      <span style={{ width: 16, height: 16 }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24">
-                          <path d="M5 12l4 4 10-10" />
-                        </svg>
-                      </span>
-                    </span>
-                  )}
-                </div>
-                <div style={{ paddingLeft: 40, marginTop: 6 }}>
-                  <SemanaMini dias={semanaAlDia(c.semana, p.fecha ?? hoy, hoy)} hoy={hoy} etiqueta={`${esYo ? 'Tu semana' : p.nombre}, ${c.nombre}`} />
-                </div>
-              </div>
+              <FilaParticipante c={c} esYo={esYo} alDia={alDia} hoy={hoy} fecha={p.fecha ?? hoy} nombre={p.nombre} />
             ) : (
               <p className="mu2" style={{ fontSize: 12.5, fontWeight: 600, margin: '8px 0 0 26px' }}>
                 Su hábito aparece cuando vuelva a abrir la app.
@@ -217,6 +183,25 @@ function Participantes({ d, gid, hoy }: { d: ConId<TipoDesafio>; gid: string; ho
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function FilaParticipante({ c, esYo, alDia, hoy, fecha, nombre }: { c: Compartido; esYo: boolean; alDia: boolean; hoy: string; fecha: string; nombre: string }) {
+  const miSemana = useMiSemana(esYo ? c.habitId : '', hoy);
+  const conteo = useConteoHoy(esYo ? c.habitId : '', hoy);
+  return (
+    <div style={{ paddingLeft: 26 }}>
+      <FilaCompartida
+        c={c}
+        esYo={esYo}
+        alDia={alDia}
+        hoy={hoy}
+        semana={esYo && miSemana ? miSemana : semanaAlDia(c.semana, fecha, hoy)}
+        etiquetaSemana={`${esYo ? 'Tu semana' : nombre}, ${c.nombre}`}
+        extra={conteo}
+        marca={esYo ? <MarcaMia habitId={c.habitId} nombre={c.nombre} hoy={hoy} resumenOk={alDia && c.hoy} /> : undefined}
+      />
     </div>
   );
 }

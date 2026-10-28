@@ -1,6 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { estadoDesafio, finDesafio, REACCIONES, semanaAlDia, validarDesafio, validarNombreGrupo, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
+import { estadoDesafio, finDesafio, REACCIONES, semanaAlDia, validarDesafio, validarNombreGrupo, type Compartido, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
 import { fechaCorta, sumarDias } from '@core/fechas';
 import { cumplido, habitoParaDesafio, LIMITES_HABITO, NOMBRE_VIRTUD, validarHabito, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
 import { inicial } from '@core/perfil';
@@ -17,7 +17,7 @@ import { IconoHabito } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
 import { SemanaMini } from '@/ui/SemanaMini';
-import { ChatGrupo, FotoDelHabito, useFotosSemana } from './Muro';
+import { ChatGrupo, FotoDelHabito, planVisible, useFotosSemana } from './Muro';
 import { PanelPlan, usePlan } from './Plan';
 import type { EstadoPlan, FotoHabito } from '@core/plan';
 
@@ -201,39 +201,7 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
       </div>
       {m.compartidos.length === 0 && <p className="vacio-mini" style={{ padding: '8px 0 0' }}>No comparte hábitos.</p>}
       {m.compartidos.map((c) => (
-        <div key={c.habitId} style={{ padding: '8px 0 0 50px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <IconoHabito icono={c.icono} virtud={c.virtud} tam={30} />
-          {esYo ? (
-            <Link to={`/habitos/${c.habitId}`} style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5, color: 'inherit', textDecoration: 'none' }}>
-              {c.nombre}{'\u00a0'}<span className="gold">›</span>
-            </Link>
-          ) : (
-            <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>{c.nombre}</span>
-          )}
-          <FotoDelHabito gid={grupoId} plan={plan} miembro={m} habitId={c.habitId} habito={c.nombre} esYo={esYo} fotos={fotos} />
-          <span className="num gold" style={{ fontSize: 15 }} title={`Racha de ${c.racha} días`}>
-            {aRomano(c.racha)}
-          </span>
-          <span className="mu2" style={{ fontSize: 12, fontWeight: 700, width: 38, textAlign: 'right' }}>
-            {c.porcentaje}%
-          </span>
-          {esYo ? (
-            <MarcaMia habitId={c.habitId} nombre={c.nombre} hoy={hoy} resumenOk={actualizado && c.hoy} />
-          ) : (
-            <span className={`dia ${actualizado && c.hoy ? 'ok' : ''}`} style={{ margin: 0, width: 32, height: 32 }} aria-label={actualizado && c.hoy ? 'Cumplido hoy' : 'Pendiente hoy'}>
-              <span style={{ width: 16, height: 16 }}>
-                <svg width="11" height="11" viewBox="0 0 24 24">
-                  <path d="M5 12l4 4 10-10" />
-                </svg>
-              </span>
-            </span>
-          )}
-        </div>
-        <div style={{ paddingLeft: 40, marginTop: 6 }}>
-          {esYo ? <MiSemana habitId={c.habitId} hoy={hoy} nombre={c.nombre} /> : <SemanaMini dias={semanaAlDia(c.semana, m.fecha, hoy)} hoy={hoy} etiqueta={`${m.nombre}, ${c.nombre}`} />}
-        </div>
-        </div>
+        <FilaDelGrupo key={c.habitId} c={c} m={m} esYo={esYo} alDia={actualizado} hoy={hoy} grupoId={grupoId} plan={plan} fotos={fotos} />
       ))}
       {!esYo && (
         <div className="chips" style={{ padding: '10px 0 0 50px', gap: 6 }} role="group" aria-label={`Reaccionar a ${m.nombre}`}>
@@ -248,25 +216,114 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
   );
 }
 
-/** Tu propio hábito compartido: se puede marcar desde el grupo (igual que en Hoy). */
+/**
+ * Fila de un hábito compartido, con la misma estructura para todos:
+ * ícono · nombre, racha, % y semana · foto de hoy · rombo de hoy.
+ */
+export function FilaCompartida({ c, esYo, alDia, hoy, semana, etiquetaSemana, foto, marca, extra }: { c: Compartido; esYo: boolean; alDia: boolean; hoy: string; semana: Array<boolean | null>; etiquetaSemana: string; foto?: ReactNode; marca?: ReactNode; extra?: string }) {
+  return (
+    <div className={`fila-compartida ${foto === undefined ? 'sin-foto' : ''}`} data-fila-habito={c.nombre}>
+      <IconoHabito icono={c.icono} virtud={c.virtud} tam={32} />
+      <div style={{ minWidth: 0 }}>
+        {esYo ? (
+          <Link to={`/habitos/${c.habitId}`} className="fc-nombre">
+            {c.nombre}
+            {'\u00a0'}
+            <span className="gold">›</span>
+          </Link>
+        ) : (
+          <span className="fc-nombre">{c.nombre}</span>
+        )}
+        <span className="fc-datos">
+          <span>
+            Racha <b className="num gold">{c.racha > 0 ? aRomano(c.racha) : '—'}</b>
+          </span>
+          <span>{c.porcentaje}% en 30 días</span>
+          {extra && <span>{extra}</span>}
+        </span>
+        <div style={{ marginTop: 6 }}>
+          <SemanaMini dias={semana} hoy={hoy} etiqueta={etiquetaSemana} />
+        </div>
+      </div>
+      {foto !== undefined && <div className="fc-foto">{foto}</div>}
+      <div className="fc-marca">
+        {marca ?? (
+          <span className={`dia ${alDia && c.hoy ? 'ok' : ''}`} style={{ margin: 0, width: 32, height: 32 }} aria-label={alDia && c.hoy ? 'Cumplido hoy' : 'Pendiente hoy'}>
+            <span style={{ width: 16, height: 16 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24">
+                <path d="M5 12l4 4 10-10" />
+              </svg>
+            </span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** En el grupo: la fila con la foto de hoy. Al cumplir tu hábito desde acá, te ofrece subir la foto. */
+function FilaDelGrupo({ c, m, esYo, alDia, hoy, grupoId, plan, fotos }: { c: Compartido; m: ConId<Miembro>; esYo: boolean; alDia: boolean; hoy: string; grupoId: string; plan: EstadoPlan; fotos: Array<ConId<FotoHabito>> }) {
+  const [pedido, setPedido] = useState(0);
+  const pedirFoto = useCallback(() => setPedido((n) => n + 1), []);
+  const miSemana = useMiSemana(esYo ? c.habitId : '', hoy);
+  const conteo = useConteoHoy(esYo ? c.habitId : '', hoy);
+  return (
+    <FilaCompartida
+      c={c}
+      esYo={esYo}
+      alDia={alDia}
+      hoy={hoy}
+      semana={esYo && miSemana ? miSemana : semanaAlDia(c.semana, m.fecha, hoy)}
+      etiquetaSemana={esYo ? `Tu semana de ${c.nombre}` : `${m.nombre}, ${c.nombre}`}
+      extra={conteo}
+      foto={planVisible(plan) ? <FotoDelHabito gid={grupoId} plan={plan} miembro={m} habitId={c.habitId} habito={c.nombre} esYo={esYo} fotos={fotos} pedido={pedido} /> : undefined}
+      marca={esYo ? <MarcaMia habitId={c.habitId} nombre={c.nombre} hoy={hoy} resumenOk={alDia && c.hoy} alCumplir={pedirFoto} /> : undefined}
+    />
+  );
+}
+
+/** Hoy en números (cantidad o lista): "3/8" o "2/3 ítems". */
+export function useConteoHoy(habitId: string, hoy: string): string | undefined {
+  const h = useHabitosActivos().find((x) => x.id === habitId);
+  const r = useDatos((s) => (habitId ? registrosDe(s.registros, habitId).get(hoy) : undefined));
+  if (!h) return undefined;
+  if (h.tipo === 'cantidad') return `Hoy ${r?.valor ?? 0}/${h.meta}${h.unidad ? ` ${h.unidad}` : ''}`;
+  if (h.tipo === 'lista') return `Hoy ${r?.valor ?? 0}/${h.variables.length}`;
+  return undefined;
+}
+
 /** Tu semana de un hábito, calculada con tus datos (siempre al día). */
-function MiSemana({ habitId, hoy, nombre }: { habitId: string; hoy: string; nombre: string }) {
+export function useMiSemana(habitId: string, hoy: string): boolean[] | null {
   const h = useHabitosActivos().find((x) => x.id === habitId);
   const registros = useDatos((s) => s.registros);
   if (!h) return null;
   const regs = registrosDe(registros, h.id);
-  return <SemanaMini dias={[-6, -5, -4, -3, -2, -1, 0].map((o) => cumplido(h, regs.get(sumarDias(hoy, o))))} hoy={hoy} etiqueta={`Tu semana de ${nombre}`} />;
+  return [-6, -5, -4, -3, -2, -1, 0].map((o) => cumplido(h, regs.get(sumarDias(hoy, o))));
 }
 
-export function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string; nombre: string; hoy: string; resumenOk: boolean }) {
+/** Tu propio hábito compartido: se puede marcar desde el grupo (igual que en Hoy). */
+
+export function MarcaMia({ habitId, nombre, hoy, resumenOk, alCumplir }: { habitId: string; nombre: string; hoy: string; resumenOk: boolean; alCumplir?: () => void }) {
   const h = useHabitosActivos().find((x) => x.id === habitId);
   const registros = useDatos((s) => s.registros);
   const [midiendo, setMidiendo] = useState(false);
   const [rebote, setRebote] = useState(0);
   const r = h ? registrosDe(registros, h.id).get(hoy) : undefined;
   const ok = h ? cumplido(h, r) : resumenOk;
+  // Si lo acabás de cumplir desde acá (no si ya venía cumplido), se ofrece subir la foto.
+  const tocado = useRef(false);
+  const antes = useRef(ok);
+  useEffect(() => {
+    if (ok && !antes.current && tocado.current) {
+      tocado.current = false;
+      setMidiendo(false);
+      alCumplir?.();
+    }
+    antes.current = ok;
+  }, [ok, alCumplir]);
   const tocar = () => {
     if (!h) return;
+    tocado.current = true;
     setRebote((n) => n + 1);
     if (h.tipo === 'sino') alternarSiNo(h, hoy);
     else if (h.tipo === 'cantidad') sumar(h, hoy, 1);
@@ -275,11 +332,6 @@ export function MarcaMia({ habitId, nombre, hoy, resumenOk }: { habitId: string;
   const etiqueta = !h ? nombre : h.tipo === 'sino' ? `${ok ? 'Desmarcar' : 'Marcar'} ${nombre}` : h.tipo === 'cantidad' ? (ok ? `${nombre}: cumplido` : `Sumar uno a ${nombre}`) : h.tipo === 'lista' ? `Marcar ítems de ${nombre}` : `Registrar ${nombre}`;
   return (
     <>
-      {(h?.tipo === 'cantidad' || h?.tipo === 'lista') && (
-        <span className="mu2 num" style={{ fontSize: 13 }}>
-          {r?.valor ?? 0}/{h.tipo === 'lista' ? h.variables.length : h.meta}
-        </span>
-      )}
       <button
         type="button"
         key={rebote}

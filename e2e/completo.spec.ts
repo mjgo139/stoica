@@ -160,9 +160,9 @@ test.describe('v0.2–v0.3 · hábitos', () => {
     await page.getByRole('radio', { name: 'Coraje' }).click();
     await expect(explica).toContainText('hacer lo difícil');
     await expect(explica).toContainText('entrenar');
-    // Solo se ven los 6 íconos del grupo elegido
+    // Solo se ven los 12 íconos del grupo elegido
     await page.getByRole('tab', { name: 'Salud' }).click();
-    await expect(page.getByRole('radiogroup', { name: 'Salud y medidas' }).getByRole('radio')).toHaveCount(6);
+    await expect(page.getByRole('radiogroup', { name: 'Salud y medidas' }).getByRole('radio')).toHaveCount(12);
     await page.getByRole('radio', { name: 'Corazón' }).click();
     await expect(page.getByText('Elegido: Corazón')).toBeVisible();
     // Los proyectos ya no piden virtud
@@ -486,6 +486,7 @@ test.describe('v0.5–v1.0', () => {
     // Mi foto: primero comparto Meditar; la foto queda ligada a cómo me fue hoy (cumplido)
     await page.getByRole('button', { name: 'Qué comparto' }).click();
     await page.getByRole('dialog').getByLabel('Meditar').check();
+    await page.getByRole('dialog').getByLabel('Tiempo con la familia').check();
     await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click();
     await page.getByRole('button', { name: 'Subir la foto de hoy de Meditar' }).click();
     const hojaFoto = page.getByRole('dialog', { name: 'Foto de hoy · Meditar' });
@@ -517,6 +518,20 @@ test.describe('v0.5–v1.0', () => {
     await hojaCollage.getByRole('button', { name: 'Compartir' }).click();
     await expect(page.getByText('Foto de Meditar compartida.')).toBeVisible();
     await captura(page, '25c-grupo-con-fotos');
+
+    // Al cumplir un hábito desde el grupo se ofrece la foto (si todavía no hay una de hoy)
+    await page.getByRole('button', { name: 'Marcar Meditar' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Marcar Tiempo con la familia' }).click();
+    const oferta = page.getByRole('dialog', { name: '¡Tiempo con la familia cumplido!' });
+    await expect(oferta).toContainText('¿Querés sumar la foto de hoy');
+    await expect(oferta.locator('[data-estado-foto="cumplido"]')).toBeVisible();
+    await captura(page, '25d-oferta-foto');
+    await oferta.getByRole('button', { name: 'Ahora no' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    // Desmarcar no vuelve a ofrecer nada
+    await page.getByRole('button', { name: 'Desmarcar Tiempo con la familia' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
 
     // En el desafío ya no hay fotos ni chat: están en el grupo
     await page.locator('[data-desafio="21 días meditando"]').click();
