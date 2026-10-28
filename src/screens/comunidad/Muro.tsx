@@ -12,6 +12,7 @@ import type { Miembro } from '@core/comunidad';
 import { registrosDe, uidActual, useDatos, useHoy } from '@/app/datos';
 import { armarCollage, borrarPublicacion, enviarMensaje, reportarPublicacion, subirFoto, type ColeccionPlan } from '@/app/plan';
 import { useConsulta } from '@/data/hooks';
+import { AvisoBorrado } from './Plan';
 import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
 import { Icono } from '@/ui/Iconos';
@@ -292,6 +293,11 @@ export function ChatGrupo({ gid, plan }: { gid: string; plan: EstadoPlan }) {
       <div className="grp cap" style={{ marginTop: 0 }}>
         <span>Chat del grupo</span>
       </div>
+      {plan.estado === 'gracia' && (
+        <div style={{ marginBottom: 12 }}>
+          <AvisoBorrado plan={plan} />
+        </div>
+      )}
       {mensajes.length === 0 && <p className="vacio-mini">Nadie escribió todavía. Un “¡vamos!” ayuda más de lo que parece.</p>}
       <div className="chat-lista" aria-live="polite" ref={lista}>
         {mensajes.map((m) => {

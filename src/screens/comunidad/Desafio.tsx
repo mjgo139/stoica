@@ -195,7 +195,6 @@ function FilaParticipante({ c, esYo, alDia, hoy, fecha, nombre }: { c: Compartid
       <FilaCompartida
         c={c}
         esYo={esYo}
-        alDia={alDia}
         hoy={hoy}
         semana={esYo && miSemana ? miSemana : semanaAlDia(c.semana, fecha, hoy)}
         etiquetaSemana={`${esYo ? 'Tu semana' : nombre}, ${c.nombre}`}

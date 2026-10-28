@@ -51,18 +51,18 @@ export function HojaCodigo({ grupoId, abierta, alCerrar }: { grupoId: string; ab
   );
 }
 
-/** Panel del grupo: estado del plan y botón para activarlo o renovarlo. */
+/** Sección del plan (dentro del panel del grupo, junto a la invitación): estado y botón para activarlo o renovarlo. */
 export function PanelPlan({ grupoId, plan }: { grupoId: string; plan: EstadoPlan }) {
   const [abierta, setAbierta] = useState(false);
   return (
-    <div className="panel" data-plan={plan.estado}>
-      <div className="grp cap" style={{ marginTop: 0 }}>
+    <div data-plan={plan.estado}>
+      <div className="grp cap">
         <span>Fotos y chat</span>
       </div>
       {plan.estado === 'activo' && (
         <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
           Activo hasta el <b>{fechaPlan(plan.hasta)}</b>
-          {plan.diasRestantes <= 7 && ` (quedan ${plan.diasRestantes} ${plan.diasRestantes === 1 ? 'día' : 'días'})`}. Cada uno sube la foto de hoy desde su hábito y escriben en el chat del grupo.
+          {plan.diasRestantes <= 7 && ` (quedan ${plan.diasRestantes} ${plan.diasRestantes === 1 ? 'día' : 'días'})`}.
         </p>
       )}
       {plan.estado === 'gracia' && <AvisoBorrado plan={plan} />}
@@ -71,7 +71,7 @@ export function PanelPlan({ grupoId, plan }: { grupoId: string; plan: EstadoPlan
           Sumá la foto de hoy en cada hábito compartido (cumplido o no) y un chat del grupo. Se activa con un código para todo el grupo.
         </p>
       )}
-      <button type="button" className={plan.estado === 'activo' ? 'ghost' : 'btn'} style={{ marginTop: 12, ...(plan.estado === 'activo' ? {} : { height: 44 }) }} onClick={() => setAbierta(true)}>
+      <button type="button" className={plan.estado === 'sin' || plan.estado === 'borrado' ? 'btn' : 'link'} style={plan.estado === 'sin' || plan.estado === 'borrado' ? { marginTop: 12, height: 44 } : { paddingLeft: 0, marginTop: 4 }} onClick={() => setAbierta(true)}>
         {plan.estado === 'sin' || plan.estado === 'borrado' ? 'Activar con un código' : 'Renovar con un código'}
       </button>
       <HojaCodigo grupoId={grupoId} abierta={abierta} alCerrar={() => setAbierta(false)} />

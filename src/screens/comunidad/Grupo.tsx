@@ -135,7 +135,6 @@ export function Grupo() {
                 <TarjetaDesafio key={d.id} d={d} grupoId={id} hoy={hoy} />
               ))}
           </div>
-          <PanelPlan grupoId={id} plan={plan} />
           <ChatGrupo gid={id} plan={plan} />
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
@@ -147,7 +146,11 @@ export function Grupo() {
             <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 6 }}>
               Compartí este código o el enlace. Quien lo tenga puede entrar mientras haya lugar.
             </p>
-            <button type="button" className="ghost peligro" style={{ marginTop: 14 }} onClick={() => setSaliendo(true)}>
+            <PanelPlan grupoId={id} plan={plan} />
+            <div className="grp cap">
+              <span>Tu lugar en el grupo</span>
+            </div>
+            <button type="button" className="ghost peligro" style={{ marginTop: 4 }} onClick={() => setSaliendo(true)}>
               {grupo.creador === uid ? 'Eliminar o salir' : 'Salir del grupo'}
             </button>
           </div>
@@ -220,7 +223,7 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
  * Fila de un hábito compartido, con la misma estructura para todos:
  * ícono · nombre, racha, % y semana · foto de hoy · rombo de hoy.
  */
-export function FilaCompartida({ c, esYo, alDia, hoy, semana, etiquetaSemana, foto, marca, extra }: { c: Compartido; esYo: boolean; alDia: boolean; hoy: string; semana: Array<boolean | null>; etiquetaSemana: string; foto?: ReactNode; marca?: ReactNode; extra?: string }) {
+export function FilaCompartida({ c, esYo, hoy, semana, etiquetaSemana, foto, marca, extra }: { c: Compartido; esYo: boolean; hoy: string; semana: Array<boolean | null>; etiquetaSemana: string; foto?: ReactNode; marca?: ReactNode; extra?: string }) {
   return (
     <div className={`fila-compartida ${foto === undefined ? 'sin-foto' : ''}`} data-fila-habito={c.nombre}>
       <IconoHabito icono={c.icono} virtud={c.virtud} tam={32} />
@@ -246,17 +249,8 @@ export function FilaCompartida({ c, esYo, alDia, hoy, semana, etiquetaSemana, fo
         </div>
       </div>
       {foto !== undefined && <div className="fc-foto">{foto}</div>}
-      <div className="fc-marca">
-        {marca ?? (
-          <span className={`dia ${alDia && c.hoy ? 'ok' : ''}`} style={{ margin: 0, width: 32, height: 32 }} aria-label={alDia && c.hoy ? 'Cumplido hoy' : 'Pendiente hoy'}>
-            <span style={{ width: 16, height: 16 }}>
-              <svg width="11" height="11" viewBox="0 0 24 24">
-                <path d="M5 12l4 4 10-10" />
-              </svg>
-            </span>
-          </span>
-        )}
-      </div>
+      {/* Solo marcás lo tuyo: en los demás, si cumplieron hoy se ve en el último rombo de la semana. */}
+      <div className="fc-marca">{marca ?? null}</div>
     </div>
   );
 }
@@ -271,7 +265,6 @@ function FilaDelGrupo({ c, m, esYo, alDia, hoy, grupoId, plan, fotos }: { c: Com
     <FilaCompartida
       c={c}
       esYo={esYo}
-      alDia={alDia}
       hoy={hoy}
       semana={esYo && miSemana ? miSemana : semanaAlDia(c.semana, m.fecha, hoy)}
       etiquetaSemana={esYo ? `Tu semana de ${c.nombre}` : `${m.nombre}, ${c.nombre}`}
