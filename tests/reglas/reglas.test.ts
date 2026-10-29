@@ -146,7 +146,7 @@ describe('users/{uid}/habits', () => {
   });
   it('valida la forma del hábito', async () => {
     const db = usuario('ana');
-    for (const malo of [{ tipo: 'otro' }, { virtud: 'fama' }, { momento: 3 }, { dias: [] }, { meta: 0 }, { meta: 5000 }, { recordatorio: '7am' }, { recordatorioSlot: 200 }, { variables: [1, 2, 3, 4, 5, 6, 7] }, { nombre: '' }, { inicio: 'ayer' }, { actualizadoPor: 'beto' }, { secreto: 1 }]) {
+    for (const malo of [{ tipo: 'otro' }, { virtud: 'fama' }, { momento: 3 }, { dias: [] }, { meta: 0 }, { meta: 200000 }, { recordatorio: '7am' }, { recordatorioSlot: 200 }, { variables: [1, 2, 3, 4, 5, 6, 7] }, { nombre: '' }, { inicio: 'ayer' }, { actualizadoPor: 'beto' }, { secreto: 1 }]) {
       await assertFails(setDoc(doc(db, 'users/ana/habits/h1'), habito('ana', malo)));
     }
   });
@@ -175,7 +175,7 @@ describe('users/{uid}/logs', () => {
     const db = usuario('ana');
     await assertFails(setDoc(doc(db, 'users/ana/logs/otro_id'), registro('ana')));
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { valor: -1 })));
-    await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { valor: 20000 })));
+    await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { valor: 300000 })));
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { nota: 'x'.repeat(501) })));
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { medidas: { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 } })));
     await assertFails(setDoc(doc(db, `users/ana/logs/h1_${HOY}`), registro('ana', { hecho: 'si' })));

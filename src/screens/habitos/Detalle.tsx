@@ -27,6 +27,7 @@ import { IconoHabito, Trazo } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
 import { Confirmar } from '@/ui/Hoja';
 import { HojaMedir } from './HojaMedir';
+import { esMetaGrande, HojaCantidad } from './HojaCantidad';
 
 export function Detalle() {
   const { id } = useParams();
@@ -198,7 +199,25 @@ function CajaHoy({ h, r, ok, hoy }: { h: Habito; r: Registro | undefined; ok: bo
           </div>
         </>
       )}
-      {h.tipo === 'cantidad' && (
+      {h.tipo === 'cantidad' && esMetaGrande(h) && (
+        <>
+          <div className="num" style={{ fontSize: 34, marginTop: 18 }}>
+            {formatoNumero(valor)}
+            <span className="mu2" style={{ fontSize: 20 }}>
+              {' '}
+              / {formatoNumero(h.meta)}
+            </span>
+          </div>
+          <div className="mu" style={{ fontWeight: 600 }}>
+            {h.unidad || 'unidades'} · {ok ? '¡meta cumplida!' : `faltan ${formatoNumero(h.meta - valor)}`}
+          </div>
+          <button type="button" className="btn" style={{ marginTop: 14, maxWidth: 300 }} onClick={() => setMidiendo(true)}>
+            Registrar {h.unidad || 'cantidad'}
+          </button>
+          <HojaCantidad h={h} fecha={hoy} abierta={midiendo} alCerrar={() => setMidiendo(false)} />
+        </>
+      )}
+      {h.tipo === 'cantidad' && !esMetaGrande(h) && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, marginTop: 18 }}>
             <button type="button" className="bigmenos" disabled={valor <= 0} aria-label="Restar uno" onClick={() => sumar(h, hoy, -1)}>

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, REACCIONES, semanaAlDia, validarDesafio, validarNombreGrupo, type Compartido, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
 import { fechaCorta, sumarDias } from '@core/fechas';
-import { cumplido, habitoParaDesafio, LIMITES_HABITO, NOMBRE_VIRTUD, validarHabito, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
+import { cumplido, formatoNumero, habitoParaDesafio, LIMITES_HABITO, NOMBRE_VIRTUD, validarHabito, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
 import { inicial } from '@core/perfil';
 import { aRomano } from '@core/romanos';
 import { limpiarNombre } from '@core/validaciones';
@@ -10,6 +10,7 @@ import { crearDesafio, editarDesafio, elegirCompartidos, eliminarGrupo, reaccion
 import { alternarSiNo, guardarHabito, registrosDe, sumar, uidActual, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
 import { HojaLista } from '@/screens/habitos/HojaLista';
 import { HojaMedir } from '@/screens/habitos/HojaMedir';
+import { esMetaGrande, HojaCantidad } from '@/screens/habitos/HojaCantidad';
 import { useConsulta } from '@/data/hooks';
 import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
@@ -296,7 +297,7 @@ export function useConteoHoy(habitId: string, hoy: string): string | undefined {
   const h = useHabitosActivos().find((x) => x.id === habitId);
   const r = useDatos((s) => (habitId ? registrosDe(s.registros, habitId).get(hoy) : undefined));
   if (!h) return undefined;
-  if (h.tipo === 'cantidad') return `Hoy ${r?.valor ?? 0}/${h.meta}${h.unidad ? ` ${h.unidad}` : ''}`;
+  if (h.tipo === 'cantidad') return `Hoy ${formatoNumero(r?.valor ?? 0)}/${formatoNumero(h.meta)}${h.unidad ? ` ${h.unidad}` : ''}`;
   if (h.tipo === 'lista') return `Hoy ${r?.valor ?? 0}/${h.variables.length}`;
   return undefined;
 }
@@ -335,10 +336,10 @@ export function MarcaMia({ habitId, nombre, hoy, resumenOk, alCumplir }: { habit
     tocado.current = true;
     setRebote((n) => n + 1);
     if (h.tipo === 'sino') alternarSiNo(h, hoy);
-    else if (h.tipo === 'cantidad') sumar(h, hoy, 1);
-    else setMidiendo(true); // medición o lista: se abre una hoja
+    else if (h.tipo === 'cantidad' && !esMetaGrande(h)) sumar(h, hoy, 1);
+    else setMidiendo(true); // medición, lista o cantidad grande: se abre una hoja
   };
-  const etiqueta = !h ? nombre : h.tipo === 'sino' ? `${ok ? 'Desmarcar' : 'Marcar'} ${nombre}` : h.tipo === 'cantidad' ? (ok ? `${nombre}: cumplido` : `Sumar uno a ${nombre}`) : h.tipo === 'lista' ? `Marcar ítems de ${nombre}` : `Registrar ${nombre}`;
+  const etiqueta = !h ? nombre : h.tipo === 'sino' ? `${ok ? 'Desmarcar' : 'Marcar'} ${nombre}` : h.tipo === 'cantidad' ? (esMetaGrande(h) ? `Registrar cantidad de ${nombre}` : ok ? `${nombre}: cumplido` : `Sumar uno a ${nombre}`) : h.tipo === 'lista' ? `Marcar ítems de ${nombre}` : `Registrar ${nombre}`;
   return (
     <>
       <button
@@ -346,7 +347,7 @@ export function MarcaMia({ habitId, nombre, hoy, resumenOk, alCumplir }: { habit
         key={rebote}
         className={`dia ${ok ? 'ok' : ''} ${rebote ? 'rebote' : ''}`}
         style={{ margin: 0, width: 32, height: 32 }}
-        disabled={!h || (h.tipo === 'cantidad' && ok)}
+        disabled={!h || (h.tipo === 'cantidad' && ok && !esMetaGrande(h))}
         aria-pressed={ok}
         aria-label={etiqueta}
         onClick={tocar}
@@ -359,6 +360,7 @@ export function MarcaMia({ habitId, nombre, hoy, resumenOk, alCumplir }: { habit
       </button>
       {h?.tipo === 'medicion' && <HojaMedir h={h} fecha={hoy} abierta={midiendo} alCerrar={() => setMidiendo(false)} />}
       {h?.tipo === 'lista' && <HojaLista h={h} fecha={hoy} abierta={midiendo} alCerrar={() => setMidiendo(false)} />}
+      {h && esMetaGrande(h) && <HojaCantidad h={h} fecha={hoy} abierta={midiendo} alCerrar={() => setMidiendo(false)} />}
     </>
   );
 }

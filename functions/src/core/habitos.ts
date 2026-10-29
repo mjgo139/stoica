@@ -109,7 +109,7 @@ export function horasRecordatorio(h: Pick<Habito, 'recordatorio'> & { recordator
   return [...hs].sort();
 }
 
-export const LIMITES_HABITO = { nombreMax: 40, unidadMax: 16, metaMax: 1000, variablesMax: 4, itemsMin: 2, itemsMax: 6, itemNombreMax: 24, notaMax: 500, habitosMax: 40, valorMax: 100000 } as const;
+export const LIMITES_HABITO = { nombreMax: 40, unidadMax: 16, metaMax: 100000, variablesMax: 4, itemsMin: 2, itemsMax: 6, itemNombreMax: 24, notaMax: 500, habitosMax: 40, valorMax: 100000 } as const;
 
 export const HITOS = [3, 7, 14, 21, 30, 60, 100, 180, 365, 500, 1000] as const;
 

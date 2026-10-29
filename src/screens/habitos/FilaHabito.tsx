@@ -5,6 +5,7 @@ import { aRomano } from '@core/romanos';
 import { alternarItemLista, alternarSiNo, sumar } from '@/app/datos';
 import { IconoHabito, Trazo } from '@/ui/IconoHabito';
 import { HojaMedir } from './HojaMedir';
+import { esMetaGrande, HojaCantidad } from './HojaCantidad';
 
 interface Props {
   h: Habito;
@@ -68,7 +69,25 @@ export function FilaHabito({ h, r, fecha, racha, perdido, editable }: Props) {
         </button>
       )}
 
-      {h.tipo === 'cantidad' && (
+      {h.tipo === 'cantidad' && esMetaGrande(h) && (
+        <div className="contador">
+          <span className="val">
+            <span className="num" style={{ fontSize: 17, color: ok ? 'var(--ok)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
+              {formatoNumero(valor)}
+              <span className="mu2" style={{ fontSize: 12.5 }}>/{formatoNumero(h.meta)}</span>
+            </span>
+            <span className="mu2" style={{ fontSize: 11, fontWeight: 600 }}>
+              {ok ? 'cumplido' : `faltan ${formatoNumero(h.meta - valor)}`}
+            </span>
+          </span>
+          <button type="button" className={`plus ${ok ? 'ok' : !editable ? 'off' : ''}`} disabled={!editable} aria-label={`Registrar cantidad de ${h.nombre}`} onClick={() => setMidiendo(true)}>
+            {ok ? <Trazo d="check" tam={18} /> : <Trazo d="mas" tam={18} />}
+          </button>
+          <HojaCantidad h={h} fecha={fecha} abierta={midiendo} alCerrar={() => setMidiendo(false)} />
+        </div>
+      )}
+
+      {h.tipo === 'cantidad' && !esMetaGrande(h) && (
         <div className="contador">
           {valor > 0 && editable && (
             <button type="button" className="menos" aria-label={`Restar uno a ${h.nombre}`} onClick={() => sumar(h, fecha, -1)}>

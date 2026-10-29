@@ -171,6 +171,31 @@ test.describe('v0.2–v0.3 · hábitos', () => {
     await expect(page.getByRole('dialog')).not.toContainText('Virtud');
   });
 
+  test('cantidad grande: 8.000 pasos se registran escribiendo el total', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await ir(page, '/habitos/nuevo');
+    await page.getByLabel('Nombre').fill('Caminar');
+    await page.getByRole('radio', { name: 'Cantidad' }).click();
+    await page.getByLabel('Meta por día').fill('8000');
+    await page.getByLabel('Unidad').fill('pasos');
+    await page.getByRole('button', { name: 'Crear hábito' }).click();
+    await expect(page.getByText('Hábito creado.')).toBeVisible();
+    const fila = page.locator('[data-habito="Caminar"]');
+    await expect(fila).toContainText('0/8.000');
+    await fila.getByRole('button', { name: 'Registrar cantidad de Caminar' }).click();
+    const hoja = page.getByRole('dialog', { name: 'Caminar' });
+    await hoja.getByRole('button', { name: '+1.000' }).click();
+    await hoja.getByRole('button', { name: '+2.000' }).click();
+    await expect(hoja).toContainText('Faltan 5.000 pasos.');
+    await hoja.getByRole('button', { name: 'Guardar' }).click();
+    await expect(fila).toContainText('3.000/8.000');
+    await fila.getByRole('button', { name: 'Registrar cantidad de Caminar' }).click();
+    await hoja.getByLabel('Total de hoy (pasos)').fill('8500');
+    await expect(hoja).toContainText('¡Meta cumplida!');
+    await hoja.getByRole('button', { name: 'Guardar' }).click();
+    await expect(fila).toContainText('cumplido');
+  });
+
   test('hito: Victoria sobre ti mismo al llegar a 3 días', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('tab', { name: 'Crear cuenta' }).click();

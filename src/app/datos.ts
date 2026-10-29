@@ -217,7 +217,7 @@ export async function alternarSiNo(h: Habito, fecha: string) {
 
 export async function sumar(h: Habito, fecha: string, delta: number) {
   const r = registrosDe(useDatos.getState().registros, h.id).get(fecha);
-  const valor = Math.max(0, Math.min(10000, (r?.valor ?? 0) + delta));
+  const valor = Math.max(0, Math.min(200000, (r?.valor ?? 0) + delta));
   await guardarRegistro(h, fecha, { valor });
 }
 
