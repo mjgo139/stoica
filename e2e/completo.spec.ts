@@ -464,6 +464,8 @@ test.describe('v0.5–v1.0', () => {
   });
 
   test('plan del grupo: código, chat del grupo y foto de hoy en cada hábito ligada a si se cumplió', async ({ page }) => {
+    // Recorrido largo (admin, código, chat, fotos, collage, desafío): necesita más que los 30 s por defecto.
+    test.setTimeout(120_000);
     await entrarConEjemplo(page);
     // Admin: generar un código y ver los días de espera
     await ir(page, '/admin');
