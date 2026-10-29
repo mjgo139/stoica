@@ -39,6 +39,7 @@ export function Grupo() {
   const fotos = useFotosSemana(id, plan);
   const [verFotos, setVerFotos] = useState<VerFotos | null>(null);
   const [subirFotos, setSubirFotos] = useState<SubirFotos | null>(null);
+  const celebrando = useDatos((s) => !!s.celebracion);
   const accionesFotos = useMemo(() => ({ alVer: setVerFotos, alSubir: setSubirFotos }), []);
 
   if (!estado) {
@@ -167,7 +168,8 @@ export function Grupo() {
 
       </AccionesFotos.Provider>
       <HojaFotosHabito gid={id} plan={plan} ver={verFotos} alCerrar={() => setVerFotos(null)} alSubir={setSubirFotos} />
-      <HojaSubirFoto gid={id} subir={subirFotos} fotos={fotos} alCerrar={() => setSubirFotos(null)} />
+      {/* Si al cumplir llegaste a un hito, primero se ve "Victoria sobre ti mismo" y después la oferta de foto. */}
+      <HojaSubirFoto gid={id} subir={celebrando ? null : subirFotos} fotos={fotos} alCerrar={() => setSubirFotos(null)} />
       {estado && <HojaRenombrar abierta={renombrando} alCerrar={() => setRenombrando(false)} grupoId={id} actual={estado.grupo.nombre} />}
       <HojaCompartir abierta={hoja === 'compartir'} alCerrar={() => setHoja(null)} grupoId={id} actuales={yo?.compartidos.map((c) => c.habitId) ?? []} />
       <HojaDesafio abierta={hoja === 'desafio'} alCerrar={() => setHoja(null)} grupoId={id} hoy={hoy} />

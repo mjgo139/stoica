@@ -566,8 +566,16 @@ test.describe('v0.5–v1.0', () => {
 
     // Al cumplir un hábito desde el grupo se ofrece la foto (si todavía no hay una de hoy)
     await page.getByRole('button', { name: 'Marcar Meditar' }).click();
+    // Según el día, volver a marcar puede llegar a un hito ("Victoria sobre ti mismo"): se cierra y sigue.
+    const hito = page.getByRole('alertdialog', { name: 'Victoria sobre ti mismo' });
+    if (await hito.isVisible({ timeout: 1500 }).catch(() => false)) await hito.getByRole('button', { name: 'Seguir' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.getByRole('button', { name: 'Marcar Tiempo con la familia' }).click();
+    // Si llega a un hito, primero aparece la Victoria y recién al cerrarla, la oferta de foto
+    if (await hito.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await expect(page.getByRole('dialog', { name: '¡Tiempo con la familia cumplido!' })).toHaveCount(0);
+      await hito.getByRole('button', { name: 'Seguir' }).click();
+    }
     const oferta = page.getByRole('dialog', { name: '¡Tiempo con la familia cumplido!' });
     await expect(oferta).toContainText('¿Querés sumar la foto de hoy');
     await expect(oferta.locator('[data-estado-foto="cumplido"]')).toBeVisible();
