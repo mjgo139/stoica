@@ -28,13 +28,13 @@ export function HojaCodigo({ grupoId, abierta, alCerrar }: { grupoId: string; ab
     if ('error' in r) return setError(r.error);
     setCodigo('');
     alCerrar();
-    mostrar(`Listo: fotos y chat activos hasta el ${fechaPlan(r.hasta)}.`);
+    mostrar(`Listo: fotos y comentarios activos hasta el ${fechaPlan(r.hasta)}.`);
   };
   return (
-    <Hoja titulo="Activar fotos y chat" abierta={abierta} alCerrar={alCerrar}>
+    <Hoja titulo="Activar fotos y comentarios" abierta={abierta} alCerrar={alCerrar}>
       <form onSubmit={enviar} noValidate>
         <p className="mu" style={{ fontWeight: 500, marginTop: 8 }}>
-          Con el plan, cada desafío del grupo tiene fotos del día y un chat corto. Lo activa cualquier integrante y vale para todo el grupo. Si ya está activo, el código suma tiempo.
+          Con el plan, cada uno sube la foto de hoy de sus hábitos y el grupo la puede comentar. Lo activa cualquier integrante y vale para todo el grupo. Si ya está activo, el código suma tiempo.
         </p>
         <label className="lbl cap" htmlFor="codigo-plan">
           Código de habilitación
@@ -57,7 +57,7 @@ export function PanelPlan({ grupoId, plan }: { grupoId: string; plan: EstadoPlan
   return (
     <div data-plan={plan.estado}>
       <div className="grp cap">
-        <span>Fotos y chat</span>
+        <span>Fotos y comentarios</span>
       </div>
       {plan.estado === 'activo' && (
         <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
@@ -68,7 +68,7 @@ export function PanelPlan({ grupoId, plan }: { grupoId: string; plan: EstadoPlan
       {plan.estado === 'gracia' && <AvisoBorrado plan={plan} />}
       {(plan.estado === 'sin' || plan.estado === 'borrado') && (
         <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
-          Sumá la foto de hoy en cada hábito compartido (cumplido o no) y un chat del grupo. Se activa con un código para todo el grupo.
+          Sumá la foto de hoy en cada hábito compartido (cumplido o no), y que el grupo la comente. Se activa con un código para todo el grupo.
         </p>
       )}
       <button type="button" className={plan.estado === 'sin' || plan.estado === 'borrado' ? 'btn' : 'link'} style={plan.estado === 'sin' || plan.estado === 'borrado' ? { marginTop: 12, height: 44 } : { paddingLeft: 0, marginTop: 4 }} onClick={() => setAbierta(true)}>
@@ -82,7 +82,7 @@ export function PanelPlan({ grupoId, plan }: { grupoId: string; plan: EstadoPlan
 export function AvisoBorrado({ plan }: { plan: Extract<EstadoPlan, { estado: 'gracia' }> }) {
   return (
     <div className="franja" role="status" style={{ display: 'block', fontWeight: 600 }}>
-      El plan venció el {fechaPlan(plan.hasta)}. Las fotos y el chat se pueden ver, pero se borran definitivamente el <b>{fechaPlan(plan.borraEn)}</b>
+      El plan venció el {fechaPlan(plan.hasta)}. Las fotos y los comentarios se pueden ver, pero se borran definitivamente el <b>{fechaPlan(plan.borraEn)}</b>
       {plan.diasParaBorrar <= 1 ? ' (mañana)' : ` (en ${plan.diasParaBorrar} días)`}. Renovalo con un código para conservarlos.
     </div>
   );

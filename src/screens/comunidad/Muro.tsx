@@ -1,5 +1,5 @@
 /**
- * Plan del grupo: foto de hoy en cada hábito compartido (ligada a si se cumplió) y chat del grupo.
+ * Plan del grupo: foto de hoy en cada hábito compartido (ligada a si se cumplió), con sus comentarios.
  * Todo depende del código de activación. Se lee del servidor solo con la pantalla del grupo abierta.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -7,12 +7,11 @@ import { COLLAGE_MAX, disenosPara, type DisenoCollage } from '@core/collage';
 import { fechaCorta, sumarDias } from '@core/fechas';
 import { cumplido } from '@core/habitos';
 import { inicial } from '@core/perfil';
-import { fotoCumplida, MENSAJE_MAX, type EstadoPlan, type FotoHabito, type MensajeGrupo } from '@core/plan';
+import { fotoCumplida, MENSAJE_MAX, type ComentarioFoto, type EstadoPlan, type FotoHabito } from '@core/plan';
 import type { Miembro } from '@core/comunidad';
 import { registrosDe, uidActual, useDatos, useHoy } from '@/app/datos';
-import { armarCollage, borrarPublicacion, enviarMensaje, reportarPublicacion, subirFoto, type ColeccionPlan } from '@/app/plan';
+import { armarCollage, borrarPublicacion, comentarFoto, reportarPublicacion, subirFoto, type Publicable } from '@/app/plan';
 import { useConsulta } from '@/data/hooks';
-import { AvisoBorrado } from './Plan';
 import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
 import { Icono } from '@/ui/Iconos';
@@ -127,12 +126,13 @@ export function FotosDeHoy({ fotos, miembros, alVer }: { fotos: Array<ConId<Foto
               type="button"
               role="listitem"
               onClick={() => m && alVer({ miembro: m, habitId: f.habitId, habito: f.habito, esYo, dia: f.dia })}
-              aria-label={`${esYo ? 'Tu foto' : `Foto de ${f.nombre}`}: ${f.habito}, ${ok ? 'cumplido' : 'no cumplido'}`}
+              aria-label={`${esYo ? 'Tu foto' : `Foto de ${f.nombre}`}: ${f.habito}, ${ok ? 'cumplido' : 'no cumplido'}${f.comentarios ? `, ${f.comentarios} ${f.comentarios === 1 ? 'comentario' : 'comentarios'}` : ''}`}
             >
               <img src={f.miniUrl} alt="" loading="lazy" />
               <Sello ok={ok} chico />
               <span className="q">{esYo ? 'Vos' : f.nombre.split(' ')[0]}</span>
               <span className="h">{f.habito}</span>
+              {!!f.comentarios && <ContadorComentarios n={f.comentarios} />}
             </button>
           );
         })}
@@ -168,13 +168,14 @@ export function HojaFotosHabito({ gid, plan, ver, alCerrar, alSubir }: { gid: st
       {fotos.length === 0 && <p className="vacio-mini">Todavía no hay fotos de este hábito.</p>}
       {actual && (
         <div data-foto-grande>
-          <img src={actual.fotoUrl} alt={actual.texto || `Foto de ${habito}`} style={{ width: '100%', maxHeight: '52vh', objectFit: 'contain', borderRadius: 12, background: 'var(--ln)' }} />
+          <img src={actual.fotoUrl} alt={actual.texto || `Foto de ${habito}`} style={{ width: '100%', maxHeight: '40vh', objectFit: 'contain', borderRadius: 12, background: 'var(--ln)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             <b style={{ fontSize: 14 }}>{actual.dia === hoy ? 'Hoy' : fechaCorta(actual.dia)}</b>
             <Sello ok={fotoCumplida(actual, miembro)} />
           </div>
           {actual.texto && <p style={{ fontWeight: 500, marginTop: 6, overflowWrap: 'anywhere' }}>{actual.texto}</p>}
-          <AccionesPublicacion gid={gid} coleccion="fotos" p={actual} alTerminar={alCerrar} />
+          <Comentarios gid={gid} foto={actual} plan={plan} />
+          <AccionesPublicacion gid={gid} que={{ coleccion: 'fotos', id: actual.id }} de={actual.de} alTerminar={alCerrar} />
         </div>
       )}
       {fotos.length > 1 && (
@@ -184,6 +185,7 @@ export function HojaFotosHabito({ gid, plan, ver, alCerrar, alSubir }: { gid: st
               <img src={f.miniUrl} alt="" loading="lazy" />
               <Sello ok={fotoCumplida(f, miembro)} chico />
               <span>{f.dia === hoy ? 'Hoy' : fechaCorta(f.dia)}</span>
+              {!!f.comentarios && <ContadorComentarios n={f.comentarios} />}
             </button>
           ))}
         </div>
@@ -330,98 +332,24 @@ export function HojaSubirFoto({ gid, subir: pedido, fotos, alCerrar }: { gid: st
   );
 }
 
-/** Chat del grupo: lo leen todos los integrantes; se escribe con el plan activo. */
-export function ChatGrupo({ gid, plan }: { gid: string; plan: EstadoPlan }) {
-  const uid = uidActual();
-  const mostrar = useAvisos((s) => s.mostrar);
-  const [texto, setTexto] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [elegido, setElegido] = useState<ConId<MensajeGrupo> | null>(null);
-  const visible = planVisible(plan);
-  const { datos } = useConsulta<MensajeGrupo>(visible ? { ruta: `groups/${gid}/mensajes`, orden: ['creado', 'desc'], limite: 60 } : null);
-  const lista = useRef<HTMLDivElement>(null);
-  // Se abre mostrando lo último, como cualquier chat.
-  useEffect(() => {
-    const el = lista.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [datos.length]);
-  if (!visible) return null;
-  const mensajes = [...datos].reverse();
-  const enviar = async (e: FormEvent) => {
-    e.preventDefault();
-    setEnviando(true);
-    const err = await enviarMensaje(gid, texto);
-    setEnviando(false);
-    if (err) return mostrar(err);
-    setTexto('');
-  };
-  return (
-    <div className="panel" data-chat>
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Chat del grupo</span>
-      </div>
-      {plan.estado === 'gracia' && (
-        <div style={{ marginBottom: 12 }}>
-          <AvisoBorrado plan={plan} />
-        </div>
-      )}
-      {mensajes.length === 0 && <p className="vacio-mini">Nadie escribió todavía. Un “¡vamos!” ayuda más de lo que parece.</p>}
-      <div className="chat-lista" aria-live="polite" ref={lista}>
-        {mensajes.map((m) => {
-          const mio = m.de === uid;
-          return (
-            <button key={m.id} type="button" className="srow" style={{ alignItems: 'flex-start', borderBottom: 0, padding: 0 }} onClick={() => setElegido(m)} aria-label={`Mensaje de ${mio ? 'vos' : m.nombre}: opciones`}>
-              <span className="avatar" style={{ width: 30, height: 30, fontSize: 13, flex: 'none' }}>
-                {inicial(m.nombre)}
-              </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                  <b style={{ fontSize: 13.5 }}>{mio ? 'Vos' : m.nombre}</b>
-                  <span className="mu2" style={{ fontSize: 11.5, fontWeight: 600 }}>
-                    {fechaCorta(m.dia)} · {hora(m.creado)}
-                  </span>
-                </span>
-                <span style={{ display: 'block', fontSize: 14.5, fontWeight: 500, overflowWrap: 'anywhere' }}>{m.texto}</span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      {plan.estado === 'activo' ? (
-        <form onSubmit={enviar} style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-          <input className="fi" aria-label="Mensaje" maxLength={MENSAJE_MAX} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí algo corto…" style={{ flex: 1, minWidth: 0 }} />
-          <button type="submit" className="btn" style={{ width: 'auto', padding: '0 18px', height: 46 }} disabled={enviando || !texto.trim()}>
-            Enviar
-          </button>
-        </form>
-      ) : (
-        <p className="vacio-mini" style={{ marginTop: 10 }}>
-          El plan venció: se puede leer, pero no escribir.
-        </p>
-      )}
-      <Hoja titulo="Mensaje" abierta={!!elegido} alCerrar={() => setElegido(null)}>
-        {elegido && (
-          <>
-            <p style={{ fontWeight: 500, marginTop: 8, overflowWrap: 'anywhere' }}>{elegido.texto}</p>
-            <AccionesPublicacion gid={gid} coleccion="mensajes" p={elegido} alTerminar={() => setElegido(null)} />
-          </>
-        )}
-      </Hoja>
-    </div>
-  );
-}
-
 /** Borrar lo propio o reportar lo ajeno (el admin ve solo lo reportado). */
-function AccionesPublicacion({ gid, coleccion, p, alTerminar }: { gid: string; coleccion: ColeccionPlan; p: { id: string; de: string }; alTerminar: () => void }) {
+function AccionesPublicacion({ gid, que, de, puedeBorrar, alTerminar, chico = false }: { gid: string; que: Publicable; de: string; puedeBorrar?: boolean; alTerminar: () => void; chico?: boolean }) {
   const uid = uidActual();
   const mostrar = useAvisos((s) => s.mostrar);
   const [confirmando, setConfirmando] = useState(false);
-  const mio = p.de === uid;
+  // Borra lo propio (y quien subió la foto puede borrar los comentarios que le dejaron); lo ajeno se reporta.
+  const mio = de === uid || !!puedeBorrar;
   return (
     <>
-      <button type="button" className={`ghost ${mio ? 'peligro' : ''}`} style={{ width: '100%', marginTop: 12 }} onClick={() => setConfirmando(true)}>
-        {mio ? (coleccion === 'fotos' ? 'Borrar esta foto' : 'Borrar') : 'Reportar'}
-      </button>
+      {chico ? (
+        <button type="button" className={`link ${mio ? 'peligro-txt' : ''}`} style={{ padding: 0, minHeight: 0, fontSize: 12 }} onClick={() => setConfirmando(true)}>
+          {mio ? 'Borrar' : 'Reportar'}
+        </button>
+      ) : (
+        <button type="button" className={`ghost ${mio ? 'peligro' : ''}`} style={{ width: '100%', marginTop: 12 }} onClick={() => setConfirmando(true)}>
+          {mio ? (que.coleccion === 'fotos' ? 'Borrar esta foto' : 'Borrar') : 'Reportar'}
+        </button>
+      )}
       <Confirmar
         abierto={confirmando}
         titulo={mio ? '¿Borrar?' : '¿Reportar?'}
@@ -431,7 +359,7 @@ function AccionesPublicacion({ gid, coleccion, p, alTerminar }: { gid: string; c
         alCerrar={() => setConfirmando(false)}
         alConfirmar={async () => {
           setConfirmando(false);
-          const err = mio ? await borrarPublicacion(gid, coleccion, p.id) : await reportarPublicacion(gid, coleccion, p.id, '');
+          const err = mio ? await borrarPublicacion(gid, que) : await reportarPublicacion(gid, que, '');
           mostrar(err ?? (mio ? 'Borrado.' : 'Gracias. Lo vamos a revisar.'));
           alTerminar();
         }}
@@ -482,3 +410,68 @@ function Miniatura({ archivo, indice, alQuitar }: { archivo: File; indice: numbe
   );
 }
 
+
+function ContadorComentarios({ n }: { n: number }) {
+  return (
+    <span className="cuenta-coment" aria-hidden="true">
+      <Icono nombre="comentario" tam={12} /> {n}
+    </span>
+  );
+}
+
+/** Comentarios de una foto: los ven los integrantes; comentan con el plan activo. */
+function Comentarios({ gid, foto, plan }: { gid: string; foto: ConId<FotoHabito>; plan: EstadoPlan }) {
+  const uid = uidActual();
+  const mostrar = useAvisos((s) => s.mostrar);
+  const [texto, setTexto] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const { datos } = useConsulta<ComentarioFoto>({ ruta: `groups/${gid}/fotos/${foto.id}/comentarios`, orden: ['creado', 'asc'], limite: 100 });
+  const enviar = async (e: FormEvent) => {
+    e.preventDefault();
+    setEnviando(true);
+    const err = await comentarFoto(gid, foto.id, texto);
+    setEnviando(false);
+    if (err) return mostrar(err);
+    setTexto('');
+  };
+  return (
+    <div className="comentarios" data-comentarios>
+      <div className="grp cap" style={{ marginTop: 14 }}>
+        <span>Comentarios{datos.length ? ` · ${datos.length}` : ''}</span>
+      </div>
+      {datos.length === 0 && <p className="vacio-mini">Todavía nadie comentó. Un “¡vamos!” ayuda más de lo que parece.</p>}
+      <div className="lista-coment" aria-live="polite">
+        {datos.map((c) => (
+          <div key={c.id} className="comentario">
+            <span className="avatar" style={{ width: 28, height: 28, fontSize: 12, flex: 'none' }}>
+              {inicial(c.nombre)}
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <b style={{ fontSize: 13 }}>{c.de === uid ? 'Vos' : c.nombre}</b>
+                <span className="mu2" style={{ fontSize: 11, fontWeight: 600 }}>
+                  {c.dia === foto.dia ? '' : `${fechaCorta(c.dia)} · `}
+                  {hora(c.creado)}
+                </span>
+                <span style={{ marginLeft: 'auto' }}>
+                  <AccionesPublicacion gid={gid} que={{ coleccion: 'comentarios', id: c.id, fotoId: foto.id }} de={c.de} puedeBorrar={foto.de === uid} alTerminar={() => undefined} chico />
+                </span>
+              </span>
+              <span style={{ display: 'block', fontSize: 14, fontWeight: 500, overflowWrap: 'anywhere' }}>{c.texto}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+      {plan.estado === 'activo' ? (
+        <form onSubmit={enviar} style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <input className="fi" aria-label="Comentario" maxLength={MENSAJE_MAX} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Comentá esta foto…" style={{ flex: 1, minWidth: 0 }} />
+          <button type="submit" className="btn" style={{ width: 'auto', padding: '0 16px', height: 46 }} disabled={enviando || !texto.trim()}>
+            Enviar
+          </button>
+        </form>
+      ) : (
+        <p className="vacio-mini">El plan venció: se pueden leer los comentarios, pero no escribir.</p>
+      )}
+    </div>
+  );
+}

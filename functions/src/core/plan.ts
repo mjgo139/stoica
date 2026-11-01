@@ -1,5 +1,5 @@
 /**
- * Plan de pago por grupo: foto del día en cada hábito compartido y chat del grupo.
+ * Plan de pago por grupo: foto del día en cada hábito compartido, con comentarios en cada foto.
  * Se activa con un código que genera el admin. Al vencer hay unos días de espera (configurables)
  * en los que todo se ve pero no se puede agregar nada; después se borra definitivamente.
  */
@@ -55,13 +55,15 @@ export interface FotoHabito {
   fotoUrl: string;
   miniUrl: string;
   rutas: string[];
+  /** Cuántos comentarios tiene (lo lleva el servidor). */
+  comentarios?: number;
   creado: number;
   actualizado: number;
   actualizadoPor: string;
 }
 
-/** groups/{gid}/mensajes/{id}: chat del grupo. */
-export interface MensajeGrupo {
+/** groups/{gid}/fotos/{fotoId}/comentarios/{id}: comentarios de una foto. */
+export interface ComentarioFoto {
   de: string;
   nombre: string;
   texto: string;

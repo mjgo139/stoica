@@ -191,7 +191,7 @@ export function Notificaciones() {
       <Interruptor etiqueta="Reacciones de mis grupos" detalle="Aviso cuando alguien reacciona a tu día" activo={perfil.notifReacciones} alCambiar={(v) => actualizar({ notifReacciones: v }).catch((er) => mostrar(mensajeDeError(er)))} />
       <Interruptor etiqueta="Cuando un compañero cumple" detalle="Aviso cuando alguien de tus grupos cumple un hábito que comparte" activo={perfil.notifCumplidos !== false} alCambiar={(v) => actualizar({ notifCumplidos: v }).catch((er) => mostrar(mensajeDeError(er)))} />
       <Interruptor etiqueta="Fotos de mis grupos" detalle="Aviso cuando alguien sube la foto de su hábito" activo={perfil.notifFotos !== false} alCambiar={(v) => actualizar({ notifFotos: v }).catch((er) => mostrar(mensajeDeError(er)))} />
-      <Interruptor etiqueta="Mensajes de mis grupos" detalle="Aviso cuando alguien escribe en el chat (como mucho uno cada 3 minutos por persona)" activo={perfil.notifMensajes !== false} alCambiar={(v) => actualizar({ notifMensajes: v }).catch((er) => mostrar(mensajeDeError(er)))} />
+      <Interruptor etiqueta="Comentarios en fotos" detalle="Aviso cuando comentan tu foto o una foto donde comentaste" activo={perfil.notifMensajes !== false} alCambiar={(v) => actualizar({ notifMensajes: v }).catch((er) => mostrar(mensajeDeError(er)))} />
     </>
   );
 }

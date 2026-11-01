@@ -13,7 +13,7 @@ import { Icono } from '@/ui/Iconos';
 import { TarjetaHabito } from '../habitos/Lista';
 import { FilaCompartida, HojaDesafio, HojaElegirHabito, MarcaMia, useConteoHoy, useMiSemana } from './Grupo';
 
-/** Pantalla de un desafío: tu hábito y el de cada participante, como en el grupo. Las fotos y el chat están en el grupo. */
+/** Pantalla de un desafío: tu hábito y el de cada participante, como en el grupo. Las fotos y sus comentarios están en el grupo. */
 export function Desafio() {
   const { id: gid = '', cid = '' } = useParams();
   const navegar = useNavigate();

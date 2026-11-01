@@ -98,9 +98,10 @@ async function quitarDeGrupo(gid: string, uid: string) {
   de.docs.forEach((d) => borrar.push(d.ref));
   para.docs.forEach((d) => borrar.push(d.ref));
   desafios.docs.forEach((d) => borrar.push(d.ref.collection('progress').doc(uid)));
-  // Sus fotos y mensajes en el grupo (los archivos se borran con alBorrarFotoGrupo).
-  const propias = await Promise.all([db().collection(`groups/${gid}/fotos`).where('de', '==', uid).get(), db().collection(`groups/${gid}/mensajes`).where('de', '==', uid).get()]);
-  propias.forEach((q) => q.docs.forEach((p) => borrar.push(p.ref)));
+  // Sus fotos (con sus comentarios y archivos: alBorrarFotoGrupo) y sus comentarios en fotos de otros.
+  const [susFotos, susComentarios] = await Promise.all([db().collection(`groups/${gid}/fotos`).where('de', '==', uid).get(), db().collectionGroup('comentarios').where('de', '==', uid).get()]);
+  susFotos.docs.forEach((p) => borrar.push(p.ref));
+  susComentarios.docs.filter((c) => c.ref.path.startsWith(`groups/${gid}/`)).forEach((c) => borrar.push(c.ref));
   await db().runTransaction(async (t) => {
     const snap = await t.get(ref);
     if (!snap.exists) return;
@@ -617,7 +618,7 @@ export const adminDesbloquear = onCall(llamable, async (req) => {
   return { ok: true };
 });
 
-// ---------- Plan con fotos y chat (pago por grupo) ----------
+// ---------- Plan con fotos y comentarios (pago por grupo) ----------
 const MS_DIA = 864e5;
 
 async function diasGracia(): Promise<number> {
@@ -645,10 +646,10 @@ async function borrarArchivos(prefijo: string) {
   }
 }
 
-/** Borra todas las fotos y mensajes del grupo (al vencer la espera o al eliminarlo). */
+/** Borra todas las fotos (con sus comentarios) del grupo (al vencer la espera o al eliminarlo). */
 async function borrarContenidoPlan(gid: string) {
   await db().recursiveDelete(db().collection(`groups/${gid}/fotos`));
-  await db().recursiveDelete(db().collection(`groups/${gid}/mensajes`));
+  await db().recursiveDelete(db().collection(`groups/${gid}/mensajes`)); // chat de la versión anterior
   const desafios = await db().collection(`groups/${gid}/challenges`).get();
   for (const d of desafios.docs) await db().recursiveDelete(d.ref.collection('posts')); // versión anterior
   await borrarArchivos(carpetaGrupo(gid));
@@ -656,11 +657,18 @@ async function borrarContenidoPlan(gid: string) {
 
 /**
  * Una sola vez (y después no encuentra nada): borra las fotos y mensajes que quedaron dentro de los desafíos
- * de la versión anterior. Ahora las fotos y el chat viven en el grupo.
+ * de la versión anterior, y el chat del grupo. Ahora las fotos viven en el grupo y se comentan.
  */
 async function limpiarPublicacionesDeDesafios() {
+  // El chat del grupo (versión anterior) también se reemplazó por comentarios en las fotos.
+  const chat = await db().collectionGroup('mensajes').limit(400).get();
+  if (!chat.empty) {
+    const l = db().bulkWriter();
+    chat.docs.forEach((d) => l.delete(d.ref));
+    await l.close();
+  }
   const viejas = await db().collectionGroup('posts').limit(400).get();
-  if (viejas.empty) return 0;
+  if (viejas.empty) return chat.size;
   const carpetas = new Set<string>();
   const lote = db().bulkWriter();
   for (const d of viejas.docs) {
@@ -779,6 +787,7 @@ export const subirFotoGrupo = onCall({ ...llamable, memory: '512MiB' }, async (r
   const [fotoUrl, miniUrl] = await Promise.all([guardarArchivo(rutas[0], bFoto), guardarArchivo(rutas[1], bMini)]);
   const ref = db().doc(`groups/${gid}/fotos/${idFotoHabito(uid, hid, dia)}`);
   const previa = (await ref.get()).data() as FotoHabito | undefined;
+  // Si reemplaza la de hoy, los comentarios quedan (son de ese hábito y ese día).
   const f: FotoHabito = {
     de: uid,
     nombre: String(perfil?.nombre ?? '').slice(0, 40),
@@ -790,6 +799,7 @@ export const subirFotoGrupo = onCall({ ...llamable, memory: '512MiB' }, async (r
     fotoUrl,
     miniUrl,
     rutas,
+    comentarios: previa?.comentarios ?? 0,
     creado: previa?.creado ?? Date.now(),
     actualizado: Date.now(),
     actualizadoPor: 'servidor',
@@ -809,8 +819,9 @@ export const subirFotoGrupo = onCall({ ...llamable, memory: '512MiB' }, async (r
   return { ok: true, cumplido: f.cumplido };
 });
 
-/** Al borrar una foto del grupo, se borran sus archivos. */
+/** Al borrar una foto del grupo, se borran sus comentarios y sus archivos. */
 export const alBorrarFotoGrupo = onDocumentDeleted('groups/{gid}/fotos/{fid}', async (event) => {
+  await db().recursiveDelete(db().collection(`groups/${event.params.gid}/fotos/${event.params.fid}/comentarios`));
   const rutas = (event.data?.get('rutas') as string[] | undefined) ?? [];
   if (!rutas.length) return;
   const bucket = almacen();
@@ -825,22 +836,45 @@ export const alBorrarPublicacion = onDocumentDeleted('groups/{gid}/challenges/{c
   await Promise.all(rutas.map((x) => bucket.file(x).delete({ ignoreNotFound: true }).catch(() => undefined)));
 });
 
-/** Mensajes del chat del grupo: cuentan para el tope diario de creaciones de quien escribe. */
-export const vigilarMensajes = onDocumentCreated('groups/{gid}/mensajes/{mid}', async (event) => {
+/**
+ * Comentario nuevo en una foto: cuenta para el tope diario, suma al contador de la foto y avisa a quien
+ * subió la foto y a quienes ya comentaron (como mucho un aviso cada 3 minutos por persona y foto).
+ */
+export const alComentarFoto = onDocumentCreated('groups/{gid}/fotos/{fid}/comentarios/{cid}', async (event) => {
   const de = String(event.data?.get('de') ?? '');
   if (!de) return;
+  const { gid, fid } = event.params;
   const c = await contarCreacion(de);
   if (c.excedido) return void (await event.data?.ref.delete());
-  // Aviso al grupo: como mucho uno cada 3 minutos por persona y grupo (si escribe varios seguidos).
+  const refFoto = db().doc(`groups/${gid}/fotos/${fid}`);
+  const foto = (await refFoto.get()).data() as FotoHabito | undefined;
+  if (!foto) return void (await event.data?.ref.delete());
+  await refFoto.update({ comentarios: FieldValue.increment(1) });
   const franja = Math.floor(Date.now() / (3 * 60_000));
-  if (!(await primeraVez(`chat_${event.params.gid}_${de}_${franja}`))) return;
+  if (!(await primeraVez(`coment_${gid}_${fid}_${de}_${franja}`))) return;
+  const anteriores = await db().collection(`groups/${gid}/fotos/${fid}/comentarios`).select('de').get();
+  const destinatarios = new Set([foto.de, ...anteriores.docs.map((d) => String(d.get('de')))]);
+  destinatarios.delete(de);
+  const g = (await db().doc(`groups/${gid}`).get()).data() as Grupo | undefined;
+  if (!g) return;
+  const nombreDe = String((await db().doc(`accounts/${de}`).get()).get('nombre') || 'Alguien').slice(0, 40);
   const texto = String(event.data?.get('texto') ?? '').slice(0, 120);
-  await avisarAlGrupo(event.params.gid, de, 'notifMensajes', (g, nombre) => ({
-    titulo: `${nombre} en ${g.nombre}`,
-    cuerpo: texto,
-    url: `/comunidad/${event.params.gid}`,
-    tag: `chat-${event.params.gid}`,
-  }));
+  await Promise.all(
+    [...destinatarios]
+      .filter((m) => g.miembros.includes(m))
+      .map(async (m) => {
+        const p = (await db().doc(`users/${m}`).get()).data() as Perfil | undefined;
+        if (!p?.notificaciones || p.notifMensajes === false) return;
+        const deQuien = m === foto.de ? 'tu foto' : `la foto de ${foto.nombre}`;
+        await avisar(m, { titulo: `💬 ${nombreDe} comentó ${deQuien}`, cuerpo: `${foto.habito}: «${texto}»`, url: `/comunidad/${gid}`, tag: `coment-${gid}-${fid}` });
+      }),
+  );
+});
+
+/** Al borrar un comentario, se descuenta de la foto. */
+export const alBorrarComentario = onDocumentDeleted('groups/{gid}/fotos/{fid}/comentarios/{cid}', async (event) => {
+  const ref = db().doc(`groups/${event.params.gid}/fotos/${event.params.fid}`);
+  await ref.update({ comentarios: FieldValue.increment(-1) }).catch(() => undefined); // la foto ya no existe
 });
 
 /** Al borrar un desafío, se borra lo que pudiera quedar de la versión anterior. */
@@ -854,11 +888,11 @@ export const alBorrarDesafio = onDocumentDeleted('groups/{gid}/challenges/{cid}'
 /** Cualquier integrante puede reportar una publicación: el admin ve solo lo reportado. */
 export const reportarPublicacion = onCall(llamable, async (req) => {
   const uid = exigirSesion(req);
-  const { grupoId, coleccion, publicacionId, motivo } = (req.data ?? {}) as Record<string, unknown>;
+  const { grupoId, coleccion, publicacionId, fotoId, motivo } = (req.data ?? {}) as Record<string, unknown>;
   const gid = String(grupoId ?? '');
   const g = await exigirMiembro(uid, gid);
-  if (coleccion !== 'fotos' && coleccion !== 'mensajes') throw new HttpsError('invalid-argument', 'No se sabe qué reportar.');
-  const ruta = `groups/${gid}/${coleccion}/${String(publicacionId ?? '')}`;
+  if (coleccion !== 'fotos' && coleccion !== 'comentarios') throw new HttpsError('invalid-argument', 'No se sabe qué reportar.');
+  const ruta = coleccion === 'fotos' ? `groups/${gid}/fotos/${String(publicacionId ?? '')}` : `groups/${gid}/fotos/${String(fotoId ?? '')}/comentarios/${String(publicacionId ?? '')}`;
   const p = (await db().doc(ruta).get()).data() as (Partial<FotoHabito> & { de: string; nombre: string; texto: string }) | undefined;
   if (!p) throw new HttpsError('not-found', 'Esa publicación ya no existe.');
   await db().doc(`reportes/${ruta.replace(/\//g, '_')}`).set({
@@ -910,11 +944,11 @@ async function revisarPlanes() {
     const hasta = g.premiumHasta!;
     const e = estadoPlan(hasta, ahora, gracia);
     if (e.estado === 'activo' && e.diasRestantes <= 3 && g.avisoPorVencer !== hasta) {
-      await avisarGrupo(g, { titulo: `${g.nombre}: el plan vence pronto`, cuerpo: `Las fotos y el chat siguen hasta el ${fecha(hasta)}. Cualquiera del grupo puede renovarlo con un código.` }, `plan-${d.id}`);
+      await avisarGrupo(g, { titulo: `${g.nombre}: el plan vence pronto`, cuerpo: `Las fotos y los comentarios siguen hasta el ${fecha(hasta)}. Cualquiera del grupo puede renovarlo con un código.` }, `plan-${d.id}`);
       await d.ref.update({ avisoPorVencer: hasta });
     } else if (e.estado === 'gracia') {
       if (g.avisoVencido !== hasta) {
-        await avisarGrupo(g, { titulo: `${g.nombre}: el plan venció`, cuerpo: `Las fotos y el chat se borran definitivamente el ${fecha(e.borraEn)}. Renovalo con un código para conservarlos.` }, `plan-${d.id}`);
+        await avisarGrupo(g, { titulo: `${g.nombre}: el plan venció`, cuerpo: `Las fotos y los comentarios se borran definitivamente el ${fecha(e.borraEn)}. Renovalo con un código para conservarlos.` }, `plan-${d.id}`);
         await d.ref.update({ avisoVencido: hasta });
       } else if (e.diasParaBorrar <= 1 && g.avisoBorrado !== hasta) {
         await avisarGrupo(g, { titulo: `${g.nombre}: mañana se borran las fotos`, cuerpo: 'Si querés conservarlas, renová el plan con un código hoy.' }, `plan-${d.id}`);

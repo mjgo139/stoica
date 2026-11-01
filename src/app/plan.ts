@@ -1,5 +1,5 @@
 /**
- * Plan con fotos y chat de los desafíos (pago por grupo).
+ * Plan con fotos y comentarios (pago por grupo).
  * Las fotos se reducen en el celular antes de subirlas: así pesan ~150 KB, viajan rápido,
  * casi no cuestan y pierden los datos ocultos de la cámara (como la ubicación).
  */
@@ -28,15 +28,15 @@ export async function canjearCodigo(grupoId: string, codigo: string): Promise<{ 
   }
 }
 
-/** Chat del grupo (con el plan activo). Devuelve un mensaje de error, o null si salió bien. */
-export async function enviarMensaje(grupoId: string, texto: string): Promise<string | null> {
+/** Comentar una foto del grupo (con el plan activo). Devuelve un mensaje de error, o null si salió bien. */
+export async function comentarFoto(grupoId: string, fotoId: string, texto: string): Promise<string | null> {
   const err = validarMensaje(texto);
   if (err) return err;
   const uid = uidActual();
   try {
     const d = await obtenerDriver();
     const ahora = Date.now();
-    await d.guardar(`groups/${grupoId}/mensajes/${d.nuevoId()}`, {
+    await d.guardar(`groups/${grupoId}/fotos/${fotoId}/comentarios/${d.nuevoId()}`, {
       de: uid,
       nombre: (useSesion.getState().perfil?.nombre ?? '').slice(0, 40),
       texto: limpiarNombre(texto),
@@ -51,20 +51,22 @@ export async function enviarMensaje(grupoId: string, texto: string): Promise<str
   }
 }
 
-export type ColeccionPlan = 'fotos' | 'mensajes';
+/** Qué se borra o reporta: una foto, o un comentario de una foto. */
+export type Publicable = { coleccion: 'fotos'; id: string } | { coleccion: 'comentarios'; id: string; fotoId: string };
+const rutaDe = (gid: string, p: Publicable) => (p.coleccion === 'fotos' ? `groups/${gid}/fotos/${p.id}` : `groups/${gid}/fotos/${p.fotoId}/comentarios/${p.id}`);
 
-export async function borrarPublicacion(grupoId: string, coleccion: ColeccionPlan, id: string): Promise<string | null> {
+export async function borrarPublicacion(grupoId: string, p: Publicable): Promise<string | null> {
   try {
-    await (await obtenerDriver()).borrar(`groups/${grupoId}/${coleccion}/${id}`);
+    await (await obtenerDriver()).borrar(rutaDe(grupoId, p));
     return null;
   } catch (e) {
     return mensajeDeError(e);
   }
 }
 
-export async function reportarPublicacion(grupoId: string, coleccion: ColeccionPlan, publicacionId: string, motivo: string): Promise<string | null> {
+export async function reportarPublicacion(grupoId: string, p: Publicable, motivo: string): Promise<string | null> {
   try {
-    await (await obtenerDriver()).llamar('reportarPublicacion', { grupoId, coleccion, publicacionId, motivo });
+    await (await obtenerDriver()).llamar('reportarPublicacion', { grupoId, coleccion: p.coleccion, publicacionId: p.id, fotoId: p.coleccion === 'comentarios' ? p.fotoId : undefined, motivo });
     return null;
   } catch (e) {
     return mensajeDeError(e);

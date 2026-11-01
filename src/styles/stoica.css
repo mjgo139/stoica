@@ -456,3 +456,10 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .fotos-hoy .sello.chico { right: -4px; top: 74px; bottom: auto; }
 .fotos-hoy .q { font-size: 12px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .fotos-hoy .h { font-size: 11px; font-weight: 600; color: var(--mu2); line-height: 1.2; overflow-wrap: anywhere; }
+
+/* Comentarios de una foto */
+.lista-coment { display: grid; gap: 10px; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; }
+.comentario { display: flex; gap: 10px; align-items: flex-start; }
+.cuenta-coment { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--mu2); }
+.cuenta-coment svg { vertical-align: -1px; }
+.peligro-txt { color: var(--cor) !important; }

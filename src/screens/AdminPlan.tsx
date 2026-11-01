@@ -20,7 +20,7 @@ interface Reporte {
 
 const fecha = (ms: number) => new Date(ms).toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' });
 
-/** Admin: códigos del plan de fotos y chat, días de espera antes del borrado y reportes. */
+/** Admin: códigos del plan de fotos y comentarios, días de espera antes del borrado y reportes. */
 export function AdminPlan() {
   const mostrar = useAvisos((s) => s.mostrar);
   const { datos: codigos } = useConsulta<CodigoPlan>({ ruta: 'codigos', orden: ['creado', 'desc'], limite: 100 });
@@ -90,7 +90,7 @@ export function AdminPlan() {
     <div className="cols" style={{ marginTop: 18 }} data-admin="plan">
       <div className="panel">
         <div className="grp cap" style={{ marginTop: 0 }}>
-          <span>Códigos de fotos y chat</span>
+          <span>Códigos de fotos y comentarios</span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label style={{ flex: '1 1 120px' }}>
@@ -150,7 +150,7 @@ export function AdminPlan() {
             <span>Al vencer el plan</span>
           </div>
           <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
-            Días en que las fotos y el chat se pueden ver (sin agregar nada) antes de borrarse definitivamente. A los integrantes se les avisa al vencer y el día anterior al borrado.
+            Días en que las fotos y los comentarios se pueden ver (sin agregar nada) antes de borrarse definitivamente. A los integrantes se les avisa al vencer y el día anterior al borrado.
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
             <input className="fi" inputMode="numeric" style={{ width: 90 }} aria-label="Días de espera" value={gracia ?? String(graciaActual)} onChange={(e) => setGracia(e.target.value.replace(/\D/g, '').slice(0, 2))} />

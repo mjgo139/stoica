@@ -18,7 +18,7 @@ import { IconoHabito } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
 import { SemanaMini } from '@/ui/SemanaMini';
-import { ChatGrupo, diasConFoto, FotoDelHabito, FotosDeHoy, HojaFotosHabito, HojaSubirFoto, planVisible, useFotosSemana, type SubirFotos, type VerFotos } from './Muro';
+import { diasConFoto, FotoDelHabito, FotosDeHoy, HojaFotosHabito, HojaSubirFoto, planVisible, useFotosSemana, type SubirFotos, type VerFotos } from './Muro';
 import { PanelPlan, usePlan } from './Plan';
 import type { EstadoPlan, FotoHabito } from '@core/plan';
 
@@ -144,7 +144,6 @@ export function Grupo() {
                 <TarjetaDesafio key={d.id} d={d} grupoId={id} hoy={hoy} />
               ))}
           </div>
-          <ChatGrupo gid={id} plan={plan} />
           <div className="panel">
             <div className="grp cap" style={{ marginTop: 0 }}>
               <span>Invitación</span>

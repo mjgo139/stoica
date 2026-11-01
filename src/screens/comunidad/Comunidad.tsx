@@ -17,7 +17,7 @@ export function Comunidad() {
         <div style={{ flex: 1, minWidth: 220 }}>
           <div className="cap gold">Comunidad</div>
           <h1 className="titulo">Grupos</h1>
-          <p className="lead">Pequeños grupos privados para acompañarse. Solo reacciones, sin chat.</p>
+          <p className="lead">Pequeños grupos privados para acompañarse: reacciones, y con el plan, fotos que el grupo comenta.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="ghost" onClick={() => setHoja('unirse')}>

@@ -463,8 +463,8 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('8 letras');
   });
 
-  test('plan del grupo: código, chat del grupo y foto de hoy en cada hábito ligada a si se cumplió', async ({ page }) => {
-    // Recorrido largo (admin, código, chat, fotos, collage, desafío): necesita más que los 30 s por defecto.
+  test('plan del grupo: código, foto de hoy en cada hábito ligada a si se cumplió y comentarios en las fotos', async ({ page }) => {
+    // Recorrido largo (admin, código, fotos, comentarios, collage, desafío): necesita más que los 30 s por defecto.
     test.setTimeout(120_000);
     await entrarConEjemplo(page);
     // Admin: generar un código y ver los días de espera
@@ -476,7 +476,7 @@ test.describe('v0.5–v1.0', () => {
     expect(codigo).toMatch(/^STOA-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     await expect(plan.getByLabel('Días de espera')).toHaveValue('7');
 
-    // Grupo sin plan: no hay fotos ni chat, solo la invitación a activarlo
+    // Grupo sin plan: no hay fotos, solo la invitación a activarlo
     await ir(page, '/comunidad');
     await page.getByText('El Pórtico').click();
     await expect(page.locator('[data-plan="sin"]')).toBeVisible();
@@ -490,14 +490,9 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('no existe');
     await page.getByLabel('Código de habilitación').fill(codigo.toLowerCase());
     await page.getByRole('dialog').getByRole('button', { name: 'Activar' }).click();
-    await expect(page.getByText(/fotos y chat activos hasta/)).toBeVisible();
-
-    // Chat del grupo: se ven los mensajes y escribe cualquier integrante
-    const chat = page.locator('[data-chat]');
-    await expect(chat).toContainText('Lo que depende de nosotros');
-    await chat.getByLabel('Mensaje', { exact: true }).fill('¡Vamos, Pórtico!');
-    await chat.getByRole('button', { name: 'Enviar' }).click();
-    await expect(chat).toContainText('¡Vamos, Pórtico!');
+    await expect(page.getByText(/fotos y comentarios activos hasta/)).toBeVisible();
+    // Ya no hay chat aparte: se comenta cada foto
+    await expect(page.locator('[data-chat]')).toHaveCount(0);
 
     // Fotos de los demás, con su estado: Epicteto cumplió, Séneca no
     await page.getByRole('button', { name: 'Foto de hoy de Epicteto, Meditar: cumplido' }).click();
@@ -505,9 +500,21 @@ test.describe('v0.5–v1.0', () => {
     await expect(historial).toContainText('Al amanecer, antes que nadie.');
     await expect(historial).toContainText('✓ Cumplido');
     await expect(historial.getByRole('list', { name: 'Días con foto' }).getByRole('listitem')).toHaveCount(2);
-    await expect(historial.getByRole('button', { name: 'Reportar' })).toBeVisible();
+    // Comentarios ligados a la foto: se leen y se comenta ahí mismo
+    const comentarios = historial.locator('[data-comentarios]');
+    await expect(comentarios).toContainText('Comentarios · 2');
+    await expect(comentarios).toContainText('Qué buena luz. Mañana te sigo.');
+    await comentarios.getByLabel('Comentario', { exact: true }).fill('¡Vamos, Pórtico!');
+    await comentarios.getByRole('button', { name: 'Enviar' }).click();
+    await expect(comentarios).toContainText('¡Vamos, Pórtico!');
+    await expect(comentarios).toContainText('Comentarios · 3');
+    // Lo propio se borra; lo ajeno se reporta (la foto y los comentarios de otros)
+    await expect(comentarios.getByRole('button', { name: 'Borrar' })).toHaveCount(1);
+    await expect(comentarios.getByRole('button', { name: 'Reportar' })).toHaveCount(2);
+    await expect(historial.getByRole('button', { name: 'Reportar' }).last()).toBeVisible();
     await captura(page, '25-fotos-de-otro');
     await page.keyboard.press('Escape');
+    await expect(page.locator('[data-fotos-hoy]').getByRole('listitem', { name: 'Foto de Epicteto: Meditar, cumplido, 3 comentarios' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Foto de hoy de Lucio Séneca, Ayuno: no cumplido' })).toBeVisible();
 
     // Tira "Fotos de hoy" arriba del grupo
@@ -586,7 +593,18 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('button', { name: 'Desmarcar Tiempo con la familia' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
-    // En el desafío ya no hay fotos ni chat: están en el grupo
+    // Quien subió la foto puede borrar los comentarios que le dejaron
+    await page.getByRole('button', { name: /Foto de hoy tu Meditar/ }).click();
+    const misFotos = page.getByRole('dialog', { name: 'Meditar · tus fotos' });
+    await misFotos.getByLabel('Comentario', { exact: true }).fill('Diez minutos fueron');
+    await misFotos.getByRole('button', { name: 'Enviar' }).click();
+    await expect(misFotos.locator('[data-comentarios]')).toContainText('Diez minutos fueron');
+    await misFotos.locator('[data-comentarios]').getByRole('button', { name: 'Borrar' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Borrar' }).click();
+    await expect(misFotos.locator('[data-comentarios]')).not.toContainText('Diez minutos fueron');
+    await page.keyboard.press('Escape');
+
+    // En el desafío no hay fotos: están en el grupo
     await page.locator('[data-desafio="21 días meditando"]').click();
     await expect(page.locator('[data-participantes]')).toBeVisible();
     await expect(page.locator('[data-chat]')).toHaveCount(0);

@@ -370,21 +370,31 @@ service cloud.firestore {
         allow read: if esMiembro();
         allow create, update: if false;
         allow delete: if esMiembro() && resource.data.de == request.auth.uid;
+
+        // Comentarios de la foto: escribe cualquier integrante con el plan activo. Borra quien comentó
+        // o quien subió la foto. El contador y los avisos los maneja el servidor.
+        match /comentarios/{cid} {
+          function fotoDe() {
+            return get(/databases/$(database)/documents/groups/$(gid)/fotos/$(fid)).data.de;
+          }
+          allow read: if esMiembro();
+          allow create: if esMiembro() && planActivo() && noBloqueado()
+            && exists(/databases/$(database)/documents/groups/$(gid)/fotos/$(fid))
+            && nuevo().keys().hasOnly(['de', 'nombre', 'texto', 'dia', 'creado', 'actualizado', 'actualizadoPor'])
+            && nuevo().de == request.auth.uid
+            && texto(nuevo().texto, 1, 280)
+            && texto(nuevo().nombre, 0, 40)
+            && claveDia(nuevo().dia)
+            && fechaMs(nuevo().creado)
+            && firmado(request.auth.uid);
+          allow update: if false;
+          allow delete: if esMiembro() && (resource.data.de == request.auth.uid || fotoDe() == request.auth.uid);
+        }
       }
 
-      // Plan de pago: chat del grupo. Escribe cualquier integrante mientras el plan esté activo.
+      // Versión anterior: chat del grupo. Se reemplazó por comentarios en las fotos (el servidor lo limpia).
       match /mensajes/{mid} {
-        allow read: if esMiembro();
-        allow create: if esMiembro() && planActivo() && noBloqueado()
-          && nuevo().keys().hasOnly(['de', 'nombre', 'texto', 'dia', 'creado', 'actualizado', 'actualizadoPor'])
-          && nuevo().de == request.auth.uid
-          && texto(nuevo().texto, 1, 280)
-          && texto(nuevo().nombre, 0, 40)
-          && claveDia(nuevo().dia)
-          && fechaMs(nuevo().creado)
-          && firmado(request.auth.uid);
-        allow update: if false;
-        allow delete: if esMiembro() && resource.data.de == request.auth.uid;
+        allow read, write: if false;
       }
 
       // Desafíos con duración y meta.

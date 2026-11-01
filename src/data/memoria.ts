@@ -233,6 +233,7 @@ export function crearDriverMemoria(): Driver {
         fotoUrl: `data:image/jpeg;base64,${d.foto}`,
         miniUrl: `data:image/jpeg;base64,${d.mini}`,
         rutas: [],
+        comentarios: (previa as { comentarios?: number } | undefined)?.comentarios ?? 0,
         creado: previa?.creado ?? Date.now(),
         actualizado: Date.now(),
         actualizadoPor: 'servidor',
@@ -240,8 +241,8 @@ export function crearDriverMemoria(): Driver {
       return { ok: true, cumplido: ok };
     },
     reportarPublicacion(d) {
-      if (d.coleccion !== 'fotos' && d.coleccion !== 'mensajes') throw new ErrorStoica('No se sabe qué reportar.', 'invalid-argument');
-      const ruta = `groups/${d.grupoId}/${d.coleccion}/${d.publicacionId}`;
+      if (d.coleccion !== 'fotos' && d.coleccion !== 'comentarios') throw new ErrorStoica('No se sabe qué reportar.', 'invalid-argument');
+      const ruta = d.coleccion === 'fotos' ? `groups/${d.grupoId}/fotos/${d.publicacionId}` : `groups/${d.grupoId}/fotos/${d.fotoId}/comentarios/${d.publicacionId}`;
       const p = leerDoc(ruta) as Record<string, unknown> | undefined;
       if (!p) throw new ErrorStoica('Esa publicación ya no existe.', 'not-found');
       escribir(`reportes/${ruta.replace(/\//g, '_')}`, { ruta, grupoNombre: (leerDoc(`groups/${d.grupoId}`) as unknown as Grupo).nombre, autor: p.nombre, autorUid: p.de, tipo: d.coleccion === 'fotos' ? 'foto' : 'texto', texto: d.coleccion === 'fotos' ? [p.habito, p.texto].filter(Boolean).join(' · ') : p.texto, miniUrl: p.miniUrl ?? null, fotoUrl: p.fotoUrl ?? null, motivo: String(d.motivo ?? ''), reportadoPor: yo(), creado: Date.now() });
@@ -382,11 +383,20 @@ export function crearDriverMemoria(): Driver {
       // Igual que en Firebase: el `id` de un documento leído no se guarda como campo.
       const { id: _id, ...sinId } = datos as typeof datos & { id?: unknown };
       void _id;
+      const nuevo = !leerDoc(ruta);
       escribir(ruta, sinId, !!opciones?.combinar);
+      // Como el servidor: un comentario nuevo suma al contador de su foto.
+      const foto = ruta.match(/^(groups\/[^/]+\/fotos\/[^/]+)\/comentarios\/[^/]+$/)?.[1];
+      if (foto && nuevo && leerDoc(foto)) escribir(foto, { comentarios: Number((leerDoc(foto) as { comentarios?: number }).comentarios ?? 0) + 1 }, true);
     },
     async borrar(ruta) {
       yo();
+      const foto = ruta.match(/^(groups\/[^/]+\/fotos\/[^/]+)\/comentarios\/[^/]+$/)?.[1];
+      const existia = !!leerDoc(ruta);
       escribir(ruta, null);
+      if (foto && existia && leerDoc(foto)) escribir(foto, { comentarios: Math.max(0, Number((leerDoc(foto) as { comentarios?: number }).comentarios ?? 0) - 1) }, true);
+      // Borrar una foto borra sus comentarios.
+      if (/^groups\/[^/]+\/fotos\/[^/]+$/.test(ruta)) borrarArbol(ruta);
     },
     async llamar<T>(nombre: NombreFuncion, datos?: Datos) {
       await espera(120);

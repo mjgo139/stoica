@@ -377,31 +377,41 @@ describe('memento mori en el perfil', () => {
 describe('plan con fotos y chat', () => {
   const grupo = (extra: Record<string, unknown> = {}) => ({ nombre: 'Pórtico', creador: 'ana', codigo: 'STOA2026', miembros: ['ana', 'beto', 'carla'], creado: 1, ...extra });
   const mensaje = (uid: string, extra: Record<string, unknown> = {}) => ({ de: uid, nombre: uid, texto: '¡Vamos!', dia: HOY, creado: ahora(), actualizado: ahora(), actualizadoPor: uid, ...extra });
-  const ruta = 'groups/g1/mensajes';
   const foto = (uid: string) => ({ de: uid, nombre: uid, habitId: 'h1', habito: 'Meditar', dia: HOY, cumplido: true, texto: '', fotoUrl: 'https://x/y.jpg', miniUrl: 'https://x/y_mini.jpg', rutas: ['a', 'b'], creado: 1, actualizado: 1, actualizadoPor: 'servidor' });
 
-  it('chat del grupo: con el plan activo escribe cualquier integrante; leen solo los integrantes', async () => {
+  it('comentarios de una foto: con el plan activo comenta cualquier integrante; leen solo los integrantes', async () => {
     await sembrar('groups/g1', grupo({ premiumHasta: Date.now() + 864e5 }));
-    await assertSucceeds(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
-    await assertSucceeds(setDoc(doc(usuario('carla'), `${ruta}/m2`), mensaje('carla')));
-    await assertSucceeds(getDoc(doc(usuario('beto'), `${ruta}/m1`)));
-    await assertFails(getDoc(doc(usuario('dani'), `${ruta}/m1`)));
-    await assertFails(setDoc(doc(usuario('dani'), `${ruta}/m9`), mensaje('dani')));
-    // nadie escribe en nombre de otro, ni textos largos, ni campos de más
-    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('ana')));
-    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { texto: 'x'.repeat(281) })));
-    await assertFails(setDoc(doc(usuario('beto'), `${ruta}/m3`), mensaje('beto', { fotoUrl: 'https://otro.sitio/x.jpg' })));
-    // no se edita; se borra solo lo propio
-    await assertFails(updateDoc(doc(usuario('ana'), `${ruta}/m1`), { texto: 'otro' }));
-    await assertFails(deleteDoc(doc(usuario('beto'), `${ruta}/m1`)));
-    await assertSucceeds(deleteDoc(doc(usuario('ana'), `${ruta}/m1`)));
+    await sembrar(`groups/g1/fotos/ana_h1_${HOY}`, foto('ana'));
+    const c = `groups/g1/fotos/ana_h1_${HOY}/comentarios`;
+    await assertSucceeds(setDoc(doc(usuario('beto'), `${c}/k1`), mensaje('beto')));
+    await assertSucceeds(setDoc(doc(usuario('carla'), `${c}/k2`), mensaje('carla')));
+    await assertSucceeds(getDoc(doc(usuario('ana'), `${c}/k1`)));
+    await assertFails(getDoc(doc(usuario('dani'), `${c}/k1`)));
+    await assertFails(setDoc(doc(usuario('dani'), `${c}/k9`), mensaje('dani')));
+    // en una foto que no existe, en nombre de otro, largo o con campos de más: no
+    await assertFails(setDoc(doc(usuario('beto'), `groups/g1/fotos/no_existe/comentarios/k3`), mensaje('beto')));
+    await assertFails(setDoc(doc(usuario('beto'), `${c}/k3`), mensaje('ana')));
+    await assertFails(setDoc(doc(usuario('beto'), `${c}/k3`), mensaje('beto', { texto: 'x'.repeat(281) })));
+    await assertFails(setDoc(doc(usuario('beto'), `${c}/k3`), mensaje('beto', { fotoUrl: 'https://otro.sitio/x.jpg' })));
+    // no se edita; borra quien comentó o quien subió la foto
+    await assertFails(updateDoc(doc(usuario('beto'), `${c}/k1`), { texto: 'otro' }));
+    await assertFails(deleteDoc(doc(usuario('carla'), `${c}/k1`)));
+    await assertSucceeds(deleteDoc(doc(usuario('beto'), `${c}/k1`)));
+    await assertSucceeds(deleteDoc(doc(usuario('ana'), `${c}/k2`)));
   });
 
-  it('sin plan o vencido no se puede escribir', async () => {
+  it('sin plan o vencido no se comenta', async () => {
     await sembrar('groups/g1', grupo());
-    await assertFails(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
+    await sembrar(`groups/g1/fotos/ana_h1_${HOY}`, foto('ana'));
+    await assertFails(setDoc(doc(usuario('beto'), `groups/g1/fotos/ana_h1_${HOY}/comentarios/k1`), mensaje('beto')));
     await sembrar('groups/g1', grupo({ premiumHasta: Date.now() - 1000 }));
-    await assertFails(setDoc(doc(usuario('ana'), `${ruta}/m1`), mensaje('ana')));
+    await assertFails(setDoc(doc(usuario('beto'), `groups/g1/fotos/ana_h1_${HOY}/comentarios/k1`), mensaje('beto')));
+  });
+
+  it('el chat del grupo de la versión anterior quedó cerrado', async () => {
+    await sembrar('groups/g1', grupo({ premiumHasta: Date.now() + 864e5 }));
+    await assertFails(setDoc(doc(usuario('ana'), 'groups/g1/mensajes/m1'), mensaje('ana')));
+    await assertFails(getDoc(doc(usuario('ana'), 'groups/g1/mensajes/m1')));
   });
 
   it('fotos de hábitos: las crea solo el servidor, las ven los integrantes y cada uno borra las suyas', async () => {
