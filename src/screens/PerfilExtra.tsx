@@ -10,6 +10,7 @@ import { Interruptor } from '@/ui/Interruptor';
 import { useAvisos } from '@/ui/avisos';
 import { Hoja } from '@/ui/Hoja';
 import { esAndroid, esIOS, esInstalada } from '@/pwa/instalar';
+import { esNativo } from '@/nativo/nativo';
 
 const CLAVE_DISPOSITIVO = 'stoica.dispositivo';
 
@@ -35,6 +36,8 @@ function dispositivoRegistrado(): boolean {
     if (!localStorage.getItem(CLAVE_DISPOSITIVO)) return false;
     // En modo prueba el registro es simulado: no depende del permiso real del navegador.
     if (import.meta.env.MODE === 'prueba') return true;
+    // En la APK el permiso es de Android (se pidió al activar); en el navegador, del navegador.
+    if (esNativo()) return true;
     return typeof Notification !== 'undefined' && Notification.permission === 'granted';
   } catch {
     return false;
@@ -51,8 +54,9 @@ export function useNotificacionesDispositivo() {
   const mostrar = useAvisos((s) => s.mostrar);
   const [ocupado, setOcupado] = useState(false);
   const [, refrescar] = useState(0);
-  const soportado = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
-  const bloqueado = soportado && Notification.permission === 'denied';
+  const nativo = esNativo();
+  const soportado = nativo || (typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator);
+  const bloqueado = !nativo && soportado && Notification.permission === 'denied';
   const activa = !!perfil.notificaciones && dispositivoRegistrado();
 
   const activar = async (si: boolean) => {
@@ -66,7 +70,9 @@ export function useNotificacionesDispositivo() {
           return;
         }
         const id = idDispositivo(r.token);
-        await d.guardar(`users/${uid}/devices/${id}`, { token: r.token, plataforma: navigator.userAgent.includes('Mobile') ? 'celular' : 'computadora', actualizado: Date.now(), actualizadoPor: uid });
+        // 'android' = la APK: el servidor le manda avisos nativos (con canal); el resto, avisos web.
+        const plataforma = nativo ? 'android' : navigator.userAgent.includes('Mobile') ? 'celular' : 'computadora';
+        await d.guardar(`users/${uid}/devices/${id}`, { token: r.token, plataforma, actualizado: Date.now(), actualizadoPor: uid });
         try {
           localStorage.setItem(CLAVE_DISPOSITIVO, id);
         } catch {
@@ -147,7 +153,7 @@ export function Notificaciones() {
           Este navegador no permite avisos. Usá Chrome o instalá la app.
         </p>
       )}
-      {activa && esAndroid() && (
+      {activa && esAndroid() && !esNativo() && (
         <details className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Te llegan sin sonido o sin ventana?</summary>
           <ol style={{ margin: '6px 0 0', paddingLeft: 18, display: 'grid', gap: 4 }}>

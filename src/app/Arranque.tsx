@@ -6,6 +6,7 @@ import { mensajeDeError } from '@/data/tipos';
 import { useSesion } from './sesion';
 import { aplicarTema } from './tema';
 import { esInstalada } from '@/pwa/instalar';
+import { esNativo } from '@/nativo/nativo';
 
 const zonaDelDispositivo = () => {
   try {
@@ -25,7 +26,7 @@ function registrarAccesoDelDia(uid: string, zona: string) {
     return;
   }
   obtenerDriver()
-    .then((d) => d.registrarAcceso(uid, plataformaDe(navigator.userAgent, esInstalada())))
+    .then((d) => d.registrarAcceso(uid, plataformaDe(navigator.userAgent, esInstalada() || esNativo())))
     .then(() => {
       try {
         localStorage.setItem(clave, hoy);

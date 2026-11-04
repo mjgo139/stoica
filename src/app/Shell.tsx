@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { inicial } from '@core/perfil';
 import { useSesion } from './sesion';
@@ -8,6 +8,9 @@ import { useEnLinea } from '@/pwa/conexion';
 import { Sincronizar } from './datos';
 import { SincronizarComunidad } from './comunidad';
 import { Celebracion } from '@/screens/habitos/Celebracion';
+import { AvisoApkNueva } from '@/nativo/AppAndroid';
+import { prepararNativo } from '@/nativo/nativo';
+import { useAvisos } from '@/ui/avisos';
 
 const SECCIONES: Array<{ ruta: string; nombre: string; icono: NombreIcono }> = [
   { ruta: '/', nombre: 'Hoy', icono: 'hoy' },
@@ -27,6 +30,13 @@ export function Shell() {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [pathname]);
+
+  // Dentro de la APK: canales de aviso, toques en los avisos y botón atrás de Android.
+  const navegar = useNavigate();
+  const mostrar = useAvisos((s) => s.mostrar);
+  useEffect(() => {
+    void prepararNativo((url) => navegar(url), mostrar);
+  }, [navegar, mostrar]);
 
   return (
     <>
@@ -75,6 +85,7 @@ export function Shell() {
       <SincronizarComunidad />
       <Celebracion />
       <main className="app-contenido" key={pathname}>
+        <AvisoApkNueva />
         {!enLinea && (
           <div className="franja info" role="status" style={{ marginBottom: 18 }}>
             <Icono nombre="nube" tam={18} /> Sin conexión. Podés seguir usando Stoica: los cambios se envían cuando vuelva internet.

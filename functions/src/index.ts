@@ -10,6 +10,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore, type DocumentReference } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { canalDeAviso } from './core/avisos.js';
 import { getStorage } from 'firebase-admin/storage';
 import { randomInt, randomUUID } from 'node:crypto';
 import { setGlobalOptions } from 'firebase-functions/v2';
@@ -358,26 +359,55 @@ interface Aviso {
   tag: string;
 }
 
-/** Envía a todos los dispositivos de una persona y limpia los tokens que ya no sirven. */
+/**
+ * Envía a todos los dispositivos de una persona y limpia los tokens que ya no sirven.
+ * - Navegador (PWA): mensaje solo de datos; lo dibuja nuestro service worker.
+ * - APK de Android: aviso nativo con su canal, para que salga con ventanita y sonido aunque la app esté cerrada.
+ */
 async function avisar(uid: string, aviso: Aviso) {
   const dispositivos = await db().collection(`users/${uid}/devices`).get();
   if (dispositivos.empty) return 0;
-  const tokens = dispositivos.docs.map((d) => String(d.get('token') ?? '')).filter(Boolean);
-  if (!tokens.length) return 0;
-  const r = await getMessaging().sendEachForMulticast({
-    tokens,
-    data: { ...aviso },
-    webpush: { headers: { Urgency: 'high', TTL: '3600' } },
-  });
+  const docs = dispositivos.docs.filter((d) => String(d.get('token') ?? ''));
+  const nativos = docs.filter((d) => d.get('plataforma') === 'android');
+  const web = docs.filter((d) => d.get('plataforma') !== 'android');
   const malos: Array<Promise<unknown>> = [];
-  r.responses.forEach((x, i) => {
-    const codigo = x.error?.code ?? '';
-    if (codigo.includes('registration-token-not-registered') || codigo.includes('invalid-registration-token') || codigo.includes('invalid-argument')) {
-      malos.push(dispositivos.docs[i].ref.delete());
-    }
-  });
+  let enviados = 0;
+  const revisar = (r: { successCount: number; responses: Array<{ error?: { code?: string } }> }, lista: typeof docs) => {
+    enviados += r.successCount;
+    r.responses.forEach((x, i) => {
+      const codigo = x.error?.code ?? '';
+      if (codigo.includes('registration-token-not-registered') || codigo.includes('invalid-registration-token') || codigo.includes('invalid-argument')) {
+        malos.push(lista[i].ref.delete());
+      }
+    });
+  };
+  if (web.length) {
+    revisar(
+      await getMessaging().sendEachForMulticast({
+        tokens: web.map((d) => String(d.get('token'))),
+        data: { ...aviso },
+        webpush: { headers: { Urgency: 'high', TTL: '3600' } },
+      }),
+      web,
+    );
+  }
+  if (nativos.length) {
+    revisar(
+      await getMessaging().sendEachForMulticast({
+        tokens: nativos.map((d) => String(d.get('token'))),
+        notification: { title: aviso.titulo, body: aviso.cuerpo },
+        data: { url: aviso.url, tag: aviso.tag },
+        android: {
+          priority: 'high',
+          ttl: 3600 * 1000,
+          notification: { channelId: canalDeAviso(aviso.tag), tag: aviso.tag, icon: 'ic_stat_stoica', color: '#9A7B3C', defaultSound: true, defaultVibrateTimings: true },
+        },
+      }),
+      nativos,
+    );
+  }
   await Promise.all(malos);
-  return r.successCount;
+  return enviados;
 }
 
 /**

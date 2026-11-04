@@ -13,6 +13,7 @@ import { Interruptor } from '@/ui/Interruptor';
 import { useAvisos } from '@/ui/avisos';
 import { BotonInstalar } from './Instalar';
 import { Accesos, MisDatos, Notificaciones } from './PerfilExtra';
+import { AppAndroid } from '@/nativo/AppAndroid';
 
 const TEMAS: Array<{ id: Tema; nombre: string }> = [
   { id: 'claro', nombre: 'Claro' },
@@ -122,6 +123,7 @@ export function Perfil() {
             </span>
           </div>
           <Notificaciones />
+          <AppAndroid />
           <Accesos />
           <MisDatos />
           <div className="grp cap">

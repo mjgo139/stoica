@@ -62,10 +62,75 @@ jobs:
       - run: npm ci
       - run: npm run test:reglas
 
+  apk:
+    name: APK de Android (testers)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Proyecto Android al día
+        run: |
+          # La APK abre la app publicada (server.url); igual Capacitor pide la carpeta dist.
+          mkdir -p dist && [ -f dist/index.html ] || echo '<!doctype html><title>Stoica</title>' > dist/index.html
+          npx cap sync android
+      - name: Configuración de Firebase y llave de firma (desde los secretos)
+        env:
+          GOOGLE_SERVICES: ${{ secrets.ANDROID_GOOGLE_SERVICES }}
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          falta=""
+          [ -n "$GOOGLE_SERVICES" ] || falta="$falta ANDROID_GOOGLE_SERVICES"
+          [ -n "$KEYSTORE" ] || falta="$falta ANDROID_KEYSTORE"
+          [ -n "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ] || falta="$falta ANDROID_KEYSTORE_PASSWORD"
+          [ -n "${{ secrets.ANDROID_KEY_ALIAS }}" ] || falta="$falta ANDROID_KEY_ALIAS"
+          if [ -n "$falta" ]; then echo "::error title=Faltan secretos de la APK::$falta"; exit 1; fi
+          printf '%s' "$GOOGLE_SERVICES" > android/app/google-services.json
+          # La llave llega como texto (base64, de certutil): se quitan saltos de línea y encabezados.
+          printf '%s' "$KEYSTORE" | tr -d '\r' | grep -v -- '-----' | tr -d '\n ' | base64 -d > "$RUNNER_TEMP/stoica.jks"
+          if ! python3 -c "import json;json.load(open('android/app/google-services.json'))" 2>/dev/null; then echo "::error title=google-services.json inválido::El secreto ANDROID_GOOGLE_SERVICES no es un JSON válido. Copiá el archivo completo."; exit 1; fi
+          if ! grep -q '"app.stoica"' android/app/google-services.json; then echo "::error title=google-services.json de otra app::El archivo no tiene la app app.stoica. Registrá la app Android con ese nombre de paquete."; exit 1; fi
+          keytool -list -keystore "$RUNNER_TEMP/stoica.jks" -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" > /dev/null 2>keytool.err || { echo "::error title=Llave de firma::No se pudo abrir la llave: revisá ANDROID_KEYSTORE (texto completo de stoica.txt) y ANDROID_KEYSTORE_PASSWORD."; exit 1; }
+      - name: Compilar la APK firmada
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/stoica.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -o pipefail
+          cd android
+          chmod +x gradlew
+          if ! ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee ../gradle.log; then
+            resumen=$(grep -E 'error|Error|FAILURE|What went wrong' -A3 ../gradle.log | tail -n 30 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=La APK no compiló::${resumen}"
+            exit 1
+          fi
+          cd ..
+          mkdir -p salida-apk
+          cp android/app/build/outputs/apk/release/app-release.apk salida-apk/stoica.apk
+          echo '{"codigo": ${{ github.run_number }}, "nombre": "1.0.${{ github.run_number }}", "url": "/descargas/stoica.apk"}' > salida-apk/android-version.json
+          ls -la salida-apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: salida-apk
+          retention-days: 30
+
   publicar:
     name: Publicar en Firebase
-    needs: [web, reglas]
-    if: github.ref == 'refs/heads/main'
+    # La APK no frena la publicación de la web: si falló, se publica igual (sin APK nueva).
+    needs: [web, reglas, apk]
+    if: always() && github.ref == 'refs/heads/main' && needs.web.result == 'success' && needs.reglas.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: produccion
@@ -95,6 +160,18 @@ jobs:
           } > .env.production
       - name: Build
         run: npm run build
+      - name: Traer la APK (si se compiló)
+        if: needs.apk.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: salida-apk
+      - name: Poner la APK en la web (/descargas/stoica.apk)
+        if: needs.apk.result == 'success'
+        run: |
+          mkdir -p dist/descargas
+          cp salida-apk/stoica.apk dist/descargas/stoica.apk
+          cp salida-apk/android-version.json dist/android-version.json
       - name: Parámetros de las funciones
         run: |
           echo "ADMIN_EMAIL=${{ vars.ADMIN_EMAIL }}" > functions/.env

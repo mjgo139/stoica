@@ -218,6 +218,9 @@ export function crearDriverFirebase(): Driver {
       await auth.currentUser?.getIdToken(true).catch(() => undefined);
     },
     async activarNotificaciones() {
+      // Dentro de la APK: avisos nativos de Android (con sus propios canales), no los del navegador.
+      const nativo = await import('@/nativo/nativo');
+      if (nativo.esNativo()) return nativo.registrarAvisosNativos();
       const vapid = import.meta.env.VITE_FIREBASE_VAPID_KEY;
       if (!vapid) return { error: 'Las notificaciones todavía no están configuradas en el servidor.' };
       if (!('Notification' in window) || !('serviceWorker' in navigator)) return { error: 'Este navegador no permite notificaciones. En iPhone, primero instalá la app.' };
@@ -234,6 +237,8 @@ export function crearDriverFirebase(): Driver {
       }
     },
     async desactivarNotificaciones() {
+      const nativo = await import('@/nativo/nativo');
+      if (nativo.esNativo()) return nativo.desregistrarAvisosNativos();
       try {
         const m = await import('firebase/messaging');
         if (await m.isSupported()) await m.deleteToken(m.getMessaging(app));
