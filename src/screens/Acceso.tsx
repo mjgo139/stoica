@@ -4,6 +4,7 @@ import { obtenerDriver, esModoPrueba } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
 import { Laurel } from '@/ui/Laurel';
 import { LogoGoogle } from '@/ui/Iconos';
+import { esNativo } from '@/nativo/nativo';
 import { BotonInstalar } from './Instalar';
 
 type Modo = 'entrar' | 'crear' | 'recuperar';
@@ -149,7 +150,8 @@ export function Acceso() {
         </div>
       )}
 
-      {modo !== 'recuperar' && (
+      {/* En la APK de prueba, Google todavía no está: Google no deja iniciar sesión dentro de una app así (llega en la etapa 3). */}
+      {modo !== 'recuperar' && !esNativo() && (
         <>
           <div className="sep cap">o</div>
           <button type="button" className="btn-google" onClick={conGoogle} disabled={ocupado}>
@@ -157,8 +159,13 @@ export function Acceso() {
           </button>
         </>
       )}
+      {modo !== 'recuperar' && esNativo() && (
+        <p className="mu" style={{ fontSize: 13, fontWeight: 500, textAlign: 'center', marginTop: 14 }}>
+          En esta versión de prueba de la app se entra con correo. Si tu cuenta es de Google, tocá “Olvidé mi contraseña” y te llega un correo para crearle una.
+        </p>
+      )}
 
-      <BotonInstalar estilo="discreto" />
+      {!esNativo() && <BotonInstalar estilo="discreto" />}
 
       {esModoPrueba() && (
         <p className="franja info" style={{ marginTop: 22 }}>
