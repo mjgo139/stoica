@@ -162,7 +162,10 @@ export function crearDriverFirebase(): Driver {
     salir: () => envolver(async () => {
       nombrePendiente = '';
       const nativo = await import('@/nativo/nativo');
-      if (nativo.esNativo()) await nativo.olvidarCuentaGoogle();
+      if (nativo.esNativo()) {
+        await nativo.olvidarCuentaGoogle();
+        await (await import('@/nativo/widget')).limpiarWidget();
+      }
       await signOut(auth);
     }),
     observarPerfil(uid, cb, alFallar) {

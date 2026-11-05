@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="aviso">#C9A66B</color>
+    <color name="widget_fondo">#1A1812</color>
+    <color name="widget_borde">#2E2921</color>
+    <color name="widget_texto">#F3EDDF</color>
+    <color name="widget_suave">#A39B89</color>
+    <color name="widget_dorado">#C9A66B</color>
+    <color name="widget_verde">#6FA35C</color>
+</resources>

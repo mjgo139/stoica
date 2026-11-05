@@ -4,4 +4,7 @@
     <string name="title_activity_main">Stoica</string>
     <string name="package_name">app.stoica</string>
     <string name="custom_url_scheme">app.stoica</string>
+    <string name="widget_titulo">HOY · STOICA</string>
+    <string name="widget_abrir">Abrí Stoica para ver tu día.</string>
+    <string name="widget_descripcion">Tus hábitos de hoy: cuántos llevás y cuáles faltan</string>
 </resources>

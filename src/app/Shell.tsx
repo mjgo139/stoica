@@ -10,6 +10,7 @@ import { SincronizarComunidad } from './comunidad';
 import { Celebracion } from '@/screens/habitos/Celebracion';
 import { AvisoApkNueva } from '@/nativo/AppAndroid';
 import { prepararNativo } from '@/nativo/nativo';
+import { useWidgetHoy } from '@/nativo/widget';
 import { useAvisos } from '@/ui/avisos';
 
 const SECCIONES: Array<{ ruta: string; nombre: string; icono: NombreIcono }> = [
@@ -37,6 +38,7 @@ export function Shell() {
   useEffect(() => {
     void prepararNativo((url) => navegar(url), mostrar);
   }, [navegar, mostrar]);
+  useWidgetHoy();
 
   return (
     <>

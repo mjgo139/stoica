@@ -29,6 +29,14 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/aviso" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="recordatorios" />
 
+        <!-- Widget "Hoy" para la pantalla de inicio -->
+        <receiver android:name=".HoyWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_hoy_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
