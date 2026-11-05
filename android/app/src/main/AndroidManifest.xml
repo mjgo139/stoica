@@ -68,12 +68,12 @@
         <receiver android:name=".AccionReceiver" android:exported="false" />
 
         <!-- Elegir qué hábito o grupo muestra el widget (al ponerlo o manteniéndolo apretado) -->
-        <activity android:name=".HabitoConfig" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.Dialog" android:excludeFromRecents="true">
+        <activity android:name=".HabitoConfig" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.Dialog.Alert" android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
-        <activity android:name=".GrupoConfig" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.Dialog" android:excludeFromRecents="true">
+        <activity android:name=".GrupoConfig" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.Dialog.Alert" android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
