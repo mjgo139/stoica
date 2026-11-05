@@ -3,6 +3,7 @@
  * todo pregunta primero `esNativo()` y los módulos nativos se cargan solo dentro de la APK.
  */
 import { Capacitor } from '@capacitor/core';
+import { ErrorStoica } from '@/data/tipos';
 
 export const esNativo = (): boolean => Capacitor.isNativePlatform();
 
@@ -79,6 +80,33 @@ export async function versionApk(): Promise<{ codigo: number; nombre: string } |
   const { App } = await import('@capacitor/app');
   const i = await App.getInfo();
   return { codigo: Number(i.build) || 0, nombre: i.version };
+}
+
+/**
+ * Entrar con Google en la APK: Android muestra la lista de cuentas del celular y devuelve el permiso (idToken).
+ * Los errores se traducen a algo entendible.
+ */
+export async function elegirCuentaGoogle(): Promise<string> {
+  const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+  try {
+    const r = await FirebaseAuthentication.signInWithGoogle();
+    const token = r.credential?.idToken;
+    if (!token) throw new Error('sin-token');
+    return token;
+  } catch (e) {
+    const texto = String((e as { message?: string; code?: string })?.message ?? e);
+    if (/cancel/i.test(texto)) throw new ErrorStoica('Cerraste la elección de cuenta de Google antes de terminar.', 'auth/popup-closed-by-user');
+    if (/\b10\b|DEVELOPER_ERROR|No credentials|no credential/i.test(texto)) {
+      throw new ErrorStoica('Google todavía no está configurado para esta app (falta la huella de la APK en Firebase). Mientras tanto entrá con correo.', 'auth/operation-not-allowed');
+    }
+    throw new ErrorStoica(`No se pudo entrar con Google (${texto.slice(0, 80)}). Probá de nuevo o entrá con correo.`, 'auth/internal');
+  }
+}
+
+/** Al salir: que la próxima vez Android vuelva a preguntar qué cuenta usar. */
+export async function olvidarCuentaGoogle() {
+  const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+  await FirebaseAuthentication.signOut().catch(() => undefined);
 }
 
 /** Abre un enlace fuera de la app (por ejemplo, para descargar la APK nueva). */

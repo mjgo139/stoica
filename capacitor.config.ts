@@ -20,6 +20,11 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    // Entrar con Google: Android elige la cuenta (nativo) y la sesión la abre la misma app web con ese permiso.
+    FirebaseAuthentication: {
+      skipNativeAuth: true,
+      providers: ['google.com'],
+    },
   },
 };
 

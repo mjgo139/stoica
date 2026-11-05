@@ -150,19 +150,13 @@ export function Acceso() {
         </div>
       )}
 
-      {/* En la APK de prueba, Google todavía no está: Google no deja iniciar sesión dentro de una app así (llega en la etapa 3). */}
-      {modo !== 'recuperar' && !esNativo() && (
+      {modo !== 'recuperar' && (
         <>
           <div className="sep cap">o</div>
           <button type="button" className="btn-google" onClick={conGoogle} disabled={ocupado}>
             <LogoGoogle /> Continuar con Google
           </button>
         </>
-      )}
-      {modo !== 'recuperar' && esNativo() && (
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, textAlign: 'center', marginTop: 14 }}>
-          En esta versión de prueba de la app se entra con correo. Si tu cuenta es de Google, tocá “Olvidé mi contraseña” y te llega un correo para crearle una.
-        </p>
       )}
 
       {!esNativo() && <BotonInstalar estilo="discreto" />}

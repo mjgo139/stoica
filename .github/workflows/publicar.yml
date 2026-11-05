@@ -99,6 +99,10 @@ jobs:
           if ! python3 -c "import json;json.load(open('android/app/google-services.json'))" 2>/dev/null; then echo "::error title=google-services.json inválido::El secreto ANDROID_GOOGLE_SERVICES no es un JSON válido. Copiá el archivo completo."; exit 1; fi
           if ! grep -q '"app.stoica"' android/app/google-services.json; then echo "::error title=google-services.json de otra app::El archivo no tiene la app app.stoica. Registrá la app Android con ese nombre de paquete."; exit 1; fi
           keytool -list -keystore "$RUNNER_TEMP/stoica.jks" -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" > /dev/null 2>keytool.err || { echo "::error title=Llave de firma::No se pudo abrir la llave: revisá ANDROID_KEYSTORE (texto completo de stoica.txt) y ANDROID_KEYSTORE_PASSWORD."; exit 1; }
+      - name: Huellas de la llave (para Entrar con Google; son públicas)
+        run: |
+          huellas=$(keytool -list -v -keystore "$RUNNER_TEMP/stoica.jks" -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" | grep -E 'SHA1:|SHA256:' | sed 's/^[[:space:]]*//' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::notice title=Huellas de la APK (copialas en Firebase › app Android)::${huellas}"
       - name: Compilar la APK firmada
         env:
           VERSION_CODE: ${{ github.run_number }}

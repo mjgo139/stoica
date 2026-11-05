@@ -15,6 +15,7 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithCredential,
   signInWithPopup,
   signOut,
   updateProfile,
@@ -131,6 +132,14 @@ export function crearDriverFirebase(): Driver {
       await updateProfile(cred.user, { displayName: nombre });
     }),
     entrarConGoogle: () => envolver(async () => {
+      const nativo = await import('@/nativo/nativo');
+      if (nativo.esNativo()) {
+        // En la APK Google no deja abrir su ventana de inicio dentro de la app: Android muestra sus cuentas
+        // y con ese permiso (idToken) la app web abre la sesión de siempre.
+        const idToken = await nativo.elegirCuentaGoogle();
+        await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+        return;
+      }
       const p = new GoogleAuthProvider();
       p.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, p);
@@ -152,6 +161,8 @@ export function crearDriverFirebase(): Driver {
     },
     salir: () => envolver(async () => {
       nombrePendiente = '';
+      const nativo = await import('@/nativo/nativo');
+      if (nativo.esNativo()) await nativo.olvidarCuentaGoogle();
       await signOut(auth);
     }),
     observarPerfil(uid, cb, alFallar) {
