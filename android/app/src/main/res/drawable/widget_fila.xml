@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cada fila con el tonito más oscuro de la app, para que se note la separación. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_fila" />
+    <corners android:radius="10dp" />
+</shape>

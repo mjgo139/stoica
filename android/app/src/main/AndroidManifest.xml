@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -29,13 +29,55 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/aviso" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="recordatorios" />
 
-        <!-- Widget "Hoy" para la pantalla de inicio -->
+        <!-- Widgets para la pantalla de inicio: Hoy (resumen) -->
         <receiver android:name=".HoyWidget" android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_hoy_info" />
         </receiver>
+        <!-- Hábitos de hoy (marcar sin abrir la app) -->
+        <receiver android:name=".HabitosWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_habitos_info" />
+        </receiver>
+        <!-- Un hábito -->
+        <receiver android:name=".HabitoWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_habito_info" />
+        </receiver>
+        <!-- Tareas de hoy -->
+        <receiver android:name=".TareasWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_tareas_info" />
+        </receiver>
+        <!-- Un grupo de la comunidad -->
+        <receiver android:name=".GrupoWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_grupo_info" />
+        </receiver>
+        <!-- Toques de los widgets que guardan sin abrir la app -->
+        <receiver android:name=".AccionReceiver" android:exported="false" />
+
+        <!-- Elegir qué hábito o grupo muestra el widget (al ponerlo o manteniéndolo apretado) -->
+        <activity android:name=".HabitoConfig" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.Dialog" android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".GrupoConfig" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.Dialog" android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
 
         <provider
             android:name="androidx.core.content.FileProvider"

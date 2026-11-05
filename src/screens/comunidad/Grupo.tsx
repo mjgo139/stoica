@@ -20,6 +20,7 @@ import { useAvisos } from '@/ui/avisos';
 import { SemanaMini } from '@/ui/SemanaMini';
 import { diasConFoto, FotoDelHabito, FotosDeHoy, HojaFotosHabito, HojaSubirFoto, planVisible, useFotosSemana, type SubirFotos, type VerFotos } from './Muro';
 import { PanelPlan, usePlan } from './Plan';
+import { recordarGrupoWidget } from '@/nativo/widget';
 import type { EstadoPlan, FotoHabito } from '@core/plan';
 
 export function Grupo() {
@@ -30,7 +31,11 @@ export function Grupo() {
   const estado = useComunidad((s) => s.grupos.get(id));
   const listo = useComunidad((s) => s.listo);
   const mostrar = useAvisos((s) => s.mostrar);
-  const { datos: miembros } = useConsulta<Miembro>(estado ? { ruta: `groups/${id}/members` } : null);
+  const { datos: miembros, cargando: cargandoMiembros } = useConsulta<Miembro>(estado ? { ruta: `groups/${id}/members` } : null);
+  // El widget de comunidad muestra lo último que viste acá (y después se actualiza solo).
+  useEffect(() => {
+    if (id && !cargandoMiembros && miembros.length) recordarGrupoWidget(id, miembros);
+  }, [id, miembros, cargandoMiembros]);
   const { datos: reacciones } = useConsulta<Reaccion>(estado ? { ruta: `groups/${id}/reactions`, filtros: [['dia', '==', hoy]] } : null);
   const [hoja, setHoja] = useState<'compartir' | 'desafio' | null>(null);
   const [saliendo, setSaliendo] = useState(false);

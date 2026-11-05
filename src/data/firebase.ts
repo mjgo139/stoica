@@ -231,6 +231,12 @@ export function crearDriverFirebase(): Driver {
     refrescarToken: async () => {
       await auth.currentUser?.getIdToken(true).catch(() => undefined);
     },
+    sesionWidget() {
+      const u = auth.currentUser;
+      if (!u) return null;
+      const c = configuracion();
+      return { uid: u.uid, renovar: u.refreshToken, apiKey: c.apiKey ?? '', proyecto: c.projectId ?? '' };
+    },
     async activarNotificaciones() {
       // Dentro de la APK: avisos nativos de Android (con sus propios canales), no los del navegador.
       const nativo = await import('@/nativo/nativo');

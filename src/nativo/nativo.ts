@@ -36,6 +36,14 @@ export async function prepararNativo(navegar: (url: string) => void, avisar: (te
     const t = [n.title, n.body].filter(Boolean).join(': ');
     if (t) avisar(t);
   });
+  // Los widgets abren la app en una pantalla: app.stoica://abrir/habitos/ID → /habitos/ID
+  const abrirEnlace = (url?: string) => {
+    const ruta = url?.match(/^app\.stoica:\/\/abrir(\/[^?#]*)?/)?.[1];
+    if (url?.startsWith('app.stoica://abrir')) navegar(ruta || '/');
+  };
+  await App.addListener('appUrlOpen', ({ url }) => abrirEnlace(url));
+  const inicio = await App.getLaunchUrl().catch(() => undefined);
+  abrirEnlace(inicio?.url);
   await App.addListener('backButton', ({ canGoBack }) => {
     if (canGoBack) history.back();
     else App.minimizeApp();

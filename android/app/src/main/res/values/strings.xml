@@ -6,5 +6,10 @@
     <string name="custom_url_scheme">app.stoica</string>
     <string name="widget_titulo">HOY · STOICA</string>
     <string name="widget_abrir">Abrí Stoica para ver tu día.</string>
+    <string name="widget_habitos_descripcion">Hábitos de hoy: marcalos sin abrir la app</string>
+    <string name="widget_tareas_descripcion">Tareas de hoy: tocá el rombo para completarlas</string>
+    <string name="widget_grupo_descripcion">Tu grupo: cómo van hoy tus compañeros</string>
+    <string name="widget_habito_descripcion">Un hábito: racha y marcar de un toque</string>
+    <string name="widget_habito_elegir">Elegí un hábito</string>
     <string name="widget_descripcion">Tus hábitos de hoy: cuántos llevás y cuáles faltan</string>
 </resources>

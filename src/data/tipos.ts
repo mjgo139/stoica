@@ -78,6 +78,16 @@ export interface Driver {
   /** Notificaciones push: devuelve el token del dispositivo o un motivo por el que no se pudo. */
   activarNotificaciones(): Promise<{ token: string } | { error: string }>;
   desactivarNotificaciones(): Promise<void>;
+  /** Solo en la APK: lo mínimo para que los widgets guarden marcas con tu sesión (sin contraseñas). */
+  sesionWidget?(): SesionWidget | null;
+}
+
+export interface SesionWidget {
+  uid: string;
+  /** Permiso de larga duración que Firebase ya guarda en el celular; con él el widget pide su acceso. */
+  renovar: string;
+  apiKey: string;
+  proyecto: string;
 }
 
 /** Error con un mensaje listo para mostrar en español. */
