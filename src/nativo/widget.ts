@@ -3,15 +3,16 @@
  * y tus grupos. Con eso el celular calcula solo qué toca hoy (también después de la medianoche).
  * Para marcar desde el widget, el celular usa tu misma sesión (nunca tu contraseña).
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { registerPlugin } from '@capacitor/core';
 import { sumarDias } from '@core/fechas';
-import { cumplido, esDiaActivo, NOMBRE_VIRTUD, racha, type Registro } from '@core/habitos';
+import { cumplido, esDiaActivo, estadoDia, NOMBRE_TIPO, NOMBRE_VIRTUD, racha, type Registro } from '@core/habitos';
 import type { Miembro } from '@core/comunidad';
 import { tareaHecha } from '@core/rutina';
 import { obtenerDriver } from '@/data';
-import { programarResumenGrupos, registrosDe, useDatos, useHoy, VENTANA_DIAS } from '@/app/datos';
+import { alternarSiNo, alternarTarea, programarResumenGrupos, registrosDe, sumar, useDatos, useHoy, VENTANA_DIAS } from '@/app/datos';
+import { useAvisos } from '@/ui/avisos';
 import { useComunidad } from '@/app/comunidad';
 import { useSesion } from '@/app/sesion';
 import { esNativo } from './nativo';
@@ -21,7 +22,43 @@ type Datos = Record<string, unknown>;
 const WidgetStoica = registerPlugin<{
   actualizar(datos: Datos): Promise<void>;
   sesion(datos: Datos): Promise<void>;
+  tomarPendientes(): Promise<{ lista?: Pendiente[]; error?: string }>;
 }>('WidgetStoica');
+
+/** Marca hecha en el widget que no se pudo subir a la nube: la sube la app al abrirse. */
+interface Pendiente {
+  que: 'habito' | 'tarea';
+  id: string;
+  fecha: string;
+  hecho?: boolean;
+  suma?: number;
+  hecha?: boolean;
+}
+
+/** Sube lo que quedó marcado en los widgets sin conexión (o si el widget no pudo guardar). */
+async function aplicarPendientes() {
+  const r = await WidgetStoica.tomarPendientes().catch(() => null);
+  const lista = r?.lista ?? [];
+  for (const p of lista) {
+    const s = useDatos.getState();
+    try {
+      if (p.que === 'habito') {
+        const h = s.habitos.find((x) => x.id === p.id);
+        if (!h) continue;
+        const reg = registrosDe(s.registros, h.id).get(p.fecha);
+        if (typeof p.hecho === 'boolean') {
+          if ((reg?.hecho === true) !== p.hecho) await alternarSiNo(h, p.fecha);
+        } else if (p.suma) await sumar(h, p.fecha, p.suma);
+      } else {
+        const t = s.tareas.find((x) => x.id === p.id);
+        if (t && typeof p.hecha === 'boolean' && tareaHecha(t, p.fecha, s.tareasHechas) !== p.hecha) await alternarTarea(t, p.fecha);
+      }
+    } catch {
+      /* ya avisó la app */
+    }
+  }
+  if (lista.length && r?.error) useAvisos.getState().mostrar(`Se subió lo que marcaste en el widget (allá no se pudo: ${r.error}).`);
+}
 
 const FRASES = ['Victoria sobre ti mismo.', 'Bien hecho: lo que dependía de vos.', 'Ningún gran logro surge de repente.', 'Un día más de virtud.'];
 
@@ -106,6 +143,21 @@ export function useWidgetHoy() {
   const grupos = useComunidad((s) => s.grupos);
   const miembros = useMiembros((s) => s.porGrupo);
   const ultimo = useRef('');
+  const [pendientesListos, setPendientesListos] = useState(false);
+
+  // Al abrir: primero se sube lo que quedó marcado en los widgets, después se les manda lo actual.
+  useEffect(() => {
+    if (!esNativo() || !listo || !uid || pendientesListos) return;
+    void aplicarPendientes().finally(() => setPendientesListos(true));
+  }, [listo, uid, pendientesListos]);
+  useEffect(() => {
+    if (!esNativo()) return;
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') setPendientesListos(false);
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    return () => document.removeEventListener('visibilitychange', alVolver);
+  }, []);
 
   // La sesión para marcar desde el widget (se manda una vez por inicio de sesión).
   useEffect(() => {
@@ -122,7 +174,7 @@ export function useWidgetHoy() {
   }, [listo, registros]);
 
   useEffect(() => {
-    if (!esNativo() || !listo || !uid) return;
+    if (!esNativo() || !listo || !uid || !pendientesListos) return;
     const ayer = sumarDias(hoy, -1);
     const activos = habitos.filter((h) => !h.archivado).sort((a, b) => a.momento - b.momento || a.orden - b.orden);
     const deHoy = activos.filter((h) => esDiaActivo(h, hoy));
@@ -136,6 +188,19 @@ export function useWidgetHoy() {
       }
       const sinHoy = new Map(regs);
       sinHoy.delete(hoy);
+      // Para la tarjeta: los 6 días anteriores y el 30 días sin contar hoy (hoy lo calcula el celular).
+      const semana = [-6, -5, -4, -3, -2, -1]
+        .map((o) => estadoDia(h, regs, sumarDias(hoy, o), hoy))
+        .map((e) => (e === 'ok' ? 'o' : e === 'mal' ? 'x' : 'i'))
+        .join('');
+      let a30 = 0;
+      let c30 = 0;
+      for (let o = -29; o <= -1; o++) {
+        const dia = sumarDias(hoy, o);
+        if (!esDiaActivo(h, dia)) continue;
+        a30++;
+        if (cumplido(h, regs.get(dia))) c30++;
+      }
       return {
         id: h.id,
         nombre: h.nombre,
@@ -147,6 +212,12 @@ export function useWidgetHoy() {
         inicio: h.inicio,
         items: h.variables.length,
         racha: racha(h, sinHoy, hoy, VENTANA_DIAS),
+        icono: h.icono,
+        virtudId: h.virtud,
+        tipoNombre: NOMBRE_TIPO[h.tipo] ?? '',
+        semana,
+        a30,
+        c30,
       };
     });
     const tareasWidget = tareas
@@ -192,5 +263,5 @@ export function useWidgetHoy() {
       void enviar(datos);
     }, 600);
     return () => clearTimeout(t);
-  }, [hoy, uid, zona, habitos, registros, tareas, hechas, listo, grupos, miembros]);
+  }, [hoy, uid, zona, habitos, registros, tareas, hechas, listo, grupos, miembros, pendientesListos]);
 }

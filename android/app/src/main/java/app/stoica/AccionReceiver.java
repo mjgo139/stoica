@@ -42,9 +42,7 @@ public class AccionReceiver extends BroadcastReceiver {
     }
 
     private static boolean sinSesion(Context c) {
-        if (Nube.haySesion(c) && !Nube.uid(c).isEmpty()) return false;
-        avisar(c, "Abrí Stoica una vez para poder marcar desde el widget.");
-        return true;
+        return false; // sin sesión igual se marca: queda esperando y la app la sube
     }
 
     // ---------- Hábitos ----------
@@ -57,7 +55,6 @@ public class AccionReceiver extends BroadcastReceiver {
         String clave = hid + "_" + hoy;
         boolean sino = "sino".equals(h.optString("tipo"));
         JSONObject antes = Estado.marca(d, hid, hoy);
-        String antesTexto = antes == null ? null : antes.toString();
         boolean hechoQuerido = !(antes != null && antes.optBoolean("h"));
         boolean yaCumplido = Estado.cumplido(h, antes);
 
@@ -68,6 +65,12 @@ public class AccionReceiver extends BroadcastReceiver {
             else m.put("v", Estado.valor(m) + 1);
             ponerMarca(c, clave, m);
         } catch (Exception e) {
+            return;
+        }
+
+        // Si ya hay una marca esperando para subir, esta se suma a la espera (para no pisarla).
+        if (Estado.hayPendiente(c, "habito", hid, hoy)) {
+            encolarHabito(c, hid, hoy, sino, hechoQuerido, null);
             return;
         }
 
@@ -93,15 +96,22 @@ public class AccionReceiver extends BroadcastReceiver {
             JSONObject despues = new JSONObject().put("h", hecho).put("v", valor);
             if (!yaCumplido && Estado.cumplido(h, despues)) avisar(c, "✓ " + h.optString("nombre") + ": cumplido");
         } catch (Exception e) {
-            try {
-                ponerMarca(c, clave, antesTexto == null ? null : new JSONObject(antesTexto));
-            } catch (Exception ignorado) {
-                // nada
-            }
-            avisar(c, mensajeDeFallo(e));
+            // No se pudo subir: queda marcada en el widget y la app la sube al abrirse.
+            encolarHabito(c, hid, hoy, sino, hechoQuerido, e);
         }
     }
 
+    private static void encolarHabito(Context c, String hid, String hoy, boolean sino, boolean hecho, Exception e) {
+        try {
+            JSONObject p = new JSONObject().put("que", "habito").put("id", hid).put("fecha", hoy);
+            if (sino) p.put("hecho", hecho);
+            else p.put("suma", 1);
+            Estado.encolar(c, p, e == null ? null : codigo(e));
+        } catch (Exception ignorado) {
+            // nada
+        }
+        if (e != null) avisar(c, "Quedó marcado en el celular; se sube al abrir Stoica (" + codigo(e) + ").");
+    }
     private static void ponerMarca(Context c, String clave, JSONObject m) throws Exception {
         synchronized (Estado.class) {
             JSONObject d = Estado.datos(c);
@@ -126,9 +136,16 @@ public class AccionReceiver extends BroadcastReceiver {
         String hoy = Estado.hoy(d);
         boolean diaria = t.optBoolean("diaria");
         boolean hecha = !Estado.tareaHecha(d, t, hoy);
-        Object completadaAntes = t.opt("completada");
         try {
-            ponerTarea(c, tid, hoy, diaria, hecha, null);
+            ponerTarea(c, tid, hoy, diaria, hecha);
+        } catch (Exception e) {
+            return;
+        }
+        if (Estado.hayPendiente(c, "tarea", tid, hoy)) {
+            encolarTarea(c, tid, hoy, hecha, null);
+            return;
+        }
+        try {
             String uid = Nube.uid(c);
             long ahora = System.currentTimeMillis();
             if (diaria) {
@@ -147,16 +164,19 @@ public class AccionReceiver extends BroadcastReceiver {
                 Nube.escribir(c, "users/" + uid + "/tasks/" + tid, campos, new String[] { "completada", "actualizado", "actualizadoPor" });
             }
         } catch (Exception e) {
-            try {
-                ponerTarea(c, tid, hoy, diaria, !hecha, completadaAntes);
-            } catch (Exception ignorado) {
-                // nada
-            }
-            avisar(c, mensajeDeFallo(e));
+            encolarTarea(c, tid, hoy, hecha, e);
         }
     }
 
-    private static void ponerTarea(Context c, String tid, String hoy, boolean diaria, boolean hecha, Object completadaAntes) throws Exception {
+    private static void encolarTarea(Context c, String tid, String hoy, boolean hecha, Exception e) {
+        try {
+            Estado.encolar(c, new JSONObject().put("que", "tarea").put("id", tid).put("fecha", hoy).put("hecha", hecha), e == null ? null : codigo(e));
+        } catch (Exception ignorado) {
+            // nada
+        }
+        if (e != null) avisar(c, "Quedó marcada en el celular; se sube al abrir Stoica (" + codigo(e) + ").");
+    }
+    private static void ponerTarea(Context c, String tid, String hoy, boolean diaria, boolean hecha) throws Exception {
         synchronized (Estado.class) {
             JSONObject d = Estado.datos(c);
             if (diaria) {
@@ -168,11 +188,22 @@ public class AccionReceiver extends BroadcastReceiver {
                 d.put("hechas", nuevo);
             } else {
                 JSONObject t = Estado.tarea(d, tid);
-                if (t != null) t.put("completada", completadaAntes != null ? completadaAntes : (hecha ? hoy : JSONObject.NULL));
+                if (t != null) t.put("completada", hecha ? hoy : JSONObject.NULL);
             }
             Estado.guardar(c, d);
         }
         Estado.refrescarTodos(c);
+    }
+
+    /** Código corto para saber por qué no se pudo (lo muestra el aviso y la app). */
+    static String codigo(Exception e) {
+        if (e instanceof Nube.Fallo) {
+            Nube.Fallo f = (Nube.Fallo) e;
+            String m = f.getMessage() == null ? "" : f.getMessage();
+            java.util.regex.Matcher x = java.util.regex.Pattern.compile("\"(?:message|status)\"\\s*:\\s*\"([^\"]{1,60})").matcher(m);
+            return "código " + f.codigo + (x.find() ? ": " + x.group(1) : "");
+        }
+        return "sin conexión (" + e.getClass().getSimpleName() + ")";
     }
 
     static String mensajeDeFallo(Exception e) {

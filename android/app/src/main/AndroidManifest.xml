@@ -64,6 +64,13 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_grupo_info" />
         </receiver>
+        <!-- Tarjeta de un hábito (como en la app) -->
+        <receiver android:name=".TarjetaWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_tarjeta_info" />
+        </receiver>
         <!-- Toques de los widgets que guardan sin abrir la app -->
         <receiver android:name=".AccionReceiver" android:exported="false" />
 

@@ -32,6 +32,16 @@ public class WidgetPlugin extends Plugin {
         call.resolve();
     }
 
+    /** Marcas hechas en el widget que no se pudieron subir: la app las sube y quedan borradas acá. */
+    @PluginMethod
+    public void tomarPendientes(PluginCall call) {
+        JSONObject r = Estado.tomarPendientes(getContext());
+        JSObject res = new JSObject();
+        res.put("lista", r.optJSONArray("lista") != null ? r.optJSONArray("lista") : new JSONArray());
+        res.put("error", r.optString("error", ""));
+        call.resolve(res);
+    }
+
     /** Si el widget leyó el grupo de la nube después de lo último que viste en la app, se queda con eso. */
     private static void conservarGruposLeidos(JSONObject antes, JSONObject nuevo) {
         JSONArray gs = nuevo.optJSONArray("grupos");

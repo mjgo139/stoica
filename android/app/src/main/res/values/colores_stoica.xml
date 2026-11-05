@@ -8,4 +8,25 @@
     <color name="widget_dorado">#9A7B3C</color>
     <color name="widget_verde">#4E7A3F</color>
     <color name="widget_fila">#EFE8DA</color>
+    <color name="widget_ok">#3F6E38</color>
+    <color name="widget_okbg">#DCE9D3</color>
+    <color name="widget_okbd">#86AD79</color>
+    <color name="widget_miss">#9C3F2E</color>
+    <color name="widget_missbg">#F4DED6</color>
+    <color name="widget_missbd">#D49A8B</color>
+    <color name="widget_ln3">#CDC1A7</color>
+    <color name="widget_mu2">#5A5244</color>
+    <color name="widget_ln">#E0D7C5</color>
+    <color name="virtud_sabiduria">#3B6290</color>
+    <color name="virtud_coraje">#A2472C</color>
+    <color name="virtud_justicia">#7E5D22</color>
+    <color name="virtud_templanza">#4A7541</color>
+    <color name="virtud_sabiduria_fondo">#1F3B6290</color>
+    <color name="virtud_sabiduria_borde">#803B6290</color>
+    <color name="virtud_coraje_fondo">#1FA2472C</color>
+    <color name="virtud_coraje_borde">#80A2472C</color>
+    <color name="virtud_justicia_fondo">#1F7E5D22</color>
+    <color name="virtud_justicia_borde">#807E5D22</color>
+    <color name="virtud_templanza_fondo">#1F4A7541</color>
+    <color name="virtud_templanza_borde">#804A7541</color>
 </resources>

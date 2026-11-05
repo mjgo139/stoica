@@ -1,6 +1,5 @@
 package app.stoica;
 
-import android.appwidget.AppWidgetManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -32,6 +31,7 @@ public class HabitoConfig extends ElegirWidget {
 
     @Override
     protected void alElegir(String id) {
-        HabitoWidget.dibujar(this, AppWidgetManager.getInstance(this), widgetId);
+        // Sirve para el widget de un hábito y para el de la tarjeta.
+        Estado.refrescarTodos(this);
     }
 }

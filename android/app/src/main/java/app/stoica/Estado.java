@@ -64,6 +64,65 @@ final class Estado {
         e.apply();
     }
 
+    // ---------- Marcas que el widget no pudo subir (las sube la app al abrirse) ----------
+
+    static synchronized JSONArray pendientes(Context c) {
+        try {
+            String crudo = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("pendientes", null);
+            if (crudo != null) return new JSONArray(crudo);
+        } catch (Exception e) {
+            // dañado: vacío
+        }
+        return new JSONArray();
+    }
+
+    static synchronized boolean hayPendiente(Context c, String que, String id, String fecha) {
+        JSONArray l = pendientes(c);
+        for (int i = 0; i < l.length(); i++) {
+            JSONObject p = l.optJSONObject(i);
+            if (p != null && que.equals(p.optString("que")) && id.equals(p.optString("id")) && fecha.equals(p.optString("fecha"))) return true;
+        }
+        return false;
+    }
+
+    /** Guarda (o junta con la anterior del mismo día) una marca para subir después. */
+    static synchronized void encolar(Context c, JSONObject nueva, String error) {
+        try {
+            JSONArray l = pendientes(c);
+            JSONArray resultado = new JSONArray();
+            for (int i = 0; i < l.length(); i++) {
+                JSONObject p = l.optJSONObject(i);
+                if (p == null) continue;
+                boolean mismo = p.optString("que").equals(nueva.optString("que")) && p.optString("id").equals(nueva.optString("id")) && p.optString("fecha").equals(nueva.optString("fecha"));
+                if (mismo) {
+                    if (nueva.has("suma")) nueva.put("suma", nueva.optInt("suma") + p.optInt("suma"));
+                    continue;
+                }
+                resultado.put(p);
+            }
+            resultado.put(nueva);
+            SharedPreferences.Editor e = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("pendientes", resultado.toString());
+            if (error != null) e.putString("ultimoError", error);
+            e.apply();
+        } catch (Exception e) {
+            // nada
+        }
+    }
+
+    /** La app se lleva las marcas pendientes (y el último error) para subirlas ella. */
+    static synchronized JSONObject tomarPendientes(Context c) {
+        SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        JSONObject r = new JSONObject();
+        try {
+            r.put("lista", pendientes(c));
+            r.put("error", p.getString("ultimoError", ""));
+        } catch (Exception e) {
+            // nada
+        }
+        p.edit().remove("pendientes").remove("ultimoError").apply();
+        return r;
+    }
+
     // ---------- Fechas (en la zona horaria del perfil) ----------
 
     static TimeZone zona(JSONObject d) {
@@ -173,6 +232,54 @@ final class Estado {
         if (diaActivo(h, hoy) && cumplido(h, marca(d, id, hoy))) r++;
         return r;
     }
+
+    /**
+     * Últimos 7 días para la tarjeta (del más viejo a hoy): o = cumplido, x = no, i = no tocaba,
+     * p = hoy pendiente, ? = sin dato. La app manda los 6 anteriores; hoy (y ayer, si pasó la medianoche) se calcula acá.
+     */
+    static String semana(JSONObject d, JSONObject h, String hoy) {
+        String base = d.optString("fecha");
+        String previos = h.optString("semana", "");
+        if (previos.length() != 6) previos = "??????";
+        String id = h.optString("id");
+        if (!base.equals(hoy)) {
+            if (sumarDias(base, 1).equals(hoy)) previos = previos.substring(1) + estado(h, d, id, base, false);
+            else previos = "??????";
+        }
+        return previos + estado(h, d, id, hoy, true);
+    }
+
+    private static char estado(JSONObject h, JSONObject d, String id, String fecha, boolean esHoy) {
+        if (!diaActivo(h, fecha)) return 'i';
+        if (cumplido(h, marca(d, id, fecha))) return 'o';
+        return esHoy ? 'p' : 'x';
+    }
+
+    /** Porcentaje de los últimos 30 días (hoy solo cuenta si ya se cumplió), como en la app. */
+    static int porcentaje30(JSONObject d, JSONObject h, String hoy) {
+        int activos = h.optInt("a30");
+        int hechos = h.optInt("c30");
+        if (d.optString("fecha").equals(hoy) && diaActivo(h, hoy) && cumplido(h, marca(d, h.optString("id"), hoy))) {
+            activos++;
+            hechos++;
+        }
+        return activos == 0 ? 0 : Math.round(hechos * 100f / activos);
+    }
+
+    static String romano(int n) {
+        if (n <= 0) return "0";
+        if (n > 3999) return String.valueOf(n);
+        int[] v = { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+        String[] r = { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < v.length; i++) while (n >= v[i]) {
+            sb.append(r[i]);
+            n -= v[i];
+        }
+        return sb.toString();
+    }
+
+    static final String[] LETRAS = { "D", "L", "M", "M", "J", "V", "S" };
 
     static String detalleCantidad(JSONObject h, JSONObject m) {
         String tipo = h.optString("tipo");
@@ -289,5 +396,6 @@ final class Estado {
         for (int id : ids(c, HabitoWidget.class)) HabitoWidget.dibujar(c, m, id);
         for (int id : ids(c, TareasWidget.class)) TareasWidget.dibujar(c, m, id);
         for (int id : ids(c, GrupoWidget.class)) GrupoWidget.dibujar(c, m, id);
+        for (int id : ids(c, TarjetaWidget.class)) TarjetaWidget.dibujar(c, m, id);
     }
 }
