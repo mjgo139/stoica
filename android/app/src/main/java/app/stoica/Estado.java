@@ -148,6 +148,35 @@ final class Estado {
         }
     }
 
+    /** Días entre dos fechas "aaaa-mm-dd" (negativo si b es anterior). */
+    static long diferencia(String a, String b) {
+        try {
+            SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            f.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return Math.round((f.parse(b).getTime() - f.parse(a).getTime()) / 86400000.0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /** Misma fecha N años después (29 de febrero → 28 si el año no es bisiesto), como en la app. */
+    static String sumarAnios(String fecha, int n) {
+        int anio = Integer.parseInt(fecha.substring(0, 4)) + n;
+        int mes = Integer.parseInt(fecha.substring(5, 7));
+        int dia = Integer.parseInt(fecha.substring(8, 10));
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        cal.clear();
+        cal.set(anio, mes - 1, 1);
+        int ultimo = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        return String.format(Locale.US, "%04d-%02d-%02d", anio, mes, Math.min(dia, ultimo));
+    }
+
+    static int aniosCumplidos(String nacimiento, String hoy) {
+        int a = Integer.parseInt(hoy.substring(0, 4)) - Integer.parseInt(nacimiento.substring(0, 4));
+        if (hoy.substring(5).compareTo(nacimiento.substring(5)) < 0) a--;
+        return Math.max(0, a);
+    }
+
     static int diaSemana(String clave) {
         try {
             SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -397,5 +426,6 @@ final class Estado {
         for (int id : ids(c, TareasWidget.class)) TareasWidget.dibujar(c, m, id);
         for (int id : ids(c, GrupoWidget.class)) GrupoWidget.dibujar(c, m, id);
         for (int id : ids(c, TarjetaWidget.class)) TarjetaWidget.dibujar(c, m, id);
+        for (int id : ids(c, MementoWidget.class)) MementoWidget.dibujar(c, m, id);
     }
 }

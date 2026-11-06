@@ -135,6 +135,9 @@ export function useWidgetHoy() {
   const hoy = useHoy();
   const uid = useSesion((s) => s.usuario?.uid);
   const zona = useSesion((s) => s.perfil?.zonaHoraria);
+  const nacimiento = useSesion((s) => s.perfil?.nacimiento ?? null);
+  const esperanza = useSesion((s) => s.perfil?.esperanzaVida);
+  const contadores = useSesion((s) => s.perfil?.contadores);
   const habitos = useDatos((s) => s.habitos);
   const registros = useDatos((s) => s.registros);
   const tareas = useDatos((s) => s.tareas);
@@ -255,6 +258,8 @@ export function useWidgetHoy() {
       tareas: tareasWidget,
       hechas: hechasDiarias,
       grupos: gruposWidget,
+      // Memento mori: el celular cuenta los días solo.
+      memento: { nacimiento, esperanza: esperanza ?? 73, contadores: (contadores ?? []).map((c) => ({ nombre: c.nombre, fecha: c.fecha })) },
     };
     const clave = JSON.stringify({ ...datos, frase: '' });
     if (clave === ultimo.current) return;
@@ -263,5 +268,5 @@ export function useWidgetHoy() {
       void enviar(datos);
     }, 600);
     return () => clearTimeout(t);
-  }, [hoy, uid, zona, habitos, registros, tareas, hechas, listo, grupos, miembros, pendientesListos]);
+  }, [hoy, uid, zona, habitos, registros, tareas, hechas, listo, grupos, miembros, pendientesListos, nacimiento, esperanza, contadores]);
 }
