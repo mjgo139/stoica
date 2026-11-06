@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vista previa: grupo. -->
+<!-- Widgets en lista: hábitos de hoy, tareas de hoy y grupo (6 filas como máximo). --><LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_fondo" android:orientation="vertical" android:padding="12dp">
+
+    <LinearLayout android:id="@+id/w_cabeza" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+
+        <TextView android:id="@+id/w_titulo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:letterSpacing="0.12" android:maxLines="1" android:text="LOS DEL GIMNASIO" android:textColor="@color/widget_dorado" android:textSize="11sp" android:textStyle="bold"/>
+
+        <TextView android:id="@+id/w_cuenta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minWidth="28dp" android:gravity="end" android:textColor="@color/widget_texto" android:textSize="13sp" android:textStyle="bold" android:text="↻"/>
+    </LinearLayout>
+
+    <ProgressBar android:id="@+id/w_barra" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="6dp" android:layout_marginBottom="2dp" android:max="100" android:progress="60" android:progressDrawable="@drawable/widget_barra"/>
+
+    <TextView android:id="@+id/w_vacio" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/widget_abrir" android:textColor="@color/widget_suave" android:textSize="13sp" android:visibility="gone"/>
+
+    <!-- Las filas se reparten todo el alto del widget (las que sobran quedan invisibles). -->
+    <LinearLayout android:id="@+id/w_filas" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+
+        <LinearLayout android:id="@+id/w_fila0" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="visible">
+
+            <TextView android:id="@+id/w_nombre0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp" android:text="Vos"/>
+
+            <TextView android:id="@+id/w_detalle0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp" android:text=""/>
+
+            <TextView android:id="@+id/w_marca0" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold" android:text="2/3"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila1" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="visible">
+
+            <TextView android:id="@+id/w_nombre1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="13sp" android:text="Ana"/>
+
+            <TextView android:id="@+id/w_detalle1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp" android:text=""/>
+
+            <TextView android:id="@+id/w_marca1" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_verde" android:textSize="17sp" android:textStyle="bold" android:text="◆ 3/3"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila2" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="visible">
+
+            <TextView android:id="@+id/w_nombre2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp" android:text="Luis"/>
+
+            <TextView android:id="@+id/w_detalle2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp" android:text=""/>
+
+            <TextView android:id="@+id/w_marca2" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold" android:text="2/3"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila3" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="visible">
+
+            <TextView android:id="@+id/w_nombre3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp" android:text="Caro"/>
+
+            <TextView android:id="@+id/w_detalle3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp" android:text="sin abrir hoy"/>
+
+            <TextView android:id="@+id/w_marca3" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold" android:text="0/3"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila4" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="invisible">
+
+            <TextView android:id="@+id/w_nombre4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp"/>
+
+            <TextView android:id="@+id/w_detalle4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp"/>
+
+            <TextView android:id="@+id/w_marca4" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila5" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="gone">
+
+            <TextView android:id="@+id/w_nombre5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp"/>
+
+            <TextView android:id="@+id/w_detalle5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp"/>
+
+            <TextView android:id="@+id/w_marca5" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila6" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="gone">
+
+            <TextView android:id="@+id/w_nombre6" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp"/>
+
+            <TextView android:id="@+id/w_detalle6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp"/>
+
+            <TextView android:id="@+id/w_marca6" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila7" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="gone">
+
+            <TextView android:id="@+id/w_nombre7" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp"/>
+
+            <TextView android:id="@+id/w_detalle7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp"/>
+
+            <TextView android:id="@+id/w_marca7" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila8" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="gone">
+
+            <TextView android:id="@+id/w_nombre8" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp"/>
+
+            <TextView android:id="@+id/w_detalle8" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp"/>
+
+            <TextView android:id="@+id/w_marca8" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/w_fila9" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:background="@drawable/widget_fila" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:visibility="gone">
+
+            <TextView android:id="@+id/w_nombre9" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp"/>
+
+            <TextView android:id="@+id/w_detalle9" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="12sp"/>
+
+            <TextView android:id="@+id/w_marca9" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:textColor="@color/widget_dorado" android:textSize="17sp" android:textStyle="bold"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <TextView android:id="@+id/w_pie" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="11sp" android:visibility="visible" android:text="Actualizado 08:30"/>
+</LinearLayout>

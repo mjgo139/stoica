@@ -25,9 +25,11 @@ public class HoyWidget extends AppWidgetProvider {
         String numero = "—";
         String detalle = "";
         String texto = "Abrí Stoica para ver tu día.";
+        String frase = "Victoria sobre ti mismo.";
         int avance = 0;
         try {
             JSONObject d = Estado.datos(contexto);
+            if (!d.optString("frase", "").isEmpty()) frase = d.optString("frase");
             if (d.optBoolean("sinSesion")) {
                 texto = "Entrá a Stoica para ver tus hábitos.";
             } else if (Estado.conDatos(d)) {
@@ -42,7 +44,7 @@ public class HoyWidget extends AppWidgetProvider {
                     numero = hecho + "/" + total;
                     detalle = total == 1 ? "hábito" : "hábitos";
                     avance = Math.round(hecho * 100f / total);
-                    if (faltan.isEmpty()) texto = "¡Día cumplido! " + d.optString("frase", "");
+                    if (faltan.isEmpty()) texto = "¡Día cumplido!";
                     else {
                         StringBuilder sb = new StringBuilder("Falta: ");
                         for (int i = 0; i < Math.min(4, faltan.size()); i++) {
@@ -64,6 +66,7 @@ public class HoyWidget extends AppWidgetProvider {
         v.setTextViewText(R.id.w_numero, numero);
         v.setTextViewText(R.id.w_detalle, detalle);
         v.setTextViewText(R.id.w_texto, texto);
+        v.setTextViewText(R.id.w_frase, frase);
         v.setProgressBar(R.id.w_barra, 100, avance, false);
 
         v.setOnClickPendingIntent(R.id.widget_raiz, Estado.abrir(contexto, "/"));

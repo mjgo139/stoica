@@ -15,6 +15,11 @@ public class TareasWidget extends AppWidgetProvider {
         for (int id : ids) dibujar(contexto, manager, id);
     }
 
+    @Override
+    public void onAppWidgetOptionsChanged(Context contexto, AppWidgetManager manager, int id, android.os.Bundle nuevas) {
+        dibujar(contexto, manager, id); // cambió de tamaño: entran más o menos filas
+    }
+
     static void dibujar(Context c, AppWidgetManager manager, int widgetId) {
         RemoteViews v = Lista.nueva(c, "TAREAS · HOY");
         v.setOnClickPendingIntent(R.id.w_cabeza, Estado.abrir(c, "/tareas"));
@@ -36,7 +41,9 @@ public class TareasWidget extends AppWidgetProvider {
         for (JSONObject t : ts) if (Estado.tareaHecha(d, t, hoy)) hechas++;
         v.setTextViewText(R.id.w_cuenta, hechas + "/" + ts.size());
         Lista.barra(v, hechas, ts.size());
-        int n = Math.min(Lista.MAX, ts.size());
+        int cap = Lista.capacidad(manager, widgetId);
+        Lista.reservar(v, cap);
+        int n = Math.min(cap, ts.size());
         for (int i = 0; i < n; i++) {
             JSONObject t = ts.get(i);
             boolean ok = Estado.tareaHecha(d, t, hoy);

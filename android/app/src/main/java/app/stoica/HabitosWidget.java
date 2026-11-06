@@ -16,6 +16,11 @@ public class HabitosWidget extends AppWidgetProvider {
         for (int id : ids) dibujar(contexto, manager, id);
     }
 
+    @Override
+    public void onAppWidgetOptionsChanged(Context contexto, AppWidgetManager manager, int id, android.os.Bundle nuevas) {
+        dibujar(contexto, manager, id); // cambió de tamaño: entran más o menos filas
+    }
+
     static void dibujar(Context c, AppWidgetManager manager, int widgetId) {
         RemoteViews v = Lista.nueva(c, "HÁBITOS · HOY");
         v.setOnClickPendingIntent(R.id.w_cabeza, Estado.abrir(c, "/"));
@@ -40,7 +45,9 @@ public class HabitosWidget extends AppWidgetProvider {
         Lista.barra(v, listos.size(), deHoy.size());
         List<JSONObject> orden = new ArrayList<>(faltan);
         orden.addAll(listos);
-        int n = Math.min(Lista.MAX, orden.size());
+        int cap = Lista.capacidad(manager, widgetId);
+        Lista.reservar(v, cap);
+        int n = Math.min(cap, orden.size());
         for (int i = 0; i < n; i++) {
             JSONObject h = orden.get(i);
             String id = h.optString("id");

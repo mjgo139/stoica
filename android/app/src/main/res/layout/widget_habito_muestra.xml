@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vista previa: un hábito. -->
+<!-- Widget de un hábito: nombre, cómo vas hoy, racha y el rombo para marcar. --><LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_fondo" android:orientation="vertical" android:padding="12dp">
+
+    <TextView android:id="@+id/h_virtud" android:layout_width="wrap_content" android:layout_height="wrap_content" android:letterSpacing="0.12" android:maxLines="1" android:text="Coraje" android:textAllCaps="true" android:textColor="@color/widget_dorado" android:textSize="10sp" android:textStyle="bold"/>
+
+    <TextView android:id="@+id/h_nombre" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:ellipsize="end" android:fontFamily="serif" android:maxLines="2" android:text="Bicicleta 1H" android:textColor="@color/widget_texto" android:textSize="16sp" android:textStyle="bold"/>
+
+    <!-- Espacio flexible (un View suelto no está permitido en los widgets: FrameLayout sí). -->
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="4dp"/>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+
+            <TextView android:id="@+id/h_detalle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxLines="1" android:textColor="@color/widget_texto" android:textSize="13sp" android:text="Falta hoy"/>
+
+            <TextView android:id="@+id/h_racha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxLines="1" android:textColor="@color/widget_suave" android:textSize="11sp" android:text="Racha: 12 días"/>
+        </LinearLayout>
+
+        <TextView android:id="@+id/h_marca" android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/widget_boton" android:gravity="center" android:text="◇" android:textColor="@color/widget_dorado" android:textSize="26sp" android:textStyle="bold"/>
+    </LinearLayout>
+</LinearLayout>

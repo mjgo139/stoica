@@ -31,7 +31,7 @@
             android:fontFamily="serif"
             android:text="—"
             android:textColor="@color/widget_texto"
-            android:textSize="30sp"
+            android:textSize="34sp"
             android:textStyle="bold" />
 
         <TextView
@@ -60,8 +60,27 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:ellipsize="end"
-        android:maxLines="3"
+        android:maxLines="4"
         android:text="@string/widget_abrir"
         android:textColor="@color/widget_texto"
         android:textSize="13sp" />
+
+    <!-- Espacio flexible: la frase queda siempre abajo, aproveche el widget el tamaño que tenga. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/w_frase"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:fontFamily="serif"
+        android:maxLines="2"
+        android:text="Victoria sobre ti mismo."
+        android:textColor="@color/widget_suave"
+        android:textSize="12sp"
+        android:textStyle="italic" />
 </LinearLayout>

@@ -89,6 +89,11 @@ public class GrupoWidget extends AppWidgetProvider {
         }
     }
 
+    @Override
+    public void onAppWidgetOptionsChanged(Context contexto, AppWidgetManager manager, int id, android.os.Bundle nuevas) {
+        dibujar(contexto, manager, id); // cambió de tamaño: entran más o menos filas
+    }
+
     static void dibujar(Context c, AppWidgetManager manager, int widgetId) {
         JSONObject d = Estado.datos(c);
         String gid = Estado.eleccion(c, widgetId);
@@ -127,7 +132,9 @@ public class GrupoWidget extends AppWidgetProvider {
             if (hoy.equals(m.optString("fecha"))) hechos += m.optInt("hechos");
         }
         Lista.barra(v, hechos, total);
-        int n = Math.min(Lista.MAX, lista.size());
+        int cap = Lista.capacidad(manager, widgetId);
+        Lista.reservar(v, cap);
+        int n = Math.min(cap, lista.size());
         for (int i = 0; i < n; i++) {
             JSONObject m = lista.get(i);
             boolean alDia = hoy.equals(m.optString("fecha"));
