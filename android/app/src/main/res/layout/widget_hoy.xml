@@ -54,22 +54,104 @@
         android:progress="0"
         android:progressDrawable="@drawable/widget_barra" />
 
-    <TextView
-        android:id="@+id/w_texto"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:ellipsize="end"
-        android:maxLines="4"
-        android:text="@string/widget_abrir"
-        android:textColor="@color/widget_texto"
-        android:textSize="13sp" />
-
-    <!-- Espacio flexible: la frase queda siempre abajo, aproveche el widget el tamaño que tenga. -->
-    <FrameLayout
+    <!-- Cada hábito del día en su línea (tocándola se marca); se reparten el alto disponible. -->
+    <LinearLayout
+        android:id="@+id/w_lineas"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_marginTop="4dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/w_texto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:ellipsize="end"
+            android:maxLines="3"
+            android:text="@string/widget_abrir"
+            android:textColor="@color/widget_texto"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/w_l0"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:maxHeight="34dp"
+            android:textColor="@color/widget_texto"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/w_l1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:maxHeight="34dp"
+            android:textColor="@color/widget_texto"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/w_l2"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:maxHeight="34dp"
+            android:textColor="@color/widget_texto"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/w_l3"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:maxHeight="34dp"
+            android:textColor="@color/widget_texto"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/w_l4"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:maxHeight="34dp"
+            android:textColor="@color/widget_texto"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/w_l5"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:maxHeight="34dp"
+            android:textColor="@color/widget_texto"
+            android:textSize="14sp"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/w_frase"

@@ -9,6 +9,9 @@ import org.json.JSONObject;
 /** Widget de un solo hábito: cómo vas hoy, la racha y el rombo para marcar (o +1). */
 public class HabitoWidget extends AppWidgetProvider {
 
+    static final int[] BX = { R.id.h_bx0, R.id.h_bx1, R.id.h_bx2, R.id.h_bx3, R.id.h_bx4, R.id.h_bx5, R.id.h_bx6 };
+    static final int[] LB = { R.id.h_lb0, R.id.h_lb1, R.id.h_lb2, R.id.h_lb3, R.id.h_lb4, R.id.h_lb5, R.id.h_lb6 };
+
     @Override
     public void onUpdate(Context contexto, AppWidgetManager manager, int[] ids) {
         for (int id : ids) dibujar(contexto, manager, id);
@@ -31,6 +34,7 @@ public class HabitoWidget extends AppWidgetProvider {
             v.setTextViewText(R.id.h_detalle, hid == null ? "Mantené apretado para elegir" : "Mantené apretado para cambiarlo");
             v.setTextViewText(R.id.h_racha, "");
             v.setTextViewText(R.id.h_marca, Lista.VACIO);
+            v.setViewVisibility(R.id.h_semana, android.view.View.INVISIBLE);
             v.setOnClickPendingIntent(R.id.widget_raiz, Estado.abrir(c, "/habitos"));
             v.setOnClickPendingIntent(R.id.h_marca, Estado.abrir(c, "/habitos"));
             manager.updateAppWidget(widgetId, v);
@@ -47,6 +51,7 @@ public class HabitoWidget extends AppWidgetProvider {
         else if (!cuanto.isEmpty()) detalle = (ok ? "Cumplido · " : "Hoy ") + cuanto;
         else detalle = ok ? "Cumplido hoy" : "Falta hoy";
         int racha = Estado.racha(d, h, hoy);
+        TarjetaWidget.pintarSemana(c, v, d, h, hoy, BX, null, LB);
         v.setTextViewText(R.id.h_virtud, h.optString("virtud", "Stoica"));
         v.setTextViewText(R.id.h_nombre, h.optString("nombre"));
         v.setTextViewText(R.id.h_detalle, detalle);

@@ -32,6 +32,41 @@ public class TarjetaWidget extends AppWidgetProvider {
         return id == 0 ? siNo : id;
     }
 
+    /** Los 7 días: cajita con ✓ / ×, barrita de color (si hay) y la letra del día. */
+    static void pintarSemana(Context c, RemoteViews v, JSONObject d, JSONObject h, String hoy, int[] bx, int[] cp, int[] lb) {
+        String semana = Estado.semana(d, h, hoy);
+        int verde = c.getColor(R.color.widget_ok);
+        int rojo = c.getColor(R.color.widget_miss);
+        for (int i = 0; i < 7; i++) {
+            char e = semana.charAt(i);
+            int caja;
+            int barra;
+            String marca = "";
+            if (e == 'o') {
+                caja = R.drawable.dia_ok;
+                barra = R.drawable.cp_ok;
+                marca = "✓";
+            } else if (e == 'x') {
+                caja = R.drawable.dia_mal;
+                barra = R.drawable.cp_mal;
+                marca = "×";
+            } else if (e == 'i') {
+                caja = R.drawable.dia_inactivo;
+                barra = R.drawable.cp_vacio;
+            } else {
+                caja = i == 6 ? R.drawable.dia_hoy : R.drawable.dia_vacio;
+                barra = i == 6 ? R.drawable.cp_hoy : R.drawable.cp_vacio;
+            }
+            v.setInt(bx[i], "setBackgroundResource", caja);
+            if (cp != null) v.setInt(cp[i], "setBackgroundResource", barra);
+            v.setTextViewText(bx[i], marca);
+            v.setTextColor(bx[i], e == 'x' ? rojo : verde);
+            int ds = Estado.diaSemana(Estado.sumarDias(hoy, i - 6));
+            v.setTextViewText(lb[i], ds >= 0 ? Estado.LETRAS[ds] : "");
+        }
+
+    }
+
     static void dibujar(Context c, AppWidgetManager manager, int widgetId) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_tarjeta);
         JSONObject d = Estado.datos(c);
@@ -66,37 +101,8 @@ public class TarjetaWidget extends AppWidgetProvider {
         v.setTextViewText(R.id.c_racha, racha < 0 ? "—" : Estado.romano(racha));
 
         // La semana: barrita de color, cajita con ✓ / × y la letra del día.
-        String semana = Estado.semana(d, h, hoy);
+        pintarSemana(c, v, d, h, hoy, BX, CP, LB);
         int verde = c.getColor(R.color.widget_ok);
-        int rojo = c.getColor(R.color.widget_miss);
-        for (int i = 0; i < 7; i++) {
-            String dia = Estado.sumarDias(hoy, i - 6);
-            char e = semana.charAt(i);
-            int caja;
-            int barra;
-            String marca = "";
-            if (e == 'o') {
-                caja = R.drawable.dia_ok;
-                barra = R.drawable.cp_ok;
-                marca = "✓";
-            } else if (e == 'x') {
-                caja = R.drawable.dia_mal;
-                barra = R.drawable.cp_mal;
-                marca = "×";
-            } else if (e == 'i') {
-                caja = R.drawable.dia_inactivo;
-                barra = R.drawable.cp_vacio;
-            } else {
-                caja = i == 6 ? R.drawable.dia_hoy : R.drawable.dia_vacio;
-                barra = i == 6 ? R.drawable.cp_hoy : R.drawable.cp_vacio;
-            }
-            v.setInt(BX[i], "setBackgroundResource", caja);
-            v.setInt(CP[i], "setBackgroundResource", barra);
-            v.setTextViewText(BX[i], marca);
-            v.setTextColor(BX[i], e == 'x' ? rojo : verde);
-            int ds = Estado.diaSemana(dia);
-            v.setTextViewText(LB[i], ds >= 0 ? Estado.LETRAS[ds] : "");
-        }
 
         v.setTextViewText(R.id.c_pct, "30 DÍAS · " + Estado.porcentaje30(d, h, hoy) + "%");
 
