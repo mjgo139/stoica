@@ -267,15 +267,33 @@ final class Estado {
      * p = hoy pendiente, ? = sin dato. La app manda los 6 anteriores; hoy (y ayer, si pasó la medianoche) se calcula acá.
      */
     static String semana(JSONObject d, JSONObject h, String hoy) {
+        return historia(d, h, hoy, 7);
+    }
+
+    /**
+     * Últimos `n` días (hasta 35, del más viejo a hoy): o = cumplido, x = no, i = no tocaba, p = hoy pendiente,
+     * ? = sin dato. La app manda los anteriores; hoy (y ayer, si pasó la medianoche) se calcula acá.
+     */
+    static String historia(JSONObject d, JSONObject h, String hoy, int n) {
         String base = d.optString("fecha");
-        String previos = h.optString("semana", "");
-        if (previos.length() != 6) previos = "??????";
+        String previos = h.optString("hist", "");
+        if (previos.length() != 34) {
+            String s6 = h.optString("semana", "");
+            previos = repetir('?', 34 - s6.length()) + s6;
+        }
         String id = h.optString("id");
         if (!base.equals(hoy)) {
             if (sumarDias(base, 1).equals(hoy)) previos = previos.substring(1) + estado(h, d, id, base, false);
-            else previos = "??????";
+            else previos = repetir('?', 34);
         }
-        return previos + estado(h, d, id, hoy, true);
+        String todo = previos + estado(h, d, id, hoy, true);
+        return todo.substring(Math.max(0, todo.length() - n));
+    }
+
+    private static String repetir(char c, int n) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n; i++) sb.append(c);
+        return sb.toString();
     }
 
     private static char estado(JSONObject h, JSONObject d, String id, String fecha, boolean esHoy) {

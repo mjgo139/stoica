@@ -192,10 +192,12 @@ export function useWidgetHoy() {
       const sinHoy = new Map(regs);
       sinHoy.delete(hoy);
       // Para la tarjeta: los 6 días anteriores y el 30 días sin contar hoy (hoy lo calcula el celular).
-      const semana = [-6, -5, -4, -3, -2, -1]
+      // 34 días anteriores (hasta 5 semanas en el widget de un hábito agrandado).
+      const hist = Array.from({ length: 34 }, (_, k) => k - 34)
         .map((o) => estadoDia(h, regs, sumarDias(hoy, o), hoy))
         .map((e) => (e === 'ok' ? 'o' : e === 'mal' ? 'x' : 'i'))
         .join('');
+      const semana = hist.slice(-6);
       let a30 = 0;
       let c30 = 0;
       for (let o = -29; o <= -1; o++) {
@@ -219,6 +221,7 @@ export function useWidgetHoy() {
         virtudId: h.virtud,
         tipoNombre: NOMBRE_TIPO[h.tipo] ?? '',
         semana,
+        hist,
         a30,
         c30,
       };
