@@ -22,3 +22,17 @@ npx @gltf-transform/cli meshopt s.glb public/espejo/marmol/NN-nombre.glb --level
 ```
 
 Después se agrega a `public/espejo/marmol/indice.json` con su nombre y orden.
+
+## Estatua viva (transplante entre estatuas de Meshy)
+
+Una sola estatua (la Atlética) se deforma hacia las otras 7. Cada deformación ("morph") se calcula ajustando
+la Atlética sobre la otra estatua (punto más cercano en los dos sentidos + suavizado de grueso a fino). Solo se
+guarda el cambio de volumen: la cara, los rulos y la tela quedan los de la Atlética, y la cabeza no se deforma.
+
+1. Simplificar cada GLB de Meshy (weld + simplify, como arriba, sin meshopt) a `modelos/<nombre>.s.glb`
+   (athletic, lean, heavy_muscular, bodybuilder, stocky, overweight, obese, extra_obese).
+2. `MODELOS=modelos/ SALIDA=salida/ python3 transplante.py lean heavy_muscular bodybuilder stocky overweight obese extra_obese`
+3. Pasar `salida/base_v.npy`, `base_f.npy` y `morph_*.npy` a binarios (`base_v.bin`, `base_f.bin`, `m_<nombre>.bin`, float32/uint32)
+   y armar el GLB: `node armar-morph.mjs salida salida/estatua.glb`
+4. `npx @gltf-transform/cli quantize salida/estatua.glb q.glb --quantize-position 14` y
+   `npx @gltf-transform/cli meshopt q.glb public/espejo/marmol/estatua-viva.glb` (~1,8 MB).

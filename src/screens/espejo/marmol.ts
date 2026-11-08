@@ -30,7 +30,7 @@ const suave = (x: number, a: number, b: number) => {
 };
 
 /** Vetas de mármol pintadas en los vértices (no hace falta textura). */
-function vetas(g: THREE.BufferGeometry) {
+export function vetas(g: THREE.BufferGeometry) {
   const pos = g.getAttribute('position');
   const col = new Float32Array(pos.count * 3);
   const base = new THREE.Color('#f1ece4').convertSRGBToLinear();

@@ -645,7 +645,14 @@ test.describe('v0.5–v1.0', () => {
     await entrarConEjemplo(page);
     await ir(page, '/espejo');
     await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
+    // Estatua viva (una estatua de Meshy que se deforma)
+    await expect(page.getByText('Trayendo tu estatua…')).toBeHidden({ timeout: 45_000 });
+    await page.getByLabel('Peso', { exact: true }).fill('85');
+    await expect(page.getByLabel('Estatua viva: Obeso')).toBeVisible();
+    await page.waitForTimeout(800);
+    await captura(page, '27-espejo-viva');
     // Tu cuerpo (realista, hoy vs meta)
+    await page.getByRole('radio', { name: 'Tu cuerpo' }).click();
     await expect(page.getByText('Cargando tu cuerpo…')).toBeHidden({ timeout: 45_000 });
     await expect(page.getByText('META', { exact: true })).toBeVisible();
     await page.getByLabel('Peso', { exact: true }).fill('90');
