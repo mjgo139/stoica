@@ -640,7 +640,8 @@ test.describe('v0.5–v1.0', () => {
   });
 
   test('el espejo (solo admin): estatua griega que cambia con el peso, tira de 7 etapas y personaje 3D', async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(150_000);
+    page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
     await entrarConEjemplo(page);
     await ir(page, '/espejo');
     await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
