@@ -18,6 +18,7 @@ import { Grupo } from '@/screens/comunidad/Grupo';
 import { Desafio } from '@/screens/comunidad/Desafio';
 import { Admin } from '@/screens/Admin';
 // El Espejo trae el motor 3D: se carga solo al entrar.
+const PlantaJardin = lazy(() => import('@/screens/jardin/Planta').then((m) => ({ default: m.PlantaJardin })));
 const Jardin = lazy(() => import('@/screens/jardin/Jardin').then((m) => ({ default: m.Jardin })));
 const Espejo = lazy(() => import('@/screens/espejo/Espejo').then((m) => ({ default: m.Espejo })));
 import { Cargando, PantallaError, SinConexion } from '@/screens/Estados';
@@ -72,6 +73,14 @@ export function App() {
           element={
             <Suspense fallback={<Cargando />}>
               <Jardin />
+            </Suspense>
+          }
+        />
+        <Route
+          path="jardin/:id"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <PlantaJardin />
             </Suspense>
           }
         />

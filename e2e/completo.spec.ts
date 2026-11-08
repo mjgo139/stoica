@@ -712,7 +712,7 @@ test.describe('v0.5–v1.0', () => {
     await primera.click();
     await expect(page.getByText(/Te falta|Te faltan|Florecida|sin cumplir/).first()).toBeVisible();
     await page.getByRole('button', { name: /Modo prueba/ }).click();
-    await page.getByRole('button', { name: '+30 días' }).click();
+    await page.getByRole('button', { name: '+30 días', exact: true }).click();
     await expect(page.getByText('MODO PRUEBA', { exact: true })).toBeVisible();
     await page.waitForTimeout(1200);
     await captura(page, '28-jardin-prueba');
@@ -720,10 +720,28 @@ test.describe('v0.5–v1.0', () => {
     await page.getByLabel('Hora del jardín').fill('22');
     await page.waitForTimeout(800);
     await captura(page, '28-jardin-noche');
+    // Medallas y retoños: 90 días cumpliendo todo
+    await page.getByLabel('Hora del jardín').fill('-1');
+    await page.getByRole('button', { name: '+30 días cumpliendo todo' }).click();
+    await page.getByRole('button', { name: '+30 días cumpliendo todo' }).click();
+    await page.getByRole('button', { name: '+30 días cumpliendo todo' }).click();
+    await expect(page.getByRole('button', { name: /Medalla de/ }).first()).toBeVisible();
+    await page.waitForTimeout(1000);
+    await captura(page, '28-jardin-medallas');
+    // Plagas: 2 días sin cumplir
+    await page.getByRole('button', { name: '1 día sin cumplir' }).click();
+    await page.getByRole('button', { name: '1 día sin cumplir' }).click();
+    await page.waitForTimeout(800);
+    await captura(page, '28-jardin-plagas');
     // Riego manual
     await page.getByRole('button', { name: 'Volver a lo real' }).click();
     await page.getByRole('radio', { name: 'Riego manual' }).click();
-    await expect(page.getByText(/Manual: además de cumplir/)).toBeVisible();
+    await expect(page.getByText(/Riego manual: además de cumplir/)).toBeVisible();
+    // Página de una planta (la primera ya está elegida desde el principio)
+    await page.getByRole('button', { name: /racha/ }).nth(1).click();
+    await page.getByRole('link', { name: 'Ver su página' }).click();
+    await expect(page.getByText('Medallas', { exact: true })).toBeVisible();
+    await captura(page, '28-jardin-planta');
   });
 
   test('borrar mi cuenta', async ({ page }) => {

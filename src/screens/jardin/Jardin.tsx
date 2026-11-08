@@ -1,37 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useSesion } from '@/app/sesion';
-import { DIAS_PARA_MARCHITAR, ETAPAS_PLANTA, estadoPlanta, estadoPorDias, estadoSimulado, faltanParaCrecer, MARCHITA, PLANTA_DE_VIRTUD, UMBRALES, type EstadoPlanta } from '@core/jardin';
-import { cumplido, esDiaActivo, NOMBRE_VIRTUD, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
-import { alternarSiNo, registrosDe, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
+import { DIAS_PARA_MARCHITAR, DIAS_POR_RETONO, ETAPAS_PLANTA, faltanParaCrecer, MARCHITA, MAX_RETONOS, MEDALLAS, PASIONES, PLANTA_DE_VIRTUD, plagaDeFortuna, UMBRALES } from '@core/jardin';
+import { NOMBRE_VIRTUD, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
+import { useAvisos } from '@/ui/avisos';
+import { alternarSiNo, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
 import { FONDOS, MACETEROS, SPRITES } from './disposicion';
 import { Noche } from './Noche';
 import { crearSonido, type SonidoJardin } from './sonido';
+import { Bicho, ESTILOS_GRAFICOS, Medalla } from './Graficos';
+import { calcularJardin, MAX_MACETEROS, useGuardado, type ModoRiego, type PlantaCalc } from './estado';
 
-const MAX = 15;
 /** Ancho máximo de cada planta (su etapa más grande), para que la adulta ocupe el ancho del macetero. */
 const ANCHO_MAX: Record<string, number> = Object.fromEntries(Object.entries(SPRITES).map(([k, v]) => [k, Math.max(...v.map((s) => s.w))]));
 /** Dónde está la regadera dibujada en cada fondo (en %). */
 const REGADERA = { vertical: { x: 12, y: 90, w: 20, h: 10 }, horizontal: { x: 8, y: 82, w: 13, h: 18 } } as const;
-
-type ModoRiego = 'auto' | 'manual';
-interface Guardado {
-  modo: ModoRiego;
-  /** habitId → días regados (clave de día). */
-  riegos: Record<string, string[]>;
-}
-
-interface Lugar {
-  id: string;
-  nombre: string;
-  virtud: Virtud;
-  estado: EstadoPlanta;
-  habito: Habito | null;
-  /** Riego manual: cumplió hoy y todavía no la regó. */
-  pideAgua: boolean;
-  /** Cumplió hoy (o, en modo prueba, el último día). */
-  hechoHoy: boolean;
-}
 
 function fuerzaNoche(h: number): number {
   if (h >= 20 || h < 6) return 1;
@@ -65,14 +48,28 @@ function useAncho(): boolean {
   return !!ancho;
 }
 
-function leerGuardado(uid: string): Guardado {
-  try {
-    const crudo = localStorage.getItem(`stoica.jardin.${uid}`);
-    if (crudo) return { modo: 'auto', riegos: {}, ...(JSON.parse(crudo) as Partial<Guardado>) };
-  } catch {
-    /* sin almacenamiento */
-  }
-  return { modo: 'auto', riegos: {} };
+/** Ancho en px de un elemento (para dibujar medallas y bichos a escala). */
+function useAnchoPx<T extends HTMLElement>(): [React.RefObject<T>, number] {
+  const ref = useRef<T>(null);
+  const [w, setW] = useState(600);
+  useEffect(() => {
+    if (!ref.current) return;
+    const o = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    o.observe(ref.current);
+    return () => o.disconnect();
+  }, []);
+  return [ref, w];
+}
+
+/** Lo que se dibuja en cada macetero: la planta de un hábito o un retoño. */
+interface Item {
+  id: string;
+  nombre: string;
+  virtud: Virtud;
+  etapa: number;
+  plaga: number;
+  planta: PlantaCalc | null;
+  retonoDe: PlantaCalc | null;
 }
 
 /** El Jardín estoico: cada hábito es una planta de su virtud que crece con la racha. */
@@ -84,6 +81,8 @@ export function Jardin() {
 
 function JardinAdmin() {
   const uid = useSesion((s) => s.usuario?.uid ?? '');
+  const navegar = useNavigate();
+  const avisar = useAvisos((s) => s.mostrar);
   const hoy = useHoy();
   const habitos = useHabitosActivos();
   const registros = useDatos((s) => s.registros);
@@ -92,23 +91,18 @@ function JardinAdmin() {
   const fondo = FONDOS[forma];
   // Se llenan de adelante (los más grandes y visibles) hacia atrás.
   const maceteros = useMemo(() => [...MACETEROS[forma]].sort((a, b) => b.y - a.y || a.x - b.x), [forma]);
-  const [guardado, setGuardado] = useState<Guardado>(() => leerGuardado(uid));
-  useEffect(() => {
-    try {
-      localStorage.setItem(`stoica.jardin.${uid}`, JSON.stringify(guardado));
-    } catch {
-      /* sin almacenamiento */
-    }
-  }, [guardado, uid]);
-  const modo = guardado.modo;
+  const [g, setG] = useGuardado(uid);
+  const modo = g.modo;
   const [elegido, setElegido] = useState<string | null>(null);
   /** Modo prueba: días inventados por planta (true = día bueno). */
   const [prueba, setPrueba] = useState<Record<string, boolean[]> | null>(null);
   const [hora, setHora] = useState(() => new Date().getHours());
   const [horaPrueba, setHoraPrueba] = useState<number | null>(null);
   const [regando, setRegando] = useState<Set<string>>(new Set());
+  const [espantando, setEspantando] = useState(false);
   const [conSonido, setConSonido] = useState(false);
   const sonido = useRef<SonidoJardin | null>(null);
+  const [refJardin, anchoPx] = useAnchoPx<HTMLDivElement>();
   useEffect(() => {
     const t = setInterval(() => setHora(new Date().getHours()), 60_000);
     return () => clearInterval(t);
@@ -132,39 +126,37 @@ function JardinAdmin() {
   }, [conSonido]);
   useEffect(() => sonido.current?.noche(fuerza >= 1), [fuerza, conSonido]);
 
-  const ordenados = useMemo(() => [...habitos].sort((a, b) => a.orden - b.orden), [habitos]);
-  const lugares = useMemo<Lugar[]>(() => {
-    if (prueba && !ordenados.length) {
-      // Sin hábitos: plantas de ejemplo para ver el jardín lleno.
-      return Array.from({ length: MAX }, (_, i) => {
-        const id = `ejemplo-${i}`;
-        const dias = prueba[id] ?? [];
-        return { id, nombre: `Ejemplo ${i + 1}`, virtud: VIRTUDES[i % 4], estado: estadoSimulado(dias), habito: null, pideAgua: false, hechoHoy: !!dias[dias.length - 1] };
-      });
-    }
-    return ordenados.slice(0, MAX).map((h) => {
-      const regs = registrosDe(registros, h.id);
-      const hechoHoy = esDiaActivo(h, hoy) && cumplido(h, regs.get(hoy));
-      const regados = new Set(guardado.riegos[h.id] ?? []);
-      let estado: EstadoPlanta;
-      if (prueba) estado = estadoSimulado(prueba[h.id] ?? []);
-      else if (modo === 'manual') estado = estadoPorDias(h, hoy, (d) => cumplido(h, regs.get(d)) && regados.has(d));
-      else estado = estadoPlanta(h, regs, hoy);
-      return { id: h.id, nombre: h.nombre, virtud: h.virtud, estado, habito: h, hechoHoy, pideAgua: !prueba && modo === 'manual' && hechoHoy && !regados.has(hoy) };
-    });
-  }, [ordenados, registros, hoy, prueba, modo, guardado.riegos]);
+  const jardin = useMemo(() => calcularJardin({ habitos, registros, hoy, g, prueba }), [habitos, registros, hoy, g, prueba]);
+  const items: Item[] = useMemo(
+    () => [
+      ...jardin.plantas.map((p) => ({ id: p.id, nombre: p.nombre, virtud: p.virtud, etapa: p.a.etapa, plaga: p.plaga, planta: p, retonoDe: null })),
+      ...jardin.retonos.map((r) => ({ id: r.id, nombre: `Retoño de ${r.madre.nombre}`, virtud: r.madre.virtud, etapa: r.etapa, plaga: r.plaga, planta: null, retonoDe: r.madre })),
+    ],
+    [jardin],
+  );
 
-  // Nota de lira cuando alguna planta sube de etapa
+  // Aviso si se perdieron retoños (y nota de lira si alguna planta creció)
   const etapasAntes = useRef<Map<string, number>>(new Map());
+  const previosPrueba = useRef<Record<string, number>>({});
   useEffect(() => {
     let crecio = false;
-    for (const l of lugares) {
-      const a = etapasAntes.current.get(l.id);
-      if (a !== undefined && l.estado.etapa !== MARCHITA && l.estado.etapa > a) crecio = true;
-      etapasAntes.current.set(l.id, l.estado.etapa);
+    for (const it of items) {
+      const a = etapasAntes.current.get(it.id);
+      if (a !== undefined && it.etapa !== MARCHITA && it.etapa > a) crecio = true;
+      etapasAntes.current.set(it.id, it.etapa);
     }
     if (crecio) sonido.current?.lira();
-  }, [lugares]);
+    const previos = prueba ? previosPrueba.current : g.retonosPrevios;
+    const perdidos = jardin.plantas.filter((p) => (previos[p.id] ?? 0) > p.retonos);
+    const nuevos = Object.fromEntries(jardin.plantas.map((p) => [p.id, p.retonos]));
+    if (perdidos.length) {
+      const n = perdidos.reduce((s, p) => s + (previos[p.id] ?? 0) - p.retonos, 0);
+      avisar(g.dificil ? `Modo difícil: una planta se marchitó y perdiste ${n === 1 ? '1 retoño' : `${n} retoños`}.` : `Se marchitó ${perdidos[0].nombre}: perdiste ${n === 1 ? '1 retoño' : `${n} retoños`}.`);
+    }
+    if (prueba) previosPrueba.current = nuevos;
+    else if (JSON.stringify(nuevos) !== JSON.stringify(g.retonosPrevios)) setG((x) => ({ ...x, retonosPrevios: nuevos }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jardin]);
 
   const animarRiego = useCallback((ids: string[]) => {
     if (!ids.length) return;
@@ -175,19 +167,18 @@ function JardinAdmin() {
 
   /** Riego manual: regar las plantas cuyo hábito ya está cumplido hoy. */
   const regar = (ids: string[]) => {
-    const validos = ids.filter((id) => lugares.find((l) => l.id === id)?.pideAgua);
+    const validos = ids.filter((id) => jardin.plantas.find((p) => p.id === id)?.pideAgua);
     if (!validos.length) return;
-    setGuardado((g) => {
-      const riegos = { ...g.riegos };
-      // Se guardan los últimos 150 días de riego.
+    setG((x) => {
+      const riegos = { ...x.riegos };
       for (const id of validos) riegos[id] = [...(riegos[id] ?? []).filter((d) => d >= sumar(hoy, -150) && d !== hoy), hoy];
-      return { ...g, riegos };
+      return { ...x, riegos };
     });
     animarRiego(validos);
   };
 
   const marcarHoy = async (h: Habito) => {
-    const antes = lugares.find((l) => l.id === h.id)?.hechoHoy;
+    const antes = jardin.plantas.find((p) => p.id === h.id)?.hechoHoy;
     await alternarSiNo(h, hoy);
     // Automático: cumplir el hábito ya riega la planta.
     if (!antes && modo === 'auto') animarRiego([h.id]);
@@ -195,7 +186,7 @@ function JardinAdmin() {
 
   const pasarDias = (n: number, cumplidosPorDia: number, regaste: boolean) => {
     const base = prueba ?? {};
-    const ids = lugares.length ? lugares.map((l) => l.id) : Array.from({ length: MAX }, (_, i) => `ejemplo-${i}`);
+    const ids = jardin.plantas.length ? jardin.plantas.map((p) => p.id) : Array.from({ length: MAX_MACETEROS }, (_, i) => `ejemplo-${i}`);
     const nuevo: Record<string, boolean[]> = Object.fromEntries(ids.map((id) => [id, [...(base[id] ?? [])]]));
     const largo = nuevo[ids[0]]?.length ?? 0;
     for (let d = 0; d < n; d++) {
@@ -209,44 +200,86 @@ function JardinAdmin() {
     if (cumplidosPorDia > 0) animarRiego(ids.filter((id) => nuevo[id][nuevo[id].length - 1]));
   };
 
-  const sel = lugares.find((l) => l.id === elegido) ?? null;
+  // Plaga de la Fortuna: algunos días aparece en una planta sana; se espanta tocándola.
+  const diaFortuna = prueba ? `prueba-${Object.values(prueba)[0]?.length ?? 0}` : hoy;
+  const fortuna = useMemo(() => {
+    const f = plagaDeFortuna(diaFortuna, jardin.plantas.length);
+    if (!f) return null;
+    const p = jardin.plantas[f.planta];
+    if (!p || p.plaga > 0 || p.a.etapa === MARCHITA || p.a.etapa === 0) return null;
+    if (g.fortunaEspantada === diaFortuna) return null;
+    return { id: p.id, pasion: PASIONES[f.pasion] };
+  }, [diaFortuna, jardin, g.fortunaEspantada]);
+  const espantar = () => {
+    if (!fortuna) return;
+    setEspantando(true);
+    sonido.current?.lira();
+    avisar(`Espantaste la ${fortuna.pasion.nombre.toLowerCase()}. «${fortuna.pasion.frase}»`);
+    window.setTimeout(() => {
+      setG((x) => ({ ...x, fortunaEspantada: diaFortuna }));
+      setEspantando(false);
+    }, 700);
+  };
+
+  const sel = items.find((l) => l.id === elegido) ?? null;
   const t = tinte(horaVista);
   const relacion = fondo.ancho / fondo.alto;
-  const sedientas = lugares.filter((l) => l.pideAgua).map((l) => l.id);
+  const sedientas = jardin.plantas.filter((p) => p.pideAgua).map((p) => p.id);
   const rg = REGADERA[forma];
+  const pxPorPct = anchoPx / 100;
 
   return (
     <div className="entra" style={{ maxWidth: 1100, marginInline: 'auto' }}>
       <style>{`
+        ${ESTILOS_GRAFICOS}
         @keyframes mecer { 0%,100% { transform: rotate(-1.2deg) } 50% { transform: rotate(1.2deg) } }
         @keyframes revivir { from { transform: scale(.6); opacity: 0 } to { transform: scale(1); opacity: 1 } }
         @keyframes saltito { 0%,100% { transform: scale(1) } 40% { transform: scale(1.06, .95) } 70% { transform: scale(.98, 1.03) } }
-        @keyframes latir { 0%,100% { transform: scale(1); opacity: .9 } 50% { transform: scale(1.15); opacity: 1 } }
+        @keyframes latir { 0%,100% { transform: translate(-50%, -100%) scale(1); opacity: .9 } 50% { transform: translate(-50%, -100%) scale(1.15); opacity: 1 } }
         .jardin-planta { position: absolute; transform-origin: 50% 100%; pointer-events: none; }
         .jardin-planta img { width: 100%; display: block; transform-origin: 50% 100%; animation: revivir .5s ease-out, mecer 4.5s ease-in-out .5s infinite; transition: filter .4s; }
         .jardin-planta.seca img { animation: revivir .5s ease-out; }
         .jardin-planta.elegida img { filter: drop-shadow(0 0 6px rgba(255,214,120,.95)) drop-shadow(0 0 14px rgba(255,190,80,.6)); }
-        .jardin-planta.regando img { filter: drop-shadow(0 0 8px rgba(150,215,255,.95)) brightness(1.08); }
-        .jardin-nombre { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; background: rgba(30,24,16,.78); color: #f3e6c8; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; pointer-events: none; }
         .jardin-planta.regando { animation: saltito .9s ease-out; }
-        .pide-agua { position: absolute; transform: translate(-50%, -100%); font-size: 15px; animation: latir 1.4s ease-in-out infinite; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
-        @media (prefers-reduced-motion: reduce) { .jardin-planta img, .pide-agua { animation: none } }
+        .jardin-planta.regando img { filter: drop-shadow(0 0 8px rgba(150,215,255,.95)) brightness(1.08); }
+        .jardin-planta.retono img { filter: saturate(1.05); }
+        .jardin-nombre { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; background: rgba(30,24,16,.78); color: #f3e6c8; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; pointer-events: none; }
+        .pide-agua { position: absolute; font-size: 15px; animation: latir 1.4s ease-in-out infinite; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); pointer-events: none; }
+        .orbita { position: absolute; width: 0; height: 0; pointer-events: none; }
+        .orbita > span { position: absolute; display: block; animation: orbita var(--t) linear infinite; animation-delay: var(--d); }
+        .orbita > span > span { display: block; transform: translate(-50%, -50%); animation: vaiven 1.1s ease-in-out infinite; }
+        .medalla-pie { position: absolute; transform: translate(-50%, -30%); animation: brillo-medalla 3s ease-in-out infinite; background: none; border: 0; padding: 0; cursor: pointer; }
+        .fortuna { position: absolute; transform: translate(-50%, -50%); background: none; border: 0; padding: 6px; cursor: pointer; animation: vaiven 1.4s ease-in-out infinite; }
+        .fortuna.chau { animation: espantar .7s ease-in forwards; }
+        @media (prefers-reduced-motion: reduce) { .jardin-planta img, .pide-agua, .orbita > span, .medalla-pie, .fortuna { animation: none } }
       `}</style>
       <div className="cap gold">Jardín estoico · prueba</div>
       <h1 className="titulo">Tu jardín</h1>
       <p className="mu" style={{ marginTop: 4 }}>
-        Cada hábito es una planta de su virtud. Crece con tu racha y se marchita si lo dejás.
+        Cada hábito es una planta de su virtud. Crece con tu racha, da medallas y retoños, y se marchita si lo dejás.
       </p>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 10 }}>
-        <div className="seg3" role="radiogroup" aria-label="Riego" style={{ flex: '1 1 280px', maxWidth: 420 }}>
+        <div className="seg3" role="radiogroup" aria-label="Riego" style={{ flex: '1 1 260px', maxWidth: 380 }}>
           {(
             [
               ['auto', 'Riego automático'],
               ['manual', 'Riego manual'],
             ] as const
           ).map(([v, txt]) => (
-            <button key={v} type="button" role="radio" aria-checked={modo === v} className={modo === v ? 'on' : ''} onClick={() => setGuardado((g) => ({ ...g, modo: v }))}>
+            <button key={v} type="button" role="radio" aria-checked={modo === v} className={modo === v ? 'on' : ''} onClick={() => setG((x) => ({ ...x, modo: v as ModoRiego }))}>
+              {txt}
+            </button>
+          ))}
+        </div>
+        <div className="seg3" role="radiogroup" aria-label="Dificultad" style={{ flex: '1 1 200px', maxWidth: 280 }}>
+          {(
+            [
+              [false, 'Normal'],
+              [true, 'Difícil'],
+            ] as const
+          ).map(([v, txt]) => (
+            <button key={txt} type="button" role="radio" aria-checked={g.dificil === v} className={g.dificil === v ? 'on' : ''} onClick={() => setG((x) => ({ ...x, dificil: v }))}>
               {txt}
             </button>
           ))}
@@ -256,50 +289,85 @@ function JardinAdmin() {
         </button>
       </div>
       <p className="mu2" style={{ fontSize: 12.5, marginTop: 6 }}>
-        {modo === 'auto'
-          ? 'Automático: cumplir el hábito ya riega su planta.'
-          : 'Manual: además de cumplir el hábito, tenés que entrar al jardín y regar su planta ese mismo día. Si no la regás, ese día no cuenta.'}
+        {modo === 'auto' ? 'Riego automático: cumplir el hábito ya riega su planta.' : 'Riego manual: además de cumplir el hábito, entrá y regá su planta ese mismo día; si no, el día no cuenta.'}{' '}
+        {g.dificil ? 'Difícil: si cualquier planta se marchita, perdés TODOS los retoños del jardín.' : 'Normal: si una planta se marchita, perdés solo sus retoños.'}
       </p>
 
       <div className="card" style={{ marginTop: 10, padding: 0, overflow: 'hidden', border: 'none' }}>
-        <div style={{ position: 'relative', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` }} aria-label={`Jardín con ${lugares.length} plantas`} role="img">
-          {lugares.map((l, i) => {
+        <div ref={refJardin} style={{ position: 'relative', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` }} aria-label={`Jardín con ${items.length} plantas`} role="img">
+          {items.map((it, i) => {
             const m = maceteros[i];
-            const planta = PLANTA_DE_VIRTUD[l.virtud].id;
-            const s = SPRITES[planta][l.estado.etapa];
-            const anchoPct = (s.w / ANCHO_MAX[planta]) * m.w * 1.1;
+            const planta = PLANTA_DE_VIRTUD[it.virtud].id;
+            const s = SPRITES[planta][it.etapa];
+            const escala = it.retonoDe ? 0.85 : 1.1;
+            const anchoPct = (s.w / ANCHO_MAX[planta]) * m.w * escala;
             const altoPct = anchoPct * relacion * (s.h / s.w);
             const piso = m.y + m.h * 0.45;
-            const riega = regando.has(l.id);
+            const centroY = piso - altoPct * 0.55;
+            const tamBicho = Math.max(18, m.w * pxPorPct * 0.32);
+            const radio = Math.max(16, m.w * pxPorPct * 0.38);
+            const esFortuna = fortuna?.id === it.id;
             return (
-              <div key={l.id}>
-                <div className={`jardin-planta${l.estado.etapa === MARCHITA ? ' seca' : ''}${riega ? ' regando' : ''}${elegido === l.id ? ' elegida' : ''}`} style={{ left: `${m.x - (s.ax / s.w) * anchoPct}%`, top: `${piso - altoPct}%`, width: `${anchoPct}%`, zIndex: 2 + Math.round(m.y) }}>
-                  <img key={`${planta}-${l.estado.etapa}`} src={`/jardin/${planta}-${l.estado.etapa}.webp`} alt="" draggable={false} style={{ animationDelay: `${-(i * 0.7) % 4.5}s` }} />
+              <div key={it.id}>
+                <div
+                  className={`jardin-planta${it.etapa === MARCHITA ? ' seca' : ''}${regando.has(it.id) ? ' regando' : ''}${elegido === it.id ? ' elegida' : ''}${it.retonoDe ? ' retono' : ''}`}
+                  style={{ left: `${m.x - (s.ax / s.w) * anchoPct}%`, top: `${piso - altoPct}%`, width: `${anchoPct}%`, zIndex: 2 + Math.round(m.y) }}
+                >
+                  <img key={`${planta}-${it.etapa}`} src={`/jardin/${planta}-${it.etapa}.webp`} alt="" draggable={false} style={{ animationDelay: `0s, ${-(i * 0.7) % 4.5}s` }} />
                 </div>
-                {elegido === l.id && (
+                {/* Plaga por descuido: bichos dando vueltas (1 o 3) */}
+                {it.plaga > 0 && (
+                  <div className="orbita" style={{ left: `${m.x}%`, top: `${centroY}%`, zIndex: 63 }} aria-hidden>
+                    {Array.from({ length: it.plaga === 1 ? 1 : 3 }, (_, k) => (
+                      <span key={k} style={{ ['--radio' as string]: `${radio}px`, ['--t' as string]: `${3.2 + k * 0.6}s`, ['--d' as string]: `${-k * 1.1}s` }}>
+                        <span>
+                          <Bicho pasion={PASIONES[(i + k) % PASIONES.length].id} tam={tamBicho} />
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Medalla al pie del macetero */}
+                {it.planta?.medalla && (
+                  <button
+                    type="button"
+                    className="medalla-pie"
+                    aria-label={`Medalla de ${it.planta.medalla.nombre} de ${it.nombre}: ver su planta`}
+                    onClick={() => !prueba && it.planta?.habito && navegar(`/jardin/${it.id}`)}
+                    style={{ left: `${m.x + m.w * 0.36}%`, top: `${m.y + m.h * 0.75}%`, zIndex: 66, animationDelay: `${-i * 0.4}s` }}
+                  >
+                    <Medalla tipo={it.planta.medalla.nombre} dias={it.planta.medalla.dias} tam={Math.max(26, m.w * pxPorPct * 0.4)} />
+                  </button>
+                )}
+                {elegido === it.id && (
                   <span className="jardin-nombre" style={{ left: `${m.x}%`, top: `${piso - altoPct - 0.8}%`, zIndex: 62 }}>
-                    {l.nombre}
+                    {it.nombre}
                   </span>
                 )}
-                {l.pideAgua && elegido !== l.id && (
+                {it.planta?.pideAgua && elegido !== it.id && (
                   <span className="pide-agua" style={{ left: `${m.x}%`, top: `${piso - altoPct - 0.5}%`, zIndex: 61 }} aria-hidden>
                     💧
                   </span>
+                )}
+                {esFortuna && fortuna && (
+                  <button type="button" className={`fortuna${espantando ? ' chau' : ''}`} aria-label={`Espantar la ${fortuna.pasion.nombre.toLowerCase()} de ${it.nombre}`} onClick={espantar} style={{ left: `${m.x + m.w * 0.25}%`, top: `${centroY}%`, zIndex: 75 }}>
+                    <Bicho pasion={fortuna.pasion.id} tam={tamBicho * 1.25} />
+                  </button>
                 )}
               </div>
             );
           })}
           {/* Zonas tocables sobre cada macetero */}
-          {lugares.map((l, i) => {
+          {items.map((it, i) => {
             const m = maceteros[i];
             return (
               <button
-                key={`b-${l.id}`}
+                key={`b-${it.id}`}
                 type="button"
-                aria-label={`${l.nombre}: ${PLANTA_DE_VIRTUD[l.virtud].nombre}, ${ETAPAS_PLANTA[l.estado.etapa]}, racha ${l.estado.racha}${l.pideAgua ? ', pide agua' : ''}`}
-                aria-pressed={elegido === l.id}
-                onClick={() => setElegido(elegido === l.id ? null : l.id)}
-                style={{ position: 'absolute', left: `${m.x - m.w * 0.6}%`, top: `${m.y - m.h * 2.6}%`, width: `${m.w * 1.2}%`, height: `${m.h * 3.4}%`, zIndex: 70, borderRadius: 12, background: 'transparent', WebkitTapHighlightColor: 'transparent', outline: 'none' }}
+                aria-label={`${it.nombre}: ${PLANTA_DE_VIRTUD[it.virtud].nombre}, ${ETAPAS_PLANTA[it.etapa]}${it.planta ? `, racha ${it.planta.a.racha}` : ''}${it.planta?.pideAgua ? ', pide agua' : ''}`}
+                aria-pressed={elegido === it.id}
+                onClick={() => setElegido(elegido === it.id ? null : it.id)}
+                style={{ position: 'absolute', left: `${m.x - m.w * 0.55}%`, top: `${m.y - m.h * 2.4}%`, width: `${m.w * 1.1}%`, height: `${m.h * 3}%`, zIndex: 70, borderRadius: 12, background: 'transparent', WebkitTapHighlightColor: 'transparent', outline: 'none' }}
               />
             );
           })}
@@ -309,7 +377,7 @@ function JardinAdmin() {
               type="button"
               aria-label={sedientas.length ? `Regar ${sedientas.length} plantas` : 'Regadera: no hay plantas para regar'}
               onClick={() => regar(sedientas)}
-              style={{ position: 'absolute', left: `${rg.x - rg.w / 2}%`, top: `${rg.y - rg.h / 2}%`, width: `${rg.w}%`, height: `${rg.h}%`, zIndex: 72, borderRadius: 16, background: sedientas.length ? 'radial-gradient(circle, rgba(120,200,255,.35), rgba(120,200,255,0) 70%)' : 'transparent', outline: sedientas.length ? '2px dashed rgba(90,170,230,.8)' : 'none' }}
+              style={{ position: 'absolute', left: `${rg.x - rg.w / 2}%`, top: `${rg.y - rg.h / 2}%`, width: `${rg.w}%`, height: `${rg.h}%`, zIndex: 72, borderRadius: 16, background: sedientas.length ? 'radial-gradient(circle, rgba(120,200,255,.35), rgba(120,200,255,0) 70%)' : 'transparent' }}
             />
           )}
           <div style={{ position: 'absolute', inset: 0, background: t.color, opacity: t.opacidad, mixBlendMode: 'multiply', pointerEvents: 'none', zIndex: 50, transition: 'opacity 1s' }} />
@@ -330,34 +398,43 @@ function JardinAdmin() {
       )}
 
       {sel ? (
-        <FichaPlanta lugar={sel} prueba={!!prueba} modo={modo} alCerrar={() => setElegido(null)} alMarcar={marcarHoy} alRegar={() => regar([sel.id])} />
+        <Ficha item={sel} prueba={!!prueba} modo={modo} dificil={g.dificil} alCerrar={() => setElegido(null)} alMarcar={marcarHoy} alRegar={() => regar([sel.id])} />
       ) : (
         <p className="mu2" style={{ fontSize: 13, marginTop: 10 }}>
-          {lugares.length ? 'Tocá una planta para ver su hábito.' : 'Todavía no tenés hábitos: creá uno y aparece su semilla en el jardín (o probá el modo prueba).'}
-          {ordenados.length > MAX && ` Tenés ${ordenados.length} hábitos; el jardín muestra los primeros ${MAX}.`}
+          {items.length ? 'Tocá una planta para ver su hábito. Las medallas al pie de los maceteros abren la página de esa planta.' : 'Todavía no tenés hábitos: creá uno y aparece su semilla en el jardín (o probá el modo prueba).'}
+          {habitos.length > MAX_MACETEROS && ` Tenés ${habitos.length} hábitos; el jardín muestra los primeros ${MAX_MACETEROS}.`}
         </p>
       )}
 
       <div className="card" style={{ marginTop: 14, padding: '12px 16px' }}>
         <div className="cap gold">Tu jardín hoy</div>
-        <Resumen lugares={lugares} />
+        <Resumen items={items} enVivero={jardin.enVivero} medallas={jardin.plantas.filter((p) => p.medalla).length} />
         <details style={{ marginTop: 10, fontSize: 13 }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Cómo crecen las plantas?</summary>
+          <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Cómo funciona el jardín?</summary>
           <ul style={{ paddingLeft: 18, margin: '6px 0 0', lineHeight: 1.6 }}>
             <li>
-              Racha 0: semilla · {UMBRALES[1]}–{UMBRALES[2] - 1} días: brote · {UMBRALES[2]}–{UMBRALES[3] - 1}: planta chica · {UMBRALES[3]}–{UMBRALES[4] - 1}: planta grande · {UMBRALES[4]} o más: florecida.
+              <b>Crece con los días cumplidos sin marchitarse:</b> semilla · {UMBRALES[1]}–{UMBRALES[2] - 1} días: brote · {UMBRALES[2]}–{UMBRALES[3] - 1}: chica · {UMBRALES[3]}–{UMBRALES[4] - 1}: grande · {UMBRALES[4]}+: florecida.
             </li>
-            <li>Si pasás {DIAS_PARA_MARCHITAR} días seguidos sin cumplir, se marchita. Cumplilo de nuevo y revive como brote.</li>
-            <li>Riego automático: cumplir el hábito riega la planta. Riego manual: además tenés que regarla ese día (💧 te avisa cuáles).</li>
+            <li>
+              <b>Medallas</b> (no se pierden): {MEDALLAS.map((x) => `${x.nombre} a los ${x.dias} días`).join(' · ')} seguidos sin marchitarse. Aparecen al pie del macetero y abren la página de la planta.
+            </li>
+            <li>
+              <b>Retoños:</b> cada {DIAS_POR_RETONO} días cumplidos sin marchitarse, la planta da un retoño (hasta {MAX_RETONOS}) que ocupa un macetero libre y también crece.
+            </li>
+            <li>
+              <b>Plagas:</b> si pasás 1 o 2 días sin cumplir, las pasiones (ira, miedo, envidia, deseo) rondan la planta (no la achican). A los {DIAS_PARA_MARCHITAR} días se marchita y perdés sus retoños (en difícil, todos los del jardín).
+            </li>
+            <li>
+              <b>La Fortuna:</b> algunos días aparece una plaga en una planta sana, aunque hayas cumplido: lo que no depende de vos. Tocala para espantarla.
+            </li>
             <li>
               Cada virtud tiene su planta: {VIRTUDES.map((v) => `${NOMBRE_VIRTUD[v]} → ${PLANTA_DE_VIRTUD[v].nombre}`).join(' · ')}.
             </li>
-            <li>La luz cambia con la hora: de noche se prenden los braseros, el templo y la fuente, y salen las luciérnagas.</li>
           </ul>
         </details>
       </div>
 
-      <Prueba activa={!!prueba} total={lugares.length || MAX} modo={modo} pasarDias={pasarDias} salir={() => setPrueba(null)} reiniciar={() => setPrueba({})} hora={horaPrueba} setHora={setHoraPrueba} />
+      <Prueba activa={!!prueba} total={jardin.plantas.length || MAX_MACETEROS} modo={modo} pasarDias={pasarDias} salir={() => setPrueba(null)} reiniciar={() => setPrueba({})} hora={horaPrueba} setHora={setHoraPrueba} />
     </div>
   );
 }
@@ -368,16 +445,17 @@ const sumar = (dia: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-function Resumen({ lugares }: { lugares: Lugar[] }) {
-  const cuenta = (e: number) => lugares.filter((l) => l.estado.etapa === e).length;
-  const flor = cuenta(4);
-  const secas = cuenta(MARCHITA);
+function Resumen({ items, enVivero, medallas }: { items: Item[]; enVivero: number; medallas: number }) {
+  const flor = items.filter((l) => l.etapa === 4).length;
+  const secas = items.filter((l) => l.etapa === MARCHITA).length;
+  const retonos = items.filter((l) => l.retonoDe).length + enVivero;
   return (
     <div style={{ display: 'flex', gap: 18, marginTop: 8, flexWrap: 'wrap' }}>
       {[
-        [lugares.length, 'plantas'],
+        [items.length - items.filter((l) => l.retonoDe).length, 'plantas'],
+        [retonos, 'retoños'],
+        [medallas, 'medallas'],
         [flor, 'florecidas'],
-        [lugares.length - flor - secas, 'creciendo'],
         [secas, 'marchitas'],
       ].map(([n, t]) => (
         <div key={t as string}>
@@ -387,47 +465,55 @@ function Resumen({ lugares }: { lugares: Lugar[] }) {
           </div>
         </div>
       ))}
+      {enVivero > 0 && <div className="mu2" style={{ fontSize: 12, alignSelf: 'center' }}>(+{enVivero} en el vivero: no entran en los maceteros)</div>}
     </div>
   );
 }
 
-function FichaPlanta({ lugar, prueba, modo, alCerrar, alMarcar, alRegar }: { lugar: Lugar; prueba: boolean; modo: ModoRiego; alCerrar: () => void; alMarcar: (h: Habito) => void; alRegar: () => void }) {
-  const { estado, habito } = lugar;
-  const planta = PLANTA_DE_VIRTUD[lugar.virtud];
-  const falta = faltanParaCrecer(estado.racha, estado.etapa);
+function Ficha({ item, prueba, modo, dificil, alCerrar, alMarcar, alRegar }: { item: Item; prueba: boolean; modo: ModoRiego; dificil: boolean; alCerrar: () => void; alMarcar: (h: Habito) => void; alRegar: () => void }) {
+  const planta = PLANTA_DE_VIRTUD[item.virtud];
+  const p = item.planta;
+  let texto: string;
+  if (item.retonoDe) {
+    texto = `Retoño nacido de ${item.retonoDe.nombre}. Crece mientras su madre siga cumpliendo; si ella se marchita, se pierde${dificil ? ' (en difícil, se pierden todos los retoños si cualquier planta se marchita)' : ''}.`;
+  } else if (p) {
+    const falta = faltanParaCrecer(p.ciclo, p.a.etapa);
+    texto = p.pideAgua
+      ? 'Cumpliste el hábito hoy: regala para que el día cuente.'
+      : p.a.etapa === MARCHITA
+        ? `Lleva ${p.a.sinCumplir} días sin ${modo === 'manual' ? 'cumplir y regar' : 'cumplir'}. Hacelo hoy y revive.`
+        : p.plaga > 0
+          ? `Las pasiones rondan tu planta: ${p.a.sinCumplir} ${p.a.sinCumplir === 1 ? 'día' : 'días'} sin cumplir. A los ${DIAS_PARA_MARCHITAR} se marchita${p.retonos ? ` y perdés ${p.retonos === 1 ? 'su retoño' : `sus ${p.retonos} retoños`}` : ''}.`
+          : falta === null
+            ? `¡Florecida! ${p.retonos < MAX_RETONOS ? `Próximo retoño en ${DIAS_POR_RETONO - (p.ciclo % DIAS_POR_RETONO)} días.` : 'Ya dio todos sus retoños.'}`
+            : `Te ${falta === 1 ? 'falta 1 día' : `faltan ${falta} días`} para que sea ${ETAPAS_PLANTA[p.a.etapa + 1].toLowerCase()}.`;
+  } else texto = '';
   return (
     <div className="card" style={{ marginTop: 12, padding: '12px 16px', display: 'flex', gap: 14, alignItems: 'center' }}>
-      <img src={`/jardin/${planta.id}-${estado.etapa}.webp`} alt="" style={{ width: 64, height: 64, objectFit: 'contain', flex: 'none' }} />
+      <img src={`/jardin/${planta.id}-${item.etapa}.webp`} alt="" style={{ width: 64, height: 64, objectFit: 'contain', flex: 'none' }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: 16 }}>{lugar.nombre}</div>
+        <div style={{ fontWeight: 800, fontSize: 16 }}>{item.nombre}</div>
         <div className="mu2" style={{ fontSize: 12.5 }}>
-          {planta.nombre} ({NOMBRE_VIRTUD[lugar.virtud]}) · {ETAPAS_PLANTA[estado.etapa]} · racha {estado.racha}
+          {planta.nombre} ({NOMBRE_VIRTUD[item.virtud]}) · {ETAPAS_PLANTA[item.etapa]}
+          {p && ` · racha ${p.a.racha}`}
+          {p?.medalla && ` · medalla de ${p.medalla.nombre.toLowerCase()}`}
+          {p && p.retonos > 0 && ` · ${p.retonos} ${p.retonos === 1 ? 'retoño' : 'retoños'}`}
         </div>
-        <div style={{ fontSize: 13, marginTop: 4 }}>
-          {lugar.pideAgua
-            ? 'Cumpliste el hábito hoy: regala para que el día cuente.'
-            : estado.etapa === MARCHITA
-              ? `Lleva ${estado.sinCumplir} días sin ${modo === 'manual' ? 'cumplir y regar' : 'cumplir'}. Hacelo hoy y revive.`
-              : falta === null
-                ? '¡Florecida! Mantené la racha para que siga así.'
-                : estado.sinCumplir > 0
-                  ? `Ojo: ${estado.sinCumplir} ${estado.sinCumplir === 1 ? 'día' : 'días'} sin ${modo === 'manual' ? 'regar' : 'cumplir'}. A los ${DIAS_PARA_MARCHITAR} se marchita.`
-                  : `Te ${falta === 1 ? 'falta 1 día' : `faltan ${falta} días`} para que sea ${ETAPAS_PLANTA[estado.etapa + 1].toLowerCase()}.`}
-        </div>
-        {habito && !prueba && (
+        <div style={{ fontSize: 13, marginTop: 4 }}>{texto}</div>
+        {p?.habito && !prueba && (
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            {habito.tipo === 'sino' && (
-              <button type="button" className="ghost" onClick={() => alMarcar(habito)}>
-                {lugar.hechoHoy ? 'Desmarcar hoy' : 'Marcar hoy'}
+            {p.habito.tipo === 'sino' && (
+              <button type="button" className="ghost" onClick={() => alMarcar(p.habito!)}>
+                {p.hechoHoy ? 'Desmarcar hoy' : 'Marcar hoy'}
               </button>
             )}
-            {lugar.pideAgua && (
+            {p.pideAgua && (
               <button type="button" className="ghost" onClick={alRegar}>
                 💧 Regar
               </button>
             )}
-            <Link to={`/habitos/${habito.id}`} className="ghost">
-              Ver hábito
+            <Link to={`/jardin/${p.id}`} className="ghost">
+              Ver su página
             </Link>
           </div>
         )}
@@ -470,7 +556,7 @@ function Prueba({
       {abierto && (
         <div style={{ marginTop: 8 }}>
           <p className="mu2" style={{ fontSize: 12.5, margin: '0 0 8px' }}>
-            Hacé pasar días inventados y mirá cómo crece o se marchita cada planta. No toca tus hábitos reales. Si no tenés hábitos, llena el jardín con plantas de ejemplo.
+            Hacé pasar días inventados y mirá cómo crecen, dan medallas y retoños, o se llenan de plagas. No toca tus hábitos reales. Si no tenés hábitos, llena el jardín con plantas de ejemplo.
           </p>
           <label style={{ display: 'block', fontSize: 13 }}>
             Hábitos cumplidos por día: <b>{n}</b> de {total}
@@ -491,6 +577,12 @@ function Prueba({
             </button>
             <button type="button" className="ghost" onClick={() => pasarDias(30, n, regaste)}>
               +30 días
+            </button>
+            <button type="button" className="ghost" onClick={() => pasarDias(30, total, regaste)}>
+              +30 días cumpliendo todo
+            </button>
+            <button type="button" className="ghost" onClick={() => pasarDias(1, 0, regaste)}>
+              1 día sin cumplir
             </button>
             <button type="button" className="ghost" onClick={() => pasarDias(3, 0, regaste)}>
               3 días sin cumplir

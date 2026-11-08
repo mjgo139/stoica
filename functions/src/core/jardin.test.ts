@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diasSinCumplir, estadoPorDias, estadoSimulado, etapaPlanta, faltanParaCrecer, MARCHITA } from './jardin.js';
+import { analizar, buenosDesde, diasSinCumplir, estadoPorDias, estadoSimulado, medalla, plagaDeFortuna, rachaRetono, retonos, etapaPlanta, faltanParaCrecer, MARCHITA } from './jardin.js';
 import type { Habito, Registro } from './habitos.js';
 
 describe('jardín estoico', () => {
@@ -43,5 +43,54 @@ describe('jardín estoico', () => {
     const nada = estadoPorDias(h, '2026-11-12', (d) => cumplidos.has(d) && regados.has(d));
     expect(nada.sinCumplir).toBe(3);
     expect(nada.etapa).toBe(MARCHITA);
+  });
+});
+
+
+describe('jardín: medallas, retoños y modo difícil', () => {
+  const v = (s: string) => [...s].map((c) => (c === '1' ? true : c === '0' ? false : null));
+  it('analiza racha, mejor racha, ciclo y marchitada', () => {
+    const a = analizar(v('1111000111'), false);
+    expect(a.racha).toBe(3);
+    expect(a.mejor).toBe(4);
+    expect(a.marchitaEn).toBe(6);
+    expect(a.ciclo).toBe(3);
+    expect(a.mejorCiclo).toBe(4);
+  });
+  it('fallar 1 o 2 días no achica la planta (solo trae plagas); al 3.º se marchita', () => {
+    const treinta = '1'.repeat(30);
+    expect(analizar(v(treinta + '00'), false).etapa).toBe(4);
+    expect(analizar(v(treinta + '000'), false).etapa).toBe(MARCHITA);
+  });
+  it('dos días sin cumplir no reinician el ciclo; tres sí', () => {
+    expect(analizar(v('11100111'), false).ciclo).toBe(6);
+    expect(analizar(v('111000111'), false).ciclo).toBe(3);
+  });
+  it('hoy pendiente no cuenta como fallado', () => {
+    const a = analizar(v('1110'), true);
+    expect(a.racha).toBe(3);
+    expect(a.sinCumplir).toBe(0);
+  });
+  it('los días que no tocan se saltean', () => {
+    expect(analizar(v('11-1-1'), false).racha).toBe(4);
+  });
+  it('medallas por mejor racha y retoños cada 30 días del ciclo', () => {
+    expect(medalla(29)).toBeNull();
+    expect(medalla(30)?.nombre).toBe('Bronce');
+    expect(medalla(70)?.nombre).toBe('Plata');
+    expect(medalla(150)?.nombre).toBe('Oro');
+    expect([29, 30, 61, 200].map(retonos)).toEqual([0, 1, 2, 3]);
+    expect(rachaRetono(45, 0)).toBe(15);
+    expect(rachaRetono(45, 1)).toBe(0);
+  });
+  it('modo difícil: solo cuentan los días buenos después de la última marchitada de cualquier planta', () => {
+    expect(buenosDesde(v('1111111111'), 4, false)).toBe(5);
+  });
+  it('la plaga de la Fortuna es la misma todo el día', () => {
+    expect(plagaDeFortuna('2026-11-08', 7)).toEqual(plagaDeFortuna('2026-11-08', 7));
+    const dias = Array.from({ length: 300 }, (_, i) => `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}-${i}`);
+    const con = dias.filter((d) => plagaDeFortuna(d, 5)).length;
+    expect(con).toBeGreaterThan(60);
+    expect(con).toBeLessThan(140);
   });
 });
