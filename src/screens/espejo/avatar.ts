@@ -47,7 +47,7 @@ export const REFLEJO_INICIAL: Reflejo = {
   pantalon: COLORES_ROPA[2],
 };
 
-interface Datos {
+export interface Datos {
   nV: number;
   nF: number;
   base: Float32Array;
@@ -58,13 +58,17 @@ interface Datos {
   puntos: Record<string, number[]>;
   piso: number;
   altura: number;
+  /** 1 = vértice del brazo o la mano (para que el manto no los envuelva). */
+  brazo: Uint8Array | null;
 }
 
-let cache: Promise<Datos> | null = null;
+const cache = new Map<string, Promise<Datos>>();
 
 /** Descarga y lee el cuerpo (una vez; después queda en la memoria y en la caché del navegador). */
 export function cargarCuerpo(url = '/espejo/cuerpo.bin'): Promise<Datos> {
-  cache ??= fetch(url)
+  const previo = cache.get(url);
+  if (previo) return previo;
+  const promesa = fetch(url)
     .then((r) => {
       if (!r.ok) throw new Error('No se pudo cargar tu reflejo.');
       return r.arrayBuffer();
@@ -108,15 +112,15 @@ export function cargarCuerpo(url = '/espejo/cuerpo.bin'): Promise<Datos> {
         o += c.borde * 2;
         capas[k] = { caras: cs, borde: b };
       }
-      return { nV, nF, base, caras, zona, formas, capas, puntos: meta.puntos, piso: meta.piso, altura: meta.altura };
+      const brazo = buf.byteLength - o >= nV ? new Uint8Array(buf.slice(o, o + nV)) : null;
+      return { nV, nF, base, caras, zona, formas, capas, puntos: meta.puntos, piso: meta.piso, altura: meta.altura, brazo };
     });
-  cache.catch(() => {
-    cache = null;
-  });
-  return cache;
+  cache.set(url, promesa);
+  promesa.catch(() => cache.delete(url));
+  return promesa;
 }
 
-const suave = (x: number, a: number, b: number) => {
+export const suave = (x: number, a: number, b: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
@@ -183,7 +187,7 @@ function deformar(d: Datos, r: Reflejo): Float32Array {
 }
 
 /** Normales suaves por vértice (para sacar el pelo hacia afuera). */
-function normales(d: Datos, p: Float32Array): Float32Array {
+export function normales(d: Datos, p: Float32Array): Float32Array {
   const n = new Float32Array(p.length);
   const a = new THREE.Vector3();
   const b = new THREE.Vector3();
@@ -212,7 +216,7 @@ function normales(d: Datos, p: Float32Array): Float32Array {
 }
 
 /** Cáscara (pelo o barba) sobre la piel: capa exterior + borde que la cierra. */
-function cascara(capa: { caras: Uint16Array; borde: Uint16Array }, p: Float32Array, n: Float32Array, grosor: (i: number) => number, color: THREE.Color, caida: (i: number) => number = () => 0): THREE.BufferGeometry {
+export function cascara(capa: { caras: Uint16Array; borde: Uint16Array }, p: Float32Array, n: Float32Array, grosor: (i: number) => number, color: THREE.Color, caida: (i: number) => number = () => 0): THREE.BufferGeometry {
   const pos: number[] = [];
   const fuera = (i: number) => {
     const g = grosor(i);
@@ -248,7 +252,7 @@ function cascara(capa: { caras: Uint16Array; borde: Uint16Array }, p: Float32Arr
 }
 
 /** Ruido fijo por vértice (para los rulos). */
-const ruido = (i: number) => {
+export const ruido = (i: number) => {
   const s = Math.sin(i * 12.9898) * 43758.5453;
   return s - Math.floor(s);
 };

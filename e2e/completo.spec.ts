@@ -639,18 +639,26 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Enfoque' })).toBeVisible();
   });
 
-  test('el espejo (solo admin): versión 3D (la de imágenes está pausada)', async ({ page }) => {
+  test('el espejo (solo admin): estatua griega que cambia con el peso, tira de 7 etapas y personaje 3D', async ({ page }) => {
     test.setTimeout(90_000);
     await entrarConEjemplo(page);
     await ir(page, '/espejo');
     await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
-    // 3D
-    // La versión con imágenes está pausada: se abre directo el 3D.
-    await expect(page.getByRole('radio', { name: 'Imagen (nueva)' })).toHaveCount(0);
+    await expect(page.getByText('Esculpiendo tu estatua…')).toBeHidden({ timeout: 45_000 });
+    await expect(page.getByRole('radiogroup', { name: 'Etapas de peso' }).locator('img')).toHaveCount(7, { timeout: 20_000 });
+    await page.getByRole('radio', { name: 'Obeso' }).click();
+    await expect(page.getByLabel('Tu estatua: Obeso')).toBeVisible();
+    await page.getByRole('radio', { name: 'Con laurel' }).click();
+    await page.waitForTimeout(800);
+    await captura(page, '27-espejo-estatua');
+    await page.getByRole('radio', { name: 'Cara' }).click();
+    await page.waitForTimeout(800);
+    await captura(page, '27-espejo-estatua-cara');
+    // Personaje 3D (el anterior)
+    await page.getByRole('radio', { name: 'Personaje 3D' }).click();
     await expect(page.getByText('Preparando tu reflejo…')).toBeHidden({ timeout: 45_000 });
     await page.getByLabel('Cuerpo').fill('95');
-    await page.getByRole('radio', { name: 'Grande' }).click();
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(500);
     await captura(page, '27-espejo-3d');
   });
 

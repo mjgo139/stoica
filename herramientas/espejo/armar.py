@@ -11,13 +11,19 @@ sys.path.insert(0, os.path.dirname(__file__))
 from mh import leer_obj, leer_target, triangulos, joint, MH
 
 SALIDA = os.path.join(os.path.dirname(__file__), '../../public/espejo')
-CARAS_OBJETIVO = int(os.environ.get('CARAS', '9000'))
+# ESTATUA=1 arma la versión "estatua griega": más detalle, liso, solo deformaciones de cuerpo (peso).
+ESTATUA = os.environ.get('ESTATUA') == '1'
+CARAS_OBJETIVO = int(os.environ.get('CARAS', '16000' if ESTATUA else '9000'))
+ARCHIVO = 'estatua.bin' if ESTATUA else 'cuerpo.bin'
 
 vs, grupos = leer_obj()
 n = len(vs)
 T = lambda r: leer_target(r, n)
 M = 'macrodetails/universal-male-young-'
 base = vs + T(M + 'averagemuscle-averageweight.target')
+if ESTATUA:
+    # Pecho de estatua masculina: sin "punta" y con pectoral marcado.
+    base = base + T('breast/breast-point-decr.target') + 0.45 * T('torso/torso-muscle-pectoral-incr.target') + 0.3 * T('breast/breast-volume-vert-up.target')
 
 formas = {
     'pesoMenos': T(M + 'averagemuscle-minweight.target'),
@@ -53,7 +59,7 @@ formas['flaco'] = mezcla(**{
     'measure__measure-thigh-circ-decr': 0.5, 'measure__measure-bust-circ-decr': 0.3, 'head__head-fat-decr': 0.5,
 })
 formas['atletico'] = mezcla(**{
-    'torso__torso-muscle-pectoral-incr': 0.8, 'torso__torso-muscle-dorsi-incr': 0.8, 'torso__torso-vshape-incr': 0.7,
+    'torso__torso-muscle-pectoral-incr': 0.35, 'measure__measure-bust-circ-decr': 0.25, 'torso__torso-muscle-dorsi-incr': 0.8, 'torso__torso-vshape-incr': 0.7,
     'measure__measure-upperarm-circ-incr': 0.4, 'measure__measure-shoulder-dist-incr': 0.4, 'stomach__stomach-tone-incr': 0.6,
 })
 
@@ -226,6 +232,17 @@ def capa(mascara, nombre):
     return {'caras': caras.flatten().tolist(), 'borde': [i for e in borde for i in e]}
 
 capas = {'pelo': capa(pelo, 'pelo'), 'barba': capa(barba, 'barba')}
+if ESTATUA:
+    # Banda del manto: cruza el torso del hombro izquierdo a la cadera derecha (adelante y atrás).
+    a = np.array([1.35, 5.35]); b = np.array([-1.25, 0.9])
+    d = (b - a) / np.linalg.norm(b - a); nrm = np.array([-d[1], d[0]])
+    dist = (np.stack([vx, vy], 1) - (a + b) / 2) @ nrm
+    banda = (np.abs(dist) < 0.5) & (vy > 0.7) & (vy < 5.7) & (W_brazo < 0.35)
+    banda[len(pts):] = False
+    capas['banda'] = capa(banda, 'banda')
+    # Sin ojos pintados: en las estatuas el ojo es del mismo mármol.
+    formas_estatua = ['pesoMenos', 'pesoMas', 'muscMenos', 'muscMas', 'obeso', 'flaco', 'atletico', 'papada']
+    DS = {k: v for k, v in DS.items() if k in formas_estatua}
 
 # ---------- Guardar ----------
 os.makedirs(SALIDA, exist_ok=True)
@@ -238,7 +255,9 @@ meta = {
     'puntos': {k: [round(float(a), 4) for a in v] for k, v in J.items()},
 }
 cab = json.dumps(meta).encode()
-with open(f'{SALIDA}/cuerpo.bin', 'wb') as f:
+brazo_v = (W_brazo > 0.5).astype('<u1')
+meta['brazo'] = True
+with open(f'{SALIDA}/{ARCHIVO}', 'wb') as f:
     f.write(struct.pack('<I', len(cab))); f.write(cab)
     f.write(b'\0' * ((4 - (4 + len(cab)) % 4) % 4))
     f.write(V.astype('<f4').tobytes())
@@ -250,4 +269,5 @@ with open(f'{SALIDA}/cuerpo.bin', 'wb') as f:
     for k in capas:
         f.write(np.array(capas[k]['caras'], dtype='<u2').tobytes())
         f.write(np.array(capas[k]['borde'], dtype='<u2').tobytes())
-print('listo', os.path.getsize(f'{SALIDA}/cuerpo.bin') // 1024, 'KB')
+    f.write(brazo_v.tobytes())
+print('listo', ARCHIVO, os.path.getsize(f'{SALIDA}/{ARCHIVO}') // 1024, 'KB')
