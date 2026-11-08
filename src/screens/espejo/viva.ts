@@ -270,6 +270,7 @@ export async function crearViva(lienzo: HTMLCanvasElement, inicial: Forma): Prom
         f.mat.dispose();
       }
       render.dispose();
+      render.forceContextLoss();
     },
   };
 }

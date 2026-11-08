@@ -225,6 +225,7 @@ export async function crearMarmol(lienzo: HTMLCanvasElement, inicial: string): P
       controles.dispose();
       for (const m of [actual, saliente]) if (m) (m.material as THREE.Material).dispose();
       render.dispose();
+      render.forceContextLoss();
     },
   };
 }

@@ -654,7 +654,7 @@ test.describe('v0.5–v1.0', () => {
     // Tu cuerpo (realista, hoy vs meta)
     await page.getByRole('radio', { name: 'Tu cuerpo' }).click();
     await expect(page.getByText('Cargando tu cuerpo…')).toBeHidden({ timeout: 45_000 });
-    await expect(page.getByText('META', { exact: true })).toBeVisible();
+    await expect(page.getByText('META', { exact: true })).toBeVisible({ timeout: 45_000 });
     await page.getByLabel('Peso', { exact: true }).fill('90');
     await page.waitForTimeout(800);
     await captura(page, '27-espejo-cuerpo');

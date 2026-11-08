@@ -204,6 +204,7 @@ export async function crearHumano(lienzo: HTMLCanvasElement, cuerpos: Cuerpo[]):
       entorno.dispose();
       pmrem.dispose();
       render.dispose();
+      render.forceContextLoss();
     },
   };
 }
