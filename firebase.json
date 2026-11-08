@@ -36,6 +36,15 @@
     ],
     "headers": [
       {
+        "source": "/espejo/fuente/**",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          }
+        ]
+      },
+      {
         "source": "/@(sw.js|index.html|manifest.webmanifest|registerSW.js)",
         "headers": [
           {
