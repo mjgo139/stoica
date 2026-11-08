@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSesion } from '@/app/sesion';
-import { crearViva, ETAPAS_MUSCULO, ETAPAS_PESO, FORMA_INICIAL, nombreDe, type EscenaViva, type Forma } from './viva';
+import { crearViva, ETAPAS_MUSCULO, ETAPAS_PESO, FORMA_INICIAL, nombreDe, PESO_ATLETICO, type EscenaViva, type Forma } from './viva';
 
 const clave = (uid: string) => `stoica.viva.${uid}`;
 
@@ -42,7 +42,7 @@ export function EspejoViva() {
   }, []);
 
   useEffect(() => {
-    escena.current?.actualizar(f);
+    void escena.current?.actualizar(f);
     try {
       localStorage.setItem(clave(uid), JSON.stringify(f));
     } catch {
@@ -54,7 +54,7 @@ export function EspejoViva() {
     escena.current?.enfocar(vista);
   }, [vista, cargando]);
 
-  const nombrePeso = nombreDe(ETAPAS_PESO, f.peso);
+  const nombrePeso = f.musculo > 0.001 ? nombreDe(ETAPAS_MUSCULO, f.musculo) : nombreDe(ETAPAS_PESO, f.peso);
   const nombreMusculo = nombreDe(ETAPAS_MUSCULO, f.musculo);
 
   const deslizante = (titulo: string, valor: number, texto: string, extremos: [string, string], cambiar: (v: number) => void) => (
@@ -100,10 +100,10 @@ export function EspejoViva() {
           )}
         </div>
         <div className="card" style={{ flex: '1 1 280px', minWidth: 0, padding: '14px 16px 18px' }}>
-          {deslizante('Peso', f.peso, nombrePeso, ['Delgado', 'Muy obeso'], (v) => setF((a) => ({ ...a, peso: v })))}
-          {deslizante('Músculo', f.musculo, nombreMusculo, ['Normal', 'Fisicoculturista'], (v) => setF((a) => ({ ...a, musculo: v })))}
+          {deslizante('Peso', f.peso, f.musculo > 0.001 ? 'Atlético' : nombrePeso, ['Delgado', 'Muy obeso'], (v) => setF({ peso: v, musculo: 0 }))}
+          {deslizante('Músculo', f.musculo, nombreMusculo, ['Normal', 'Fisicoculturista'], (v) => setF({ peso: PESO_ATLETICO, musculo: v }))}
           <p className="mu2" style={{ fontSize: 11.5, marginTop: 14 }}>
-            Una sola estatua que pasa suave por las 8 que hiciste en Meshy. Por ahora se mueve a mano.
+            Tus 8 estatuas de Meshy unidas: en cada etapa ves la estatua real y entre etapas se transforma de una a otra. El músculo sale desde Atlético (si movés el peso, vuelve a Normal). Por ahora se mueve a mano.
           </p>
         </div>
       </div>

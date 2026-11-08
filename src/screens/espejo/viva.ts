@@ -1,7 +1,8 @@
 /**
- * El Espejo · Estatua viva: UNA estatua de Meshy (la Atlética) que se deforma de forma continua hacia las
- * otras 7 que hiciste en Meshy. Las deformaciones (morphs) se calcularon ajustando la Atlética sobre cada una
- * (herramientas/espejo/transplante.py): solo se transfiere el volumen; la cara, el pelo y la tela quedan nítidos.
+ * El Espejo · Estatua viva: tus 8 estatuas de Meshy unidas en un camino continuo.
+ * En cada etapa se ve la estatua real de Meshy (con su cara y su cuerpo). Entre dos etapas, cada estatua se
+ * deforma hacia la otra (morphs calculados ajustando una sobre otra: herramientas/espejo/pares.py) y se
+ * funden a mitad de camino, así no hay saltos.
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -9,42 +10,42 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { vetas } from './marmol';
 
-const ARCHIVO = '/espejo/marmol/estatua-viva.glb';
+const BASE = '/espejo/viva/';
 
-/** Etapas del eje de peso (en orden) y del eje de músculo. '' = la estatua base (Atlética). */
+/** Camino del peso (desde Atlético hacia los dos lados) y camino del músculo (sale de Atlético). */
 export const ETAPAS_PESO = [
-  { morph: 'lean', nombre: 'Delgado' },
-  { morph: '', nombre: 'Atlético' },
-  { morph: 'stocky', nombre: 'Fornido' },
-  { morph: 'overweight', nombre: 'Con sobrepeso' },
-  { morph: 'obese', nombre: 'Obeso' },
-  { morph: 'extra_obese', nombre: 'Muy obeso' },
+  { id: 'lean', nombre: 'Delgado' },
+  { id: 'athletic', nombre: 'Atlético' },
+  { id: 'stocky', nombre: 'Fornido' },
+  { id: 'overweight', nombre: 'Con sobrepeso' },
+  { id: 'obese', nombre: 'Obeso' },
+  { id: 'extra_obese', nombre: 'Muy obeso' },
 ];
 export const ETAPAS_MUSCULO = [
-  { morph: '', nombre: 'Normal' },
-  { morph: 'heavy_muscular', nombre: 'Musculoso' },
-  { morph: 'bodybuilder', nombre: 'Fisicoculturista' },
+  { id: 'athletic', nombre: 'Normal' },
+  { id: 'heavy_muscular', nombre: 'Musculoso' },
+  { id: 'bodybuilder', nombre: 'Fisicoculturista' },
 ];
+/** Posición del Atlético en el camino del peso (el músculo solo se suma desde ahí). */
+export const PESO_ATLETICO = 1 / (ETAPAS_PESO.length - 1);
 
 export interface Forma {
   /** 0 a 1 a lo largo de ETAPAS_PESO */
   peso: number;
-  /** 0 a 1 a lo largo de ETAPAS_MUSCULO */
+  /** 0 a 1 a lo largo de ETAPAS_MUSCULO (si es mayor a 0, el peso queda en Atlético) */
   musculo: number;
 }
-export const FORMA_INICIAL: Forma = { peso: 0.2, musculo: 0 };
-
-/** Pesos de cada morph para un punto de un eje (interpolación entre las dos etapas vecinas). */
-function mezcla(etapas: { morph: string }[], x: number, w: Map<string, number>) {
-  const t = Math.min(1, Math.max(0, x)) * (etapas.length - 1);
-  const i = Math.min(etapas.length - 2, Math.floor(t));
-  const f = t - i;
-  const sumar = (m: string, v: number) => m && v > 0 && w.set(m, (w.get(m) ?? 0) + v);
-  sumar(etapas[i].morph, 1 - f);
-  sumar(etapas[i + 1].morph, f);
-}
+export const FORMA_INICIAL: Forma = { peso: PESO_ATLETICO, musculo: 0 };
 
 export const nombreDe = (etapas: { nombre: string }[], x: number) => etapas[Math.round(Math.min(1, Math.max(0, x)) * (etapas.length - 1))].nombre;
+
+/** En qué tramo del camino estamos: estatua A, estatua B y cuánto se avanzó de A a B (0 a 1). */
+function tramo(f: Forma): { a: string; b: string; t: number } {
+  const camino = f.musculo > 0.001 ? ETAPAS_MUSCULO : ETAPAS_PESO;
+  const x = Math.min(1, Math.max(0, f.musculo > 0.001 ? f.musculo : f.peso)) * (camino.length - 1);
+  const i = Math.min(camino.length - 2, Math.floor(x));
+  return { a: camino[i].id, b: camino[i + 1].id, t: x - i };
+}
 
 interface Datos {
   base: Float32Array;
@@ -52,12 +53,13 @@ interface Datos {
   indice: THREE.BufferAttribute;
 }
 
-let cache: Promise<Datos> | null = null;
-function cargar(): Promise<Datos> {
-  if (cache) return cache;
+const cache = new Map<string, Promise<Datos>>();
+function cargar(id: string): Promise<Datos> {
+  const previo = cache.get(id);
+  if (previo) return previo;
   const cargador = new GLTFLoader();
   cargador.setMeshoptDecoder(MeshoptDecoder);
-  cache = cargador.loadAsync(ARCHIVO).then((gltf) => {
+  const p = cargador.loadAsync(`${BASE}${id}.glb`).then((gltf) => {
     let malla: THREE.Mesh | null = null;
     gltf.scene.traverse((o) => {
       if (!malla && o instanceof THREE.Mesh) malla = o;
@@ -65,53 +67,51 @@ function cargar(): Promise<Datos> {
     if (!malla) throw new Error('sin malla');
     const m = malla as THREE.Mesh;
     const g = m.geometry as THREE.BufferGeometry;
-    // Las posiciones vienen comprimidas (enteros): se pasan a decimales.
-    const aFloat = (a: THREE.BufferAttribute | THREE.InterleavedBufferAttribute) => {
-      const out = new Float32Array(a.count * 3);
-      for (let i = 0; i < a.count; i++) for (let k = 0; k < 3; k++) out[i * 3 + k] = a.getComponent(i, k);
-      return out;
-    };
-    // La compresión guarda una escala/desplazamiento en el nodo: se aplica a la base (completa) y a los morphs (solo escala).
+    // La compresión guarda escala y desplazamiento en el nodo: se aplican a la malla (completo) y a los morphs (solo escala).
     gltf.scene.updateMatrixWorld(true);
     const mat = m.matrixWorld;
     const lineal = new THREE.Matrix3().setFromMatrix4(mat);
     const v = new THREE.Vector3();
-    const transformar = (a: Float32Array, completa: boolean) => {
-      for (let i = 0; i < a.length; i += 3) {
-        v.set(a[i], a[i + 1], a[i + 2]);
+    const aFloat = (a: THREE.BufferAttribute | THREE.InterleavedBufferAttribute, completa: boolean) => {
+      const out = new Float32Array(a.count * 3);
+      for (let i = 0; i < a.count; i++) {
+        v.set(a.getComponent(i, 0), a.getComponent(i, 1), a.getComponent(i, 2));
         if (completa) v.applyMatrix4(mat);
         else v.applyMatrix3(lineal);
-        a[i] = v.x;
-        a[i + 1] = v.y;
-        a[i + 2] = v.z;
+        out[i * 3] = v.x;
+        out[i * 3 + 1] = v.y;
+        out[i * 3 + 2] = v.z;
       }
-      return a;
+      return out;
     };
-    const base = transformar(aFloat(g.getAttribute('position')), true);
-    const nombres: string[] = (m.geometry.userData.targetNames as string[] | undefined) ?? (m.userData.targetNames as string[] | undefined) ?? Object.keys(m.morphTargetDictionary ?? {});
+    const base = aFloat(g.getAttribute('position'), true);
     const morphs = new Map<string, Float32Array>();
     const lista = g.morphAttributes.position ?? [];
-    const dic = m.morphTargetDictionary ?? {};
-    for (const n of nombres) {
-      const i = dic[n];
-      if (i !== undefined && lista[i]) morphs.set(n, transformar(aFloat(lista[i]), false));
-    }
+    for (const [nombre, i] of Object.entries(m.morphTargetDictionary ?? {})) if (lista[i]) morphs.set(nombre, aFloat(lista[i], false));
     return { base, morphs, indice: g.getIndex()!.clone() };
   });
-  cache.catch(() => (cache = null));
-  return cache;
+  cache.set(id, p);
+  p.catch(() => cache.delete(id));
+  return p;
 }
 
 export interface EscenaViva {
-  actualizar(f: Forma): void;
+  actualizar(f: Forma): Promise<void>;
   enfocar(v: 'cuerpo' | 'cara'): void;
   destruir(): void;
 }
 
 const ALTO = 10;
 
+interface Figura {
+  datos: Datos;
+  pos: Float32Array;
+  geo: THREE.BufferGeometry;
+  mat: THREE.MeshPhysicalMaterial;
+  malla: THREE.Mesh;
+}
+
 export async function crearViva(lienzo: HTMLCanvasElement, inicial: Forma): Promise<EscenaViva> {
-  const d = await cargar();
   const render = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, alpha: true });
   render.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   render.shadowMap.enabled = true;
@@ -141,33 +141,77 @@ export async function crearViva(lienzo: HTMLCanvasElement, inicial: Forma): Prom
   piso.receiveShadow = true;
   escena.add(piso);
 
-  // Geometría propia: la deformación se calcula en el celular cuando movés el deslizante.
-  const pos = new Float32Array(d.base);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setIndex(d.indice);
-  g.computeVertexNormals();
-  vetas(g);
-  const malla = new THREE.Mesh(g, new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, metalness: 0, clearcoat: 0.15, clearcoatRoughness: 0.5 }));
-  malla.castShadow = true;
-  malla.receiveShadow = true;
-  escena.add(malla);
-
-  const actualizar = (f: Forma) => {
-    const w = new Map<string, number>();
-    mezcla(ETAPAS_PESO, f.peso, w);
-    mezcla(ETAPAS_MUSCULO, f.musculo, w);
-    pos.set(d.base);
-    for (const [n, v] of w) {
-      const m = d.morphs.get(n);
-      if (!m) continue;
-      for (let i = 0; i < pos.length; i++) pos[i] += m[i] * v;
-    }
-    g.getAttribute('position').needsUpdate = true;
-    g.computeVertexNormals();
-    g.computeBoundingSphere();
+  const figuras = new Map<string, Figura>();
+  const figura = async (id: string): Promise<Figura> => {
+    const ya = figuras.get(id);
+    if (ya) return ya;
+    const datos = await cargar(id);
+    const otra = figuras.get(id);
+    if (otra) return otra;
+    const pos = new Float32Array(datos.base);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setIndex(datos.indice);
+    geo.computeVertexNormals();
+    vetas(geo);
+    const mat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, metalness: 0, clearcoat: 0.15, clearcoatRoughness: 0.5 });
+    const malla = new THREE.Mesh(geo, mat);
+    malla.castShadow = true;
+    malla.receiveShadow = true;
+    const f = { datos, pos, geo, mat, malla };
+    figuras.set(id, f);
+    return f;
   };
-  actualizar(inicial);
+  /** Deforma una estatua hacia una vecina (peso 0 = la estatua tal cual). */
+  const deformar = (f: Figura, hacia: string, peso: number) => {
+    f.pos.set(f.datos.base);
+    const m = f.datos.morphs.get(hacia);
+    if (m && peso > 0) for (let i = 0; i < f.pos.length; i++) f.pos[i] += m[i] * peso;
+    f.geo.getAttribute('position').needsUpdate = true;
+    f.geo.computeVertexNormals();
+    f.geo.computeBoundingSphere();
+  };
+  /** Opacidad: la que domina se dibuja entera; la otra encima, transparente. */
+  const opacidad = (f: Figura, o: number, encima: boolean) => {
+    f.mat.transparent = o < 1;
+    f.mat.opacity = o;
+    f.mat.depthWrite = !encima;
+    f.mat.polygonOffset = encima;
+    f.mat.polygonOffsetFactor = encima ? -1 : 0;
+    f.malla.castShadow = !encima;
+    f.malla.renderOrder = encima ? 1 : 0;
+    f.mat.needsUpdate = true;
+  };
+
+  let pedido = 0;
+  const actualizar = async (forma: Forma) => {
+    const n = ++pedido;
+    const { a, b, t } = tramo(forma);
+    const [fa, fb] = await Promise.all([figura(a), figura(b)]);
+    if (n !== pedido) return; // llegó un cambio más nuevo mientras cargaba
+    for (const [id, f] of figuras) if (id !== a && id !== b) escena.remove(f.malla);
+    // Fundido entre 30 % y 70 % del tramo (ahí las dos formas casi coinciden).
+    const s = Math.min(1, Math.max(0, (t - 0.3) / 0.4));
+    const fundido = s * s * (3 - 2 * s);
+    const verA = fundido < 1;
+    const verB = fundido > 0;
+    if (verA) {
+      deformar(fa, b, t);
+      escena.add(fa.malla);
+      opacidad(fa, fundido < 0.5 ? 1 : 2 * (1 - fundido), fundido >= 0.5);
+    } else escena.remove(fa.malla);
+    if (verB) {
+      deformar(fb, a, 1 - t);
+      escena.add(fb.malla);
+      opacidad(fb, fundido >= 0.5 ? 1 : 2 * fundido, fundido < 0.5);
+    } else escena.remove(fb.malla);
+    // Precargar las vecinas para que el próximo tramo no espere.
+    for (const c of [ETAPAS_PESO, ETAPAS_MUSCULO]) {
+      const i = c.findIndex((e) => e.id === b);
+      if (i >= 0 && c[i + 1]) void cargar(c[i + 1].id).catch(() => undefined);
+    }
+  };
+  await actualizar(inicial);
 
   let vista: 'cuerpo' | 'cara' = 'cuerpo';
   const controles = new OrbitControls(camara, lienzo);
@@ -220,8 +264,10 @@ export async function crearViva(lienzo: HTMLCanvasElement, inicial: Forma): Prom
       cancelAnimationFrame(cuadro);
       obs.disconnect();
       controles.dispose();
-      g.dispose();
-      (malla.material as THREE.Material).dispose();
+      for (const f of figuras.values()) {
+        f.geo.dispose();
+        f.mat.dispose();
+      }
       render.dispose();
     },
   };
