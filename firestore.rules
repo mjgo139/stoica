@@ -238,6 +238,12 @@ service cloud.firestore {
           && firmado(uid);
       }
 
+      // ----- El Espejo: lo escribe solo el servidor (imágenes generadas) -----
+      match /espejo/{doc} {
+        allow read: if esDueno(uid);
+        allow write: if false;
+      }
+
       // ----- Hitos: milestones/{habitId}_{días} -----
       match /milestones/{mid} {
         allow read, delete: if esDueno(uid);

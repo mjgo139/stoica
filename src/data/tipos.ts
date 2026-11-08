@@ -40,7 +40,8 @@ export type NombreFuncion =
   | 'reportarPublicacion'
   | 'adminResolverReporte'
   | 'renombrarGrupo'
-  | 'asignarRol';
+  | 'asignarRol'
+  | 'espejoGenerar';
 
 /**
  * Capa de datos. La app habla solo con esta interfaz; abajo hay dos "drivers":

@@ -275,6 +275,25 @@ export function crearDriverMemoria(): Driver {
       escribir(`metrics/${m.fecha}`, m as never);
       return m;
     },
+    espejoGenerar(d) {
+      // Modo prueba: en vez de la IA, una lámina dibujada (tres siluetas) para ver la pantalla.
+      if (!esAdmin()) throw new ErrorStoica('Solo el admin puede hacer esto.', 'permission-denied');
+      const ruta = `users/${yo()}/espejo/reflejo`;
+      const tonos: Record<string, string> = { hoy: '#c9a24a', aflojando: '#9c3f2e', mejorando: '#3f6b45', meta: '#2f4f7f' };
+      const lamina = (e: string) => {
+        const c = tonos[e] ?? '#c9a24a';
+        const figura = (x: number) =>
+          `<g transform="translate(${x} 0)"><circle cx="0" cy="110" r="38" fill="${c}"/><rect x="-46" y="160" width="92" height="190" rx="30" fill="${c}"/><rect x="-40" y="340" width="34" height="190" rx="14" fill="#333"/><rect x="6" y="340" width="34" height="190" rx="14" fill="#333"/></g>`;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 576"><rect width="1024" height="576" fill="#eceae6"/>${figura(171)}${figura(512)}${figura(853)}<text x="512" y="560" font-size="22" text-anchor="middle" fill="#666">${e} (modo prueba)</text></svg>`;
+        return { url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`, ruta: e, creado: Date.now() };
+      };
+      if (d.que === 'lamina') escribir(ruta, { base: lamina('hoy'), etapas: {}, actualizado: Date.now() });
+      else if (d.que === 'etapa') {
+        const actual = (leerDoc(ruta) as { etapas?: Record<string, unknown> } | undefined) ?? {};
+        escribir(ruta, { ...actual, etapas: { ...(actual.etapas ?? {}), [String(d.etapa)]: lamina(String(d.etapa)) } });
+      } else if (d.que === 'borrar') escribir(ruta, null);
+      return { ok: true };
+    },
     asignarRol(d) {
       if (!esAdmin()) throw new ErrorStoica('Solo el admin puede cambiar roles.', 'permission-denied');
       escribir(`users/${d.uid}`, { rol: d.rol }, true);

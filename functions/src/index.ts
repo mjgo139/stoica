@@ -2,11 +2,12 @@
  * Cloud Functions de Stoica (v2, región São Paulo, la misma que Firestore).
  *
  * Cuentas:      alCrearUsuario, alCambiarPerfil, borrarMiCuenta
+ * Espejo:       espejoGenerar (imágenes del reflejo, por ahora solo admin)
  * Admin:        asignarRol, adminSuspender, adminBorrarCuenta, adminCalcularMetricas, metricasNocturnas
  * Comunidad:    crearGrupo, unirseAGrupo, salirDeGrupo, eliminarGrupo, alReaccionar
  * Avisos:       enviarRecordatorios
  */
-import { initializeApp } from 'firebase-admin/app';
+import { applicationDefault, getApp, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore, type DocumentReference } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -28,6 +29,7 @@ import { examenCompleto, idTareaHecha, tareaDelDia, tareaHecha, type Examen, typ
 import { limpiarNombre } from './core/validaciones.js';
 import { COLECCIONES_CONTADAS, LIMITES_ABUSO, sumarCreacion, topeDeColeccion, type Cuota } from './core/limites.js';
 import type { Perfil } from './core/perfil.js';
+import { ETAPAS_GENERADAS, FOTO_REFLEJO_MAX_BYTES, MAX_IMAGENES_MES, promptEtapa, promptLamina, type Etapa } from './core/espejo.js';
 import {
   CODIGOS_POR_VEZ,
   DIAS_GRACIA_DEFECTO,
@@ -124,6 +126,9 @@ async function quitarDeGrupo(gid: string, uid: string) {
 async function borrarTodoDeUsuario(uid: string) {
   const grupos = await db().collection('groups').where('miembros', 'array-contains', uid).get();
   for (const g of grupos.docs) await quitarDeGrupo(g.id, uid);
+  await almacen()
+    .deleteFiles({ prefix: `users/${uid}/espejo/`, force: true })
+    .catch(() => undefined);
   await db().recursiveDelete(db().doc(`users/${uid}`));
   await db().doc(`accounts/${uid}`).delete();
   await getAuth()
@@ -992,3 +997,108 @@ async function revisarPlanes() {
   }
   return { revisados: grupos.size, borrados };
 }
+
+// ---------- El Espejo v2: tu reflejo en imágenes (por ahora solo admin) ----------
+/**
+ * Genera la lámina (frente, perfil, espalda) con la IA de imágenes de Google (Vertex AI) usando la cuenta
+ * de servicio del proyecto: no hay claves en el código. La selfie no se guarda: se usa y se descarta.
+ */
+const MODELO_IMAGEN = defineString('MODELO_IMAGEN', { default: 'gemini-2.5-flash-image' });
+
+async function generarImagen(texto: string, imagen?: { datos: Buffer; tipo: string }): Promise<Buffer> {
+  const proyecto = configFirebase.projectId || process.env.GCLOUD_PROJECT || '';
+  const cred = getApp().options.credential ?? applicationDefault();
+  const { access_token } = await cred.getAccessToken();
+  const partes: Array<Record<string, unknown>> = [{ text: texto }];
+  if (imagen) partes.push({ inlineData: { mimeType: imagen.tipo, data: imagen.datos.toString('base64') } });
+  const url = `https://aiplatform.googleapis.com/v1/projects/${proyecto}/locations/global/publishers/google/models/${MODELO_IMAGEN.value()}:generateContent`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: partes }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: '16:9' } },
+    }),
+  });
+  const cuerpo = (await r.json().catch(() => ({}))) as {
+    error?: { message?: string; status?: string };
+    candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ inlineData?: { data?: string } }> } }>;
+  };
+  if (!r.ok) {
+    logger.error('Espejo: la IA de imágenes respondió con error', { status: r.status, error: cuerpo.error });
+    if (r.status === 403 || r.status === 404) throw new HttpsError('failed-precondition', 'La IA de imágenes no está activada en el proyecto (falta habilitar Vertex AI).');
+    if (r.status === 429) throw new HttpsError('resource-exhausted', 'La IA de imágenes está ocupada. Probá de nuevo en un minuto.');
+    throw new HttpsError('internal', 'No se pudo generar la imagen. Probá de nuevo.');
+  }
+  const img = cuerpo.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)?.inlineData?.data;
+  if (!img) {
+    logger.warn('Espejo: la IA no devolvió imagen', { motivo: cuerpo.candidates?.[0]?.finishReason });
+    throw new HttpsError('failed-precondition', 'La IA no pudo dibujar tu reflejo con esa foto. Probá con otra (de frente, con buena luz).');
+  }
+  return Buffer.from(img, 'base64');
+}
+
+export const espejoGenerar = onCall({ ...llamable, memory: '512MiB', timeoutSeconds: 180 }, async (req) => {
+  const uid = exigirAdmin(req); // prueba: solo admin
+  const { que, foto, descripcion, remera, pantalon, etapa } = (req.data ?? {}) as Record<string, unknown>;
+  const ref = db().doc(`users/${uid}/espejo/reflejo`);
+  const actual = ((await ref.get()).data() ?? {}) as {
+    base?: { url: string; ruta: string };
+    etapas?: Record<string, { url: string; ruta: string }>;
+    usos?: { mes: string; cantidad: number };
+  };
+  const mes = claveDia(new Date(), ZONA_POR_DEFECTO).slice(0, 7);
+  const usados = actual.usos?.mes === mes ? actual.usos.cantidad : 0;
+  if (usados >= MAX_IMAGENES_MES) throw new HttpsError('resource-exhausted', `Llegaste a las ${MAX_IMAGENES_MES} imágenes de este mes.`);
+  const bucket = almacen();
+  const guardar = async (nombre: string, datos: Buffer) => {
+    const ruta = `users/${uid}/espejo/${nombre}_${Date.now().toString(36)}.png`;
+    const token = randomUUID();
+    await bucket.file(ruta).save(datos, { contentType: 'image/png', resumable: false, metadata: { cacheControl: 'private, max-age=31536000', metadata: { firebaseStorageDownloadTokens: token } } });
+    return { ruta, url: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(ruta)}?alt=media&token=${token}`, creado: Date.now() };
+  };
+  const borrarViejos = async (rutas: string[]) => {
+    await Promise.all(rutas.map((r) => bucket.file(r).delete().catch(() => undefined)));
+  };
+
+  if (que === 'lamina') {
+    let imagen: { datos: Buffer; tipo: string } | undefined;
+    if (foto) {
+      const b = Buffer.from(String(foto), 'base64');
+      if (b.length < 100 || b.length > FOTO_REFLEJO_MAX_BYTES || b[0] !== 0xff || b[1] !== 0xd8) throw new HttpsError('invalid-argument', 'La foto no es válida o es muy pesada.');
+      imagen = { datos: b, tipo: 'image/jpeg' };
+    }
+    const pedido = {
+      descripcion: limpiarNombre(String(descripcion ?? '')).slice(0, 300),
+      remera: String(remera ?? 'blanco'),
+      pantalon: String(pantalon ?? 'jean'),
+      conFoto: !!imagen,
+    };
+    const png = await generarImagen(promptLamina(pedido), imagen);
+    const base = await guardar('hoy', png);
+    // Lámina nueva: las etapas anteriores ya no corresponden.
+    await borrarViejos([actual.base?.ruta, ...Object.values(actual.etapas ?? {}).map((e) => e.ruta)].filter((r): r is string => !!r));
+    await ref.set({ base, etapas: {}, pedido: { remera: pedido.remera, pantalon: pedido.pantalon }, usos: { mes, cantidad: usados + 1 }, actualizado: Date.now() });
+    return { ok: true };
+  }
+
+  if (que === 'etapa') {
+    const e = String(etapa ?? '') as Etapa;
+    if (!ETAPAS_GENERADAS.includes(e)) throw new HttpsError('invalid-argument', 'Etapa desconocida.');
+    if (!actual.base) throw new HttpsError('failed-precondition', 'Primero creá tu reflejo.');
+    const [datos] = await bucket.file(actual.base.ruta).download();
+    const png = await generarImagen(promptEtapa(e), { datos, tipo: 'image/png' });
+    const nueva = await guardar(e, png);
+    const vieja = actual.etapas?.[e]?.ruta;
+    if (vieja) await borrarViejos([vieja]);
+    await ref.set({ etapas: { [e]: nueva }, usos: { mes, cantidad: usados + 1 }, actualizado: Date.now() }, { merge: true });
+    return { ok: true };
+  }
+
+  if (que === 'borrar') {
+    await borrarViejos([actual.base?.ruta, ...Object.values(actual.etapas ?? {}).map((x) => x.ruta)].filter((r): r is string => !!r));
+    await ref.delete();
+    return { ok: true };
+  }
+  throw new HttpsError('invalid-argument', 'Pedido desconocido.');
+});
