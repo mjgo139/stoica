@@ -66,6 +66,34 @@ export function estadoPlanta(h: Habito, registros: MapaRegistros, hoy: string, v
   return { racha: r, sinCumplir: s, etapa: etapaPlanta(r, s) };
 }
 
+/**
+ * Estado según una regla propia de "día bueno" (por ejemplo, riego manual: cumplir el hábito Y regar la planta).
+ * Hoy, si todavía no es bueno, no corta nada (se cuenta desde ayer). Los días en que el hábito no toca se saltean.
+ */
+export function estadoPorDias(h: Pick<Habito, 'dias' | 'inicio'>, hoy: string, bueno: (dia: string) => boolean, ventana = 120): EstadoPlanta {
+  let dia = hoy;
+  if (!esDiaActivo(h, hoy) || !bueno(hoy)) dia = sumarDias(hoy, -1);
+  // Racha
+  let racha = 0;
+  let d = dia;
+  for (let i = 0; i < ventana && d >= h.inicio; i++, d = sumarDias(d, -1)) {
+    if (!esDiaActivo(h, d)) continue;
+    if (bueno(d)) racha++;
+    else break;
+  }
+  // Días seguidos sin día bueno (desde ayer)
+  let sinCumplir = 0;
+  if (!(esDiaActivo(h, hoy) && bueno(hoy))) {
+    d = sumarDias(hoy, -1);
+    for (let i = 0; i < ventana && d >= h.inicio; i++, d = sumarDias(d, -1)) {
+      if (!esDiaActivo(h, d)) continue;
+      if (bueno(d)) break;
+      sinCumplir++;
+    }
+  }
+  return { racha, sinCumplir, etapa: etapaPlanta(racha, sinCumplir) };
+}
+
 /** Modo prueba: estado a partir de una secuencia de días inventados (true = cumplido). */
 export function estadoSimulado(dias: boolean[]): EstadoPlanta {
   let racha = 0;

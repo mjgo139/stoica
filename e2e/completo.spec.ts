@@ -716,6 +716,14 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByText('MODO PRUEBA', { exact: true })).toBeVisible();
     await page.waitForTimeout(1200);
     await captura(page, '28-jardin-prueba');
+    // De noche: braseros, templo, fuente y luciérnagas
+    await page.getByLabel('Hora del jardín').fill('22');
+    await page.waitForTimeout(800);
+    await captura(page, '28-jardin-noche');
+    // Riego manual
+    await page.getByRole('button', { name: 'Volver a lo real' }).click();
+    await page.getByRole('radio', { name: 'Riego manual' }).click();
+    await expect(page.getByText(/Manual: además de cumplir/)).toBeVisible();
   });
 
   test('borrar mi cuenta', async ({ page }) => {

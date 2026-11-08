@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diasSinCumplir, estadoSimulado, etapaPlanta, faltanParaCrecer, MARCHITA } from './jardin.js';
+import { diasSinCumplir, estadoPorDias, estadoSimulado, etapaPlanta, faltanParaCrecer, MARCHITA } from './jardin.js';
 import type { Habito, Registro } from './habitos.js';
 
 describe('jardín estoico', () => {
@@ -28,5 +28,20 @@ describe('jardín estoico', () => {
     expect(diasSinCumplir(h, reg, '2026-11-11')).toBe(2);
     reg.set('2026-11-11', r(true));
     expect(diasSinCumplir(h, reg, '2026-11-11')).toBe(0);
+  });
+  it('riego manual: el día cuenta solo si se cumplió y se regó', () => {
+    const h = { dias: [0, 1, 2, 3, 4, 5, 6], inicio: '2026-11-01' };
+    const cumplidos = new Set(['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08']);
+    const regados = new Set(['2026-11-06', '2026-11-07']);
+    const e = estadoPorDias(h, '2026-11-08', (d) => cumplidos.has(d) && regados.has(d));
+    // hoy (8) cumplido pero sin regar todavía: no corta; 7 y 6 buenos; 5 sin regar corta.
+    expect(e.racha).toBe(2);
+    expect(e.sinCumplir).toBe(0);
+    regados.add('2026-11-08');
+    expect(estadoPorDias(h, '2026-11-08', (d) => cumplidos.has(d) && regados.has(d)).racha).toBe(3);
+    // Tres días sin regar → marchita
+    const nada = estadoPorDias(h, '2026-11-12', (d) => cumplidos.has(d) && regados.has(d));
+    expect(nada.sinCumplir).toBe(3);
+    expect(nada.etapa).toBe(MARCHITA);
   });
 });
