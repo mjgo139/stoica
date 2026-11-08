@@ -29,7 +29,7 @@ import { examenCompleto, idTareaHecha, tareaDelDia, tareaHecha, type Examen, typ
 import { limpiarNombre } from './core/validaciones.js';
 import { COLECCIONES_CONTADAS, LIMITES_ABUSO, sumarCreacion, topeDeColeccion, type Cuota } from './core/limites.js';
 import type { Perfil } from './core/perfil.js';
-import { ETAPAS_GENERADAS, FOTO_REFLEJO_MAX_BYTES, MAX_IMAGENES_MES, promptEtapa, promptLamina, type Etapa } from './core/espejo.js';
+import { ETAPAS_GENERADAS, FOTO_REFLEJO_MAX_BYTES, MAX_IMAGENES_MES, PROMPT_RASGOS, promptEtapa, promptLamina, rasgosEnTexto, type Etapa } from './core/espejo.js';
 import {
   CODIGOS_POR_VEZ,
   DIAS_GRACIA_DEFECTO,
@@ -1003,24 +1003,44 @@ async function revisarPlanes() {
  * Genera la lámina (frente, perfil, espalda) con la IA de imágenes de Google (Vertex AI) usando la cuenta
  * de servicio del proyecto: no hay claves en el código. La selfie no se guarda: se usa y se descarta.
  */
-// Modelo de imágenes de Google (se puede cambiar con la variable de entorno MODELO_IMAGEN).
-const modeloImagen = () => process.env.MODELO_IMAGEN || 'gemini-2.5-flash-image';
+// Modelos de Google: primero el de imágenes más nuevo; si no está disponible en el proyecto, el anterior.
+const MODELOS_IMAGEN = (process.env.MODELO_IMAGEN || 'gemini-3.1-flash-image-preview,gemini-2.5-flash-image').split(',');
+const MODELO_TEXTO = process.env.MODELO_TEXTO || 'gemini-2.5-flash';
 
-async function generarImagen(texto: string, imagen?: { datos: Buffer; tipo: string }): Promise<Buffer> {
+async function vertex(modelo: string, cuerpo: unknown): Promise<Response> {
   const proyecto = configFirebase.projectId || process.env.GCLOUD_PROJECT || '';
   const cred = getApp().options.credential ?? applicationDefault();
   const { access_token } = await cred.getAccessToken();
+  const url = `https://aiplatform.googleapis.com/v1/projects/${proyecto}/locations/global/publishers/google/models/${modelo}:generateContent`;
+  return fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
+}
+
+/** La IA de texto mira la selfie y anota los rasgos (barba, pelo, lentes, contextura). Si falla, se sigue sin ellos. */
+async function leerRasgos(foto: Buffer): Promise<string> {
+  try {
+    const r = await vertex(MODELO_TEXTO, {
+      contents: [{ role: 'user', parts: [{ text: PROMPT_RASGOS }, { inlineData: { mimeType: 'image/jpeg', data: foto.toString('base64') } }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+    });
+    const c = (await r.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const texto = c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+    return rasgosEnTexto(JSON.parse(texto));
+  } catch (e) {
+    logger.warn('Espejo: no se pudieron leer los rasgos de la selfie', { e: String(e) });
+    return '';
+  }
+}
+
+async function generarImagen(texto: string, imagenes: Array<{ datos: Buffer; tipo: string }> = []): Promise<Buffer> {
   const partes: Array<Record<string, unknown>> = [{ text: texto }];
-  if (imagen) partes.push({ inlineData: { mimeType: imagen.tipo, data: imagen.datos.toString('base64') } });
-  const url = `https://aiplatform.googleapis.com/v1/projects/${proyecto}/locations/global/publishers/google/models/${modeloImagen()}:generateContent`;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: partes }],
-      generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: '16:9' } },
-    }),
-  });
+  for (const imagen of imagenes) partes.push({ inlineData: { mimeType: imagen.tipo, data: imagen.datos.toString('base64') } });
+  const pedido = { contents: [{ role: 'user', parts: partes }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: '16:9' } } };
+  let r = await vertex(MODELOS_IMAGEN[0], pedido);
+  for (const otro of MODELOS_IMAGEN.slice(1)) {
+    if (r.status !== 404 && r.status !== 400) break;
+    logger.warn('Espejo: modelo no disponible, pruebo otro', { status: r.status, otro });
+    r = await vertex(otro, pedido);
+  }
   const cuerpo = (await r.json().catch(() => ({}))) as {
     error?: { message?: string; status?: string };
     candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ inlineData?: { data?: string } }> } }>;
@@ -1069,17 +1089,19 @@ export const espejoGenerar = onCall({ ...llamable, memory: '512MiB', timeoutSeco
       if (b.length < 100 || b.length > FOTO_REFLEJO_MAX_BYTES || b[0] !== 0xff || b[1] !== 0xd8) throw new HttpsError('invalid-argument', 'La foto no es válida o es muy pesada.');
       imagen = { datos: b, tipo: 'image/jpeg' };
     }
+    const rasgos = imagen ? await leerRasgos(imagen.datos) : '';
     const pedido = {
       descripcion: limpiarNombre(String(descripcion ?? '')).slice(0, 300),
       remera: String(remera ?? 'blanco'),
       pantalon: String(pantalon ?? 'jean'),
       conFoto: !!imagen,
+      rasgos,
     };
-    const png = await generarImagen(promptLamina(pedido), imagen);
+    const png = await generarImagen(promptLamina(pedido), imagen ? [imagen] : []);
     const base = await guardar('hoy', png);
     // Lámina nueva: las etapas anteriores ya no corresponden.
     await borrarViejos([actual.base?.ruta, ...Object.values(actual.etapas ?? {}).map((e) => e.ruta)].filter((r): r is string => !!r));
-    await ref.set({ base, etapas: {}, pedido: { remera: pedido.remera, pantalon: pedido.pantalon }, usos: { mes, cantidad: usados + 1 }, actualizado: Date.now() });
+    await ref.set({ base, etapas: {}, rasgos, pedido: { remera: pedido.remera, pantalon: pedido.pantalon }, usos: { mes, cantidad: usados + 1 }, actualizado: Date.now() });
     return { ok: true };
   }
 
@@ -1088,7 +1110,8 @@ export const espejoGenerar = onCall({ ...llamable, memory: '512MiB', timeoutSeco
     if (!ETAPAS_GENERADAS.includes(e)) throw new HttpsError('invalid-argument', 'Etapa desconocida.');
     if (!actual.base) throw new HttpsError('failed-precondition', 'Primero creá tu reflejo.');
     const [datos] = await bucket.file(actual.base.ruta).download();
-    const png = await generarImagen(promptEtapa(e), { datos, tipo: 'image/png' });
+    const rasgos = String((actual as { rasgos?: string }).rasgos ?? '');
+    const png = await generarImagen(promptEtapa(e, rasgos), [{ datos, tipo: 'image/png' }]);
     const nueva = await guardar(e, png);
     const vieja = actual.etapas?.[e]?.ruta;
     if (vieja) await borrarViejos([vieja]);
