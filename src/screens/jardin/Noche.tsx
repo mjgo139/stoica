@@ -66,17 +66,10 @@ export function Noche({ forma, fuerza }: { forma: keyof typeof LUCES; fuerza: nu
       />
       {/* Fuente iluminada desde abajo */}
       <span style={{ position: 'absolute', left: `${L.fuente.x - L.fuente.w / 2}%`, top: `${L.fuente.y - L.fuente.h / 2}%`, width: `${L.fuente.w}%`, height: `${L.fuente.h}%`, background: 'radial-gradient(ellipse, rgba(120,210,255,.8), rgba(80,170,255,0) 70%)', mixBlendMode: 'screen' }} />
-      {/* Braseros sobre las ánforas: llama dibujada + resplandor */}
+      {/* Luz cálida sobre las ánforas (la llama dibujada vuelve cuando haya una imagen pintada) */}
       {L.braseros.map((b, i) => (
         <div key={i} style={{ position: 'absolute', left: `${b.x}%`, top: `${b.y}%` }}>
-          <span className="noche-anim" style={{ position: 'absolute', left: -90, top: -90, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,170,70,.65), rgba(255,120,30,.18) 45%, rgba(255,120,30,0) 70%)', mixBlendMode: 'screen', animation: `resplandor ${1.6 + i * 0.3}s ease-in-out infinite` }} />
-          <svg width="22" height="30" viewBox="0 0 22 30" style={{ position: 'absolute', left: -11, top: -28, overflow: 'visible' }}>
-            <g className="noche-anim" style={{ transformOrigin: '11px 29px', animation: `llama ${0.45 + i * 0.1}s ease-in-out infinite` }}>
-              <path d="M11 1 C 15 9, 21 13, 19 21 C 17.5 27, 14 29, 11 29 C 8 29, 4.5 27, 3 21 C 1 13, 7 9, 11 1 Z" fill="#ff8a1e" />
-              <path d="M11 9 C 13.5 14, 16 17, 15 22 C 14 26, 12.5 27, 11 27 C 9.5 27, 8 26, 7 22 C 6 17, 8.5 14, 11 9 Z" fill="#ffd34d" />
-              <path d="M11 16 C 12.3 19, 13 21, 12.6 23.5 C 12.2 25.5, 11.6 26, 11 26 C 10.4 26, 9.8 25.5, 9.4 23.5 C 9 21, 9.7 19, 11 16 Z" fill="#fff6c8" />
-            </g>
-          </svg>
+          <span className="noche-anim" style={{ position: 'absolute', left: -90, top: -90, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,175,80,.5), rgba(255,130,40,.14) 45%, rgba(255,120,30,0) 70%)', mixBlendMode: 'screen', animation: `resplandor ${1.6 + i * 0.3}s ease-in-out infinite` }} />
         </div>
       ))}
       {/* Luciérnagas */}

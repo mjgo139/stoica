@@ -220,14 +220,15 @@ function JardinAdmin() {
       <style>{`
         @keyframes mecer { 0%,100% { transform: rotate(-1.2deg) } 50% { transform: rotate(1.2deg) } }
         @keyframes revivir { from { transform: scale(.6); opacity: 0 } to { transform: scale(1); opacity: 1 } }
-        @keyframes caer { 0% { transform: translateY(-40px); opacity: 0 } 15% { opacity: 1 } 100% { transform: translateY(var(--hasta)); opacity: 0 } }
         @keyframes saltito { 0%,100% { transform: scale(1) } 40% { transform: scale(1.06, .95) } 70% { transform: scale(.98, 1.03) } }
         @keyframes latir { 0%,100% { transform: scale(1); opacity: .9 } 50% { transform: scale(1.15); opacity: 1 } }
-        .jardin-planta { position: absolute; transform-origin: 50% 100%; pointer-events: none; animation: revivir .5s ease-out; }
-        .jardin-planta img { width: 100%; display: block; transform-origin: 50% 100%; animation: mecer 4.5s ease-in-out infinite; }
-        .jardin-planta.seca img { animation: none; }
+        .jardin-planta { position: absolute; transform-origin: 50% 100%; pointer-events: none; }
+        .jardin-planta img { width: 100%; display: block; transform-origin: 50% 100%; animation: revivir .5s ease-out, mecer 4.5s ease-in-out .5s infinite; transition: filter .4s; }
+        .jardin-planta.seca img { animation: revivir .5s ease-out; }
+        .jardin-planta.elegida img { filter: drop-shadow(0 0 6px rgba(255,214,120,.95)) drop-shadow(0 0 14px rgba(255,190,80,.6)); }
+        .jardin-planta.regando img { filter: drop-shadow(0 0 8px rgba(150,215,255,.95)) brightness(1.08); }
+        .jardin-nombre { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; background: rgba(30,24,16,.78); color: #f3e6c8; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; pointer-events: none; }
         .jardin-planta.regando { animation: saltito .9s ease-out; }
-        .gota { position: absolute; width: 5px; height: 8px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: linear-gradient(#bfe9ff, #3fa6e8); animation: caer .9s ease-in forwards; }
         .pide-agua { position: absolute; transform: translate(-50%, -100%); font-size: 15px; animation: latir 1.4s ease-in-out infinite; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
         @media (prefers-reduced-motion: reduce) { .jardin-planta img, .pide-agua { animation: none } }
       `}</style>
@@ -272,14 +273,15 @@ function JardinAdmin() {
             const riega = regando.has(l.id);
             return (
               <div key={l.id}>
-                <div className={`jardin-planta${l.estado.etapa === MARCHITA ? ' seca' : ''}${riega ? ' regando' : ''}`} style={{ left: `${m.x - (s.ax / s.w) * anchoPct}%`, top: `${piso - altoPct}%`, width: `${anchoPct}%`, zIndex: 2 + Math.round(m.y) }}>
+                <div className={`jardin-planta${l.estado.etapa === MARCHITA ? ' seca' : ''}${riega ? ' regando' : ''}${elegido === l.id ? ' elegida' : ''}`} style={{ left: `${m.x - (s.ax / s.w) * anchoPct}%`, top: `${piso - altoPct}%`, width: `${anchoPct}%`, zIndex: 2 + Math.round(m.y) }}>
                   <img key={`${planta}-${l.estado.etapa}`} src={`/jardin/${planta}-${l.estado.etapa}.webp`} alt="" draggable={false} style={{ animationDelay: `${-(i * 0.7) % 4.5}s` }} />
                 </div>
-                {riega &&
-                  Array.from({ length: 7 }, (_, k) => (
-                    <span key={k} className="gota" style={{ left: `${m.x - m.w * 0.35 + (k / 6) * m.w * 0.7}%`, top: `${piso - altoPct * 0.9}%`, zIndex: 60, animationDelay: `${(k % 3) * 0.12 + (k % 2) * 0.05}s`, ['--hasta' as string]: '70px' }} />
-                  ))}
-                {l.pideAgua && (
+                {elegido === l.id && (
+                  <span className="jardin-nombre" style={{ left: `${m.x}%`, top: `${piso - altoPct - 0.8}%`, zIndex: 62 }}>
+                    {l.nombre}
+                  </span>
+                )}
+                {l.pideAgua && elegido !== l.id && (
                   <span className="pide-agua" style={{ left: `${m.x}%`, top: `${piso - altoPct - 0.5}%`, zIndex: 61 }} aria-hidden>
                     💧
                   </span>
@@ -297,7 +299,7 @@ function JardinAdmin() {
                 aria-label={`${l.nombre}: ${PLANTA_DE_VIRTUD[l.virtud].nombre}, ${ETAPAS_PLANTA[l.estado.etapa]}, racha ${l.estado.racha}${l.pideAgua ? ', pide agua' : ''}`}
                 aria-pressed={elegido === l.id}
                 onClick={() => setElegido(elegido === l.id ? null : l.id)}
-                style={{ position: 'absolute', left: `${m.x - m.w * 0.6}%`, top: `${m.y - m.h * 2.6}%`, width: `${m.w * 1.2}%`, height: `${m.h * 3.4}%`, zIndex: 70, borderRadius: 12, outline: elegido === l.id ? '3px solid rgba(201,162,74,.9)' : 'none', background: 'transparent' }}
+                style={{ position: 'absolute', left: `${m.x - m.w * 0.6}%`, top: `${m.y - m.h * 2.6}%`, width: `${m.w * 1.2}%`, height: `${m.h * 3.4}%`, zIndex: 70, borderRadius: 12, background: 'transparent', WebkitTapHighlightColor: 'transparent', outline: 'none' }}
               />
             );
           })}
