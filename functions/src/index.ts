@@ -1003,7 +1003,8 @@ async function revisarPlanes() {
  * Genera la lámina (frente, perfil, espalda) con la IA de imágenes de Google (Vertex AI) usando la cuenta
  * de servicio del proyecto: no hay claves en el código. La selfie no se guarda: se usa y se descarta.
  */
-const MODELO_IMAGEN = defineString('MODELO_IMAGEN', { default: 'gemini-2.5-flash-image' });
+// Modelo de imágenes de Google (se puede cambiar con la variable de entorno MODELO_IMAGEN).
+const modeloImagen = () => process.env.MODELO_IMAGEN || 'gemini-2.5-flash-image';
 
 async function generarImagen(texto: string, imagen?: { datos: Buffer; tipo: string }): Promise<Buffer> {
   const proyecto = configFirebase.projectId || process.env.GCLOUD_PROJECT || '';
@@ -1011,7 +1012,7 @@ async function generarImagen(texto: string, imagen?: { datos: Buffer; tipo: stri
   const { access_token } = await cred.getAccessToken();
   const partes: Array<Record<string, unknown>> = [{ text: texto }];
   if (imagen) partes.push({ inlineData: { mimeType: imagen.tipo, data: imagen.datos.toString('base64') } });
-  const url = `https://aiplatform.googleapis.com/v1/projects/${proyecto}/locations/global/publishers/google/models/${MODELO_IMAGEN.value()}:generateContent`;
+  const url = `https://aiplatform.googleapis.com/v1/projects/${proyecto}/locations/global/publishers/google/models/${modeloImagen()}:generateContent`;
   const r = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' },
