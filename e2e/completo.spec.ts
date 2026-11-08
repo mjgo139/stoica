@@ -701,6 +701,23 @@ test.describe('v0.5–v1.0', () => {
     await captura(page, '27-espejo-3d');
   });
 
+  test('jardín estoico (solo admin): plantas por hábito, ficha y modo prueba', async ({ page }) => {
+    test.setTimeout(90_000);
+    await entrarConEjemplo(page);
+    await ir(page, '/jardin');
+    await expect(page.getByRole('heading', { level: 1, name: 'Tu jardín' })).toBeVisible();
+    await page.waitForTimeout(1200);
+    await captura(page, '28-jardin');
+    const primera = page.getByRole('button', { name: /racha/ }).first();
+    await primera.click();
+    await expect(page.getByText(/Te falta|Te faltan|Florecida|sin cumplir/).first()).toBeVisible();
+    await page.getByRole('button', { name: /Modo prueba/ }).click();
+    await page.getByRole('button', { name: '+30 días' }).click();
+    await expect(page.getByText('MODO PRUEBA', { exact: true })).toBeVisible();
+    await page.waitForTimeout(1200);
+    await captura(page, '28-jardin-prueba');
+  });
+
   test('borrar mi cuenta', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('tab', { name: 'Crear cuenta' }).click();
