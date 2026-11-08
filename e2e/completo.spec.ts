@@ -659,7 +659,7 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('radio', { name: 'Cara' }).click();
     await page.waitForTimeout(800);
     await captura(page, '27-espejo-marmol-cara');
-    await page.getByRole('radio', { name: 'Cuerpo' }).click();
+    await page.getByRole('radio', { name: 'Cuerpo', exact: true }).click();
     // Estatua simple
     await page.getByRole('radio', { name: 'Estatua simple' }).click();
     await expect(page.getByText('Esculpiendo tu estatua…')).toBeHidden({ timeout: 45_000 });
