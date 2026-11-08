@@ -13,14 +13,20 @@ from mh import leer_obj, leer_target, triangulos, joint, MH
 SALIDA = os.path.join(os.path.dirname(__file__), '../../public/espejo')
 # ESTATUA=1 arma la versión "estatua griega": más detalle, liso, solo deformaciones de cuerpo (peso).
 ESTATUA = os.environ.get('ESTATUA') == '1'
+# HD=1 arma "Tu cuerpo" (estilo escaneo): malla completa sin simplificar, proporciones naturales y medidas reales.
+HD = os.environ.get('HD') == '1'
 CARAS_OBJETIVO = int(os.environ.get('CARAS', '16000' if ESTATUA else '9000'))
-ARCHIVO = 'estatua.bin' if ESTATUA else 'cuerpo.bin'
+ARCHIVO = 'estatua.bin' if ESTATUA else 'humano.bin' if HD else 'cuerpo.bin'
 
 vs, grupos = leer_obj()
 n = len(vs)
 T = lambda r: leer_target(r, n)
 M = 'macrodetails/universal-male-young-'
 base = vs + T(M + 'averagemuscle-averageweight.target')
+if HD:
+    # Como el MakeHuman "por defecto": mezcla de etnias y proporciones a mitad de camino a las ideales.
+    base = base + (T('macrodetails/caucasian-male-young.target') + T('macrodetails/african-male-young.target') + T('macrodetails/asian-male-young.target')) / 3
+    base = base + 0.5 * T('macrodetails/proportions/male-young-averagemuscle-averageweight-idealproportions.target')
 if ESTATUA:
     # Pecho de estatua masculina: sin "punta" y con pectoral marcado.
     base = base + T('breast/breast-point-decr.target') + 0.45 * T('torso/torso-muscle-pectoral-incr.target') + 0.3 * T('breast/breast-volume-vert-up.target')
@@ -44,6 +50,8 @@ formas.update({
     'papada': T('neck/neck-double-incr.target'),
     'menton': T('chin/chin-prominent-incr.target'),
     'mandibula': T('chin/chin-width-incr.target'),
+    'altoMas': T('macrodetails/height/male-young-averagemuscle-averageweight-maxheight.target'),
+    'altoMenos': T('macrodetails/height/male-young-averagemuscle-averageweight-minheight.target'),
 })
 # Exagerar los extremos (el "maxweight" de MakeHuman es apenas rellenito).
 def mezcla(**k):
@@ -120,7 +128,10 @@ _posada = posar(base)
 J = {k: joint(_posada, grupos, k) for k in J}
 
 # ---------- Simplificar (facetado tipo papel) ----------
-pts, fs = fast_simplification.simplify(P0.astype(np.float32), tri.astype(np.int32), target_count=CARAS_OBJETIVO)
+if HD:
+    pts, fs = P0.copy(), tri.copy()  # sin simplificar: superficie lisa
+else:
+    pts, fs = fast_simplification.simplify(P0.astype(np.float32), tri.astype(np.int32), target_count=CARAS_OBJETIVO)
 orig = trimesh.Trimesh(P0, tri, process=False)
 simp = trimesh.Trimesh(pts, fs, process=False)
 print('caras', len(fs), 'vértices', len(pts))
@@ -172,6 +183,10 @@ remera |= es_brazo & (tl < 0.42) & (wa < 0.2)
 remera &= ~((y > 5.2) & (z > 0.45) & (ax < 0.8))  # escote
 pantalon = (y <= 0.75) & (y > -7.25) & ~es_brazo
 zapato = (y <= -7.25)
+if HD:
+    # Solo ropa interior (short ajustado), como los visualizadores de cuerpo.
+    remera[:] = False; zapato[:] = False
+    pantalon = (y <= 1.05) & (y > -1.1) & ~es_brazo
 zona[remera] = 1; zona[pantalon] = 2; zona[zapato] = 3
 zona[n_cuerpo:] = 4
 # Suavizar bordes de la ropa: cada cara toma la zona de la mayoría de sus vecinas (2 pasadas).
@@ -232,6 +247,10 @@ def capa(mascara, nombre):
     return {'caras': caras.flatten().tolist(), 'borde': [i for e in borde for i in e]}
 
 capas = {'pelo': capa(pelo, 'pelo'), 'barba': capa(barba, 'barba')}
+if HD:
+    for k in list(DS):
+        if k not in ['pesoMenos', 'pesoMas', 'muscMenos', 'muscMas', 'obeso', 'flaco', 'atletico', 'papada', 'altoMas', 'altoMenos']:
+            del DS[k]
 if ESTATUA:
     # Banda del manto: cruza el torso del hombro izquierdo a la cadera derecha (adelante y atrás).
     a = np.array([1.35, 5.35]); b = np.array([-1.25, 0.9])
