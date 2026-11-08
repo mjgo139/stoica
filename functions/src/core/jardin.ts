@@ -176,18 +176,9 @@ export function buenosDesde(dias: Dia[], desde: number, hoyPendiente = true): nu
   return c;
 }
 
-export const MEDALLAS = [
-  { dias: 30, nombre: 'Bronce', color: '#b87333' },
-  { dias: 66, nombre: 'Plata', color: '#c0c6cc' },
-  { dias: 100, nombre: 'Oro', color: '#d9a92a' },
-] as const;
-
-/** Medalla ganada según el mejor ciclo (días seguidos sin marchitarse; null si todavía ninguna). Las medallas no se pierden. */
-export function medalla(mejor: number): (typeof MEDALLAS)[number] | null {
-  let m: (typeof MEDALLAS)[number] | null = null;
-  for (const x of MEDALLAS) if (mejor >= x.dias) m = x;
-  return m;
-}
+/** La planta está al 100 % (florecida): lleva la medalla de laurel. Si baja de etapa, la pierde. */
+export const AL_CIEN = 4;
+export const alCien = (etapa: number) => etapa === AL_CIEN;
 
 /** Cada 30 días buenos en el ciclo la planta da un retoño (hasta 3 por hábito). */
 export const DIAS_POR_RETONO = 30;
@@ -200,17 +191,47 @@ export function rachaRetono(ciclo: number, k: number): number {
   return Math.max(0, ciclo - DIAS_POR_RETONO * (k + 1));
 }
 
-export const PASIONES = [
-  { id: 'ira', nombre: 'Ira', color: '#c8412f', frase: 'No nos perturban las cosas, sino nuestras opiniones sobre ellas. — Epicteto' },
-  { id: 'miedo', nombre: 'Miedo', color: '#7d7f86', frase: 'Sufrimos más en la imaginación que en la realidad. — Séneca' },
-  { id: 'envidia', nombre: 'Envidia', color: '#6f9a2d', frase: 'Nunca serás feliz mientras te atormente que otro sea más feliz. — Séneca' },
-  { id: 'deseo', nombre: 'Deseo', color: '#a8558f', frase: 'La riqueza no consiste en tener grandes posesiones, sino en tener pocas necesidades. — Epicteto' },
+/** Filósofos que pasean por el jardín (estatuas de mármol) y sus frases. */
+export const FILOSOFOS = [
+  {
+    id: 'marco',
+    nombre: 'Marco Aurelio',
+    frases: ['Dejá de discutir cómo debe ser un buen hombre. Sé uno.', 'Al amanecer, decite: hoy me toca hacer el trabajo de un ser humano.', 'Lo que no es bueno para la colmena no es bueno para la abeja.'],
+  },
+  {
+    id: 'seneca',
+    nombre: 'Séneca',
+    frases: ['No es que tengamos poco tiempo, es que perdemos mucho.', 'Mientras se posterga, la vida pasa de largo.', 'Empezá ya a vivir, y contá cada día como una vida aparte.'],
+  },
+  {
+    id: 'epicteto',
+    nombre: 'Epicteto',
+    frases: ['No expliques tu filosofía: encarnala.', 'Ninguna gran cosa nace de golpe, ni siquiera la uva o el higo.', 'Primero decite qué querés ser; después hacé lo que tengas que hacer.'],
+  },
 ] as const;
 
-/** Plaga por descuido: aparece con 1 o 2 días sin cumplir (antes de marchitarse). 0 = sin plaga. */
-export function nivelPlaga(a: Pick<Analisis, 'sinCumplir' | 'etapa'>): number {
+/** Riesgo de la planta: 1 o 2 días sin cumplir (antes de marchitarse). 0 = sin riesgo. */
+export function nivelRiesgo(a: Pick<Analisis, 'sinCumplir' | 'etapa'>): number {
   if (a.etapa === MARCHITA) return 0;
   return Math.min(2, a.sinCumplir);
+}
+
+export interface Consejo {
+  filosofo: (typeof FILOSOFOS)[number];
+  titulo: string;
+  texto: string;
+  frase: string;
+}
+
+/** Lo que dice el filósofo: aviso de riesgo (nivel 1 o 2) o visita del día (nivel 0). */
+export function consejo(nivel: number, habito: string, semilla: number): Consejo {
+  const f = FILOSOFOS[semilla % FILOSOFOS.length];
+  const frase = f.frases[Math.floor(semilla / FILOSOFOS.length) % f.frases.length];
+  if (nivel >= 2)
+    return { filosofo: f, titulo: `Dos días sin «${habito}»`, texto: 'Mañana tu planta se marchita. Hacelo hoy, aunque sea en su versión más chica: lo importante es no cortar.', frase };
+  if (nivel === 1)
+    return { filosofo: f, titulo: `Ayer no cumpliste «${habito}»`, texto: 'Un tropiezo no es una caída. Hacelo hoy y tu planta sigue creciendo como si nada.', frase };
+  return { filosofo: f, titulo: `${f.nombre} pasea por tu jardín`, texto: `Se detuvo a mirar tu ${habito ? `planta de «${habito}»` : 'jardín'}. Te deja un pensamiento para hoy.`, frase };
 }
 
 /** Número entero estable a partir de un texto (para que el azar del día sea el mismo todo el día). */
@@ -223,13 +244,10 @@ export function hashTexto(t: string): number {
   return h >>> 0;
 }
 
-/**
- * Fortuna: lo que no depende de vos. Algunos días (más o menos 1 de cada 3) aparece una plaga al azar en una
- * planta sana. Se espanta tocándola. Devuelve el índice de la planta y la pasión, o null.
- */
-export function plagaDeFortuna(fecha: string, cantidadPlantas: number): { planta: number; pasion: number } | null {
+/** Algunos días (más o menos 1 de cada 3) un filósofo pasea por el jardín y se para junto a una planta sana. */
+export function visitaDelDia(fecha: string, cantidadPlantas: number): { planta: number; semilla: number } | null {
   if (cantidadPlantas <= 0) return null;
-  const h = hashTexto(`fortuna-${fecha}`);
+  const h = hashTexto(`visita-${fecha}`);
   if (h % 3 !== 0) return null;
-  return { planta: Math.floor(h / 3) % cantidadPlantas, pasion: Math.floor(h / 7) % PASIONES.length };
+  return { planta: Math.floor(h / 3) % cantidadPlantas, semilla: Math.floor(h / 7) };
 }

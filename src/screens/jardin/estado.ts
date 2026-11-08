@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { sumarDias } from '@core/fechas';
 import { cumplido, esDiaActivo, VIRTUDES, type Habito, type Registro, type Virtud } from '@core/habitos';
-import { analizar, buenosDesde, etapaPlanta, medalla, MEDALLAS, nivelPlaga, rachaRetono, retonos, type Analisis, type Dia } from '@core/jardin';
+import { analizar, buenosDesde, etapaPlanta, nivelRiesgo, rachaRetono, retonos, type Analisis, type Dia } from '@core/jardin';
 
 export const VENTANA = 120;
 export const MAX_MACETEROS = 15;
@@ -18,7 +18,7 @@ export interface Guardado {
   riegos: Record<string, string[]>;
   /** Cuántos retoños tenía cada hábito la última vez (para avisar si se perdieron). */
   retonosPrevios: Record<string, number>;
-  /** Plaga de la Fortuna espantada: fecha en que se espantó. */
+  /** Visita del filósofo ya leída: fecha. */
   fortunaEspantada: string;
 }
 
@@ -55,9 +55,9 @@ export interface PlantaCalc {
   mejor: number;
   /** Días buenos que cuentan para los retoños (en modo difícil, desde la última marchitada de cualquier planta). */
   ciclo: number;
-  medalla: (typeof MEDALLAS)[number] | null;
   retonos: number;
-  plaga: number;
+  /** 1 o 2 días sin cumplir: el filósofo viene a avisar. */
+  riesgo: number;
   hechoHoy: boolean;
   pideAgua: boolean;
   /** Últimos días (para el calendario de la pantalla de la planta). */
@@ -70,7 +70,6 @@ export interface RetonoCalc {
   k: number;
   racha: number;
   etapa: number;
-  plaga: number;
 }
 
 export interface Jardin {
@@ -124,12 +123,12 @@ export function calcularJardin({ habitos, registros, hoy, g, prueba }: Entrada):
     const mejor = Math.max(a.mejorCiclo, b.mejorGuardada);
     const desplaz = largo - b.dias.length;
     const ciclo = g.dificil ? buenosDesde(b.dias, Math.max(a.marchitaEn, marchitaGlobal - desplaz), b.pendiente) : a.ciclo;
-    return { id: b.id, nombre: b.nombre, virtud: b.virtud, habito: b.habito, a, mejor, ciclo, medalla: medalla(mejor), retonos: retonos(ciclo), plaga: nivelPlaga(a), hechoHoy: b.hechoHoy, pideAgua: b.pideAgua, historia: b.dias.slice(-30) };
+    return { id: b.id, nombre: b.nombre, virtud: b.virtud, habito: b.habito, a, mejor, ciclo, retonos: retonos(ciclo), riesgo: nivelRiesgo(a), hechoHoy: b.hechoHoy, pideAgua: b.pideAgua, historia: b.dias.slice(-30) };
   });
   const todos: RetonoCalc[] = plantas.flatMap((p) =>
     Array.from({ length: p.retonos }, (_, k) => {
       const racha = rachaRetono(p.ciclo, k);
-      return { id: `${p.id}-r${k}`, madre: p, k, racha, etapa: etapaPlanta(racha, p.a.sinCumplir), plaga: p.plaga };
+      return { id: `${p.id}-r${k}`, madre: p, k, racha, etapa: etapaPlanta(racha, p.a.sinCumplir) };
     }),
   );
   const libres = Math.max(0, MAX_MACETEROS - plantas.length);

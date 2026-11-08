@@ -702,7 +702,7 @@ test.describe('v0.5–v1.0', () => {
   });
 
   test('jardín estoico (solo admin): plantas por hábito, ficha y modo prueba', async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(240_000);
     await entrarConEjemplo(page);
     await ir(page, '/jardin');
     await expect(page.getByRole('heading', { level: 1, name: 'Tu jardín' })).toBeVisible();
@@ -725,22 +725,32 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('button', { name: '+30 días cumpliendo todo' }).click();
     await page.getByRole('button', { name: '+30 días cumpliendo todo' }).click();
     await page.getByRole('button', { name: '+30 días cumpliendo todo' }).click();
-    await expect(page.getByRole('button', { name: /Medalla de/ }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /está al 100 %/ }).first()).toBeVisible();
     await page.waitForTimeout(1000);
     await captura(page, '28-jardin-medallas');
-    // Plagas: 2 días sin cumplir
+    // La página de la planta se abre desde la medalla (también en modo prueba)
+    await page.getByRole('button', { name: /está al 100 %/ }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByText('Últimos 30 días')).toBeVisible();
+    await page.waitForTimeout(600);
+    await captura(page, '28-jardin-planta-prueba');
+    await page.getByRole('button', { name: '‹ Volver al jardín' }).click();
+    // El filósofo: 2 días sin cumplir
     await page.getByRole('button', { name: '1 día sin cumplir' }).click();
     await page.getByRole('button', { name: '1 día sin cumplir' }).click();
     await page.waitForTimeout(800);
-    await captura(page, '28-jardin-plagas');
+    await captura(page, '28-jardin-filosofo');
+    await page.locator('.filosofo').first().scrollIntoViewIfNeeded();
+    await page.locator('.filosofo').first().dispatchEvent('click');
+    await expect(page.getByText(/Mañana tu planta se marchita/)).toBeVisible();
     // Riego manual
     await page.getByRole('button', { name: 'Volver a lo real' }).click();
     await page.getByRole('radio', { name: 'Riego manual' }).click();
     await expect(page.getByText(/Riego manual: además de cumplir/)).toBeVisible();
     // Página de una planta (la primera ya está elegida desde el principio)
     await page.getByRole('button', { name: /racha/ }).nth(1).click();
-    await page.getByRole('link', { name: 'Ver su página' }).click();
-    await expect(page.getByText('Medallas', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Ver su página' }).click();
+    await expect(page.getByText('Últimos 30 días')).toBeVisible();
     await captura(page, '28-jardin-planta');
   });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analizar, buenosDesde, diasSinCumplir, estadoPorDias, estadoSimulado, medalla, plagaDeFortuna, rachaRetono, retonos, etapaPlanta, faltanParaCrecer, MARCHITA } from './jardin.js';
+import { analizar, buenosDesde, diasSinCumplir, estadoPorDias, estadoSimulado, alCien, consejo, visitaDelDia, rachaRetono, retonos, etapaPlanta, faltanParaCrecer, MARCHITA } from './jardin.js';
 import type { Habito, Registro } from './habitos.js';
 
 describe('jardín estoico', () => {
@@ -74,22 +74,24 @@ describe('jardín: medallas, retoños y modo difícil', () => {
   it('los días que no tocan se saltean', () => {
     expect(analizar(v('11-1-1'), false).racha).toBe(4);
   });
-  it('medallas por mejor racha y retoños cada 30 días del ciclo', () => {
-    expect(medalla(29)).toBeNull();
-    expect(medalla(30)?.nombre).toBe('Bronce');
-    expect(medalla(70)?.nombre).toBe('Plata');
-    expect(medalla(150)?.nombre).toBe('Oro');
+  it('medalla solo al 100 % (florecida); retoños cada 30 días del ciclo', () => {
+    expect([3, 4, MARCHITA].map(alCien)).toEqual([false, true, false]);
     expect([29, 30, 61, 200].map(retonos)).toEqual([0, 1, 2, 3]);
     expect(rachaRetono(45, 0)).toBe(15);
     expect(rachaRetono(45, 1)).toBe(0);
   });
+  it('el filósofo avisa según el riesgo', () => {
+    expect(consejo(1, 'Meditar', 0).titulo).toContain('Ayer');
+    expect(consejo(2, 'Meditar', 4).titulo).toContain('Dos días');
+    expect(consejo(0, 'Meditar', 2).titulo).toContain('pasea');
+  });
   it('modo difícil: solo cuentan los días buenos después de la última marchitada de cualquier planta', () => {
     expect(buenosDesde(v('1111111111'), 4, false)).toBe(5);
   });
-  it('la plaga de la Fortuna es la misma todo el día', () => {
-    expect(plagaDeFortuna('2026-11-08', 7)).toEqual(plagaDeFortuna('2026-11-08', 7));
-    const dias = Array.from({ length: 300 }, (_, i) => `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}-${i}`);
-    const con = dias.filter((d) => plagaDeFortuna(d, 5)).length;
+  it('la visita del filósofo es la misma todo el día y no es todos los días', () => {
+    expect(visitaDelDia('2026-11-08', 7)).toEqual(visitaDelDia('2026-11-08', 7));
+    const dias = Array.from({ length: 300 }, (_, i) => `dia-${i}`);
+    const con = dias.filter((d) => visitaDelDia(d, 5)).length;
     expect(con).toBeGreaterThan(60);
     expect(con).toBeLessThan(140);
   });
