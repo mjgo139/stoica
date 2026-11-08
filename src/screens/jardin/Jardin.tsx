@@ -10,6 +10,7 @@ import { Noche } from './Noche';
 import { crearSonido, type SonidoJardin } from './sonido';
 import { ESTILOS_GRAFICOS, Medalla } from './Graficos';
 import { VistaPlanta } from './Planta';
+import { MarcoAnimado } from './Marco';
 import { calcularJardin, MAX_MACETEROS, useGuardado, type ModoRiego, type PlantaCalc } from './estado';
 
 /** Ancho máximo de cada planta (su etapa más grande), para que la adulta ocupe el ancho del macetero. */
@@ -101,6 +102,10 @@ function JardinAdmin() {
   /** Planta cuya página está abierta encima del jardín. */
   const [pagina, setPagina] = useState<string | null>(null);
   const [verConsejo, setVerConsejo] = useState(false);
+  /** Marco Aurelio: llegó a la planta / se está yendo / avisos ya leídos en esta visita. */
+  const [marcoLlego, setMarcoLlego] = useState(false);
+  const [marcoIrse, setMarcoIrse] = useState(false);
+  const [avisoLeido, setAvisoLeido] = useState('');
   const [conSonido, setConSonido] = useState(false);
   const sonido = useRef<SonidoJardin | null>(null);
   const [refJardin, anchoPx] = useAnchoPx<HTMLDivElement>();
@@ -205,16 +210,23 @@ function JardinAdmin() {
   const diaVisita = prueba ? `prueba-${Object.values(prueba)[0]?.length ?? 0}` : hoy;
   const filosofo = useMemo((): { id: string; c: Consejo; aviso: boolean } | null => {
     const enRiesgo = [...jardin.plantas].filter((p) => p.riesgo > 0).sort((a, b) => b.riesgo - a.riesgo)[0];
-    if (enRiesgo) return { id: enRiesgo.id, c: consejo(enRiesgo.riesgo, enRiesgo.nombre, hashTexto(`${diaVisita}-${enRiesgo.id}`)), aviso: true };
+    if (enRiesgo && avisoLeido !== `${diaVisita}-${enRiesgo.id}-${enRiesgo.riesgo}`) return { id: enRiesgo.id, c: consejo(enRiesgo.riesgo, enRiesgo.nombre, hashTexto(`${diaVisita}-${enRiesgo.id}`) * 3), aviso: true };
     const v = visitaDelDia(diaVisita, jardin.plantas.length);
     if (!v || g.fortunaEspantada === diaVisita) return null;
     const p = jardin.plantas[v.planta];
     if (!p || p.a.etapa === MARCHITA) return null;
-    return { id: p.id, c: consejo(0, p.nombre, v.semilla), aviso: false };
-  }, [diaVisita, jardin, g.fortunaEspantada]);
+    return { id: p.id, c: consejo(0, p.nombre, v.semilla * 3), aviso: false };
+  }, [diaVisita, jardin, g.fortunaEspantada, avisoLeido]);
+  /** "Entendido": Marco se va caminando; recién cuando sale del jardín se guarda que ya lo leíste. */
   const despedirFilosofo = () => {
     setVerConsejo(false);
-    if (filosofo && !filosofo.aviso) setG((x) => ({ ...x, fortunaEspantada: diaVisita }));
+    setMarcoIrse(true);
+  };
+  const marcoSeFue = () => {
+    if (filosofo?.aviso) setAvisoLeido(`${diaVisita}-${filosofo.id}-${jardin.plantas.find((p) => p.id === filosofo.id)?.riesgo ?? 0}`);
+    else if (filosofo) setG((x) => ({ ...x, fortunaEspantada: diaVisita }));
+    setMarcoIrse(false);
+    setMarcoLlego(false);
   };
 
   const sel = items.find((l) => l.id === elegido) ?? null;
@@ -339,18 +351,22 @@ function JardinAdmin() {
                 )}
                 {conFilosofo && filosofo && (
                   <>
-                    <button
-                      type="button"
-                      className="filosofo"
-                      aria-label={`${filosofo.c.filosofo.nombre}: ${filosofo.c.titulo}`}
-                      onClick={() => setVerConsejo(true)}
-                      style={{ left: `${m.x + m.w * 0.66}%`, top: `${m.y + m.h * 0.95}%`, width: Math.max(44, m.w * pxPorPct * 0.55), zIndex: 85 }}
-                    >
-                      <img src={`/jardin/filosofo-${filosofo.c.filosofo.id}.webp`} alt="" draggable={false} />
-                    </button>
-                    <span className="globo" role="button" tabIndex={0} onClick={() => setVerConsejo(true)} onKeyDown={(e) => e.key === 'Enter' && setVerConsejo(true)} style={{ left: `${m.x + m.w * 0.66}%`, top: `calc(${m.y + m.h * 0.95}% - ${(Math.max(44, m.w * pxPorPct * 0.55) * 420) / 174 + 8}px)`, zIndex: 90 }}>
-                      {filosofo.aviso ? filosofo.c.titulo : `${filosofo.c.filosofo.nombre} te dejó un consejo`}
-                    </span>
+                    <MarcoAnimado
+                      key={`${filosofo.id}-${diaVisita}-${filosofo.c.titulo}`}
+                      x={m.x + m.w * 0.66}
+                      piso={m.y + m.h * 0.95}
+                      alto={Math.max(72, m.w * pxPorPct * 1.05)}
+                      irse={marcoIrse}
+                      etiqueta={`${filosofo.c.filosofo.nombre}: ${filosofo.c.titulo}`}
+                      alTocar={() => setVerConsejo(true)}
+                      alLlegar={() => setMarcoLlego(true)}
+                      alIrse={marcoSeFue}
+                    />
+                    {marcoLlego && !marcoIrse && (
+                      <span className="globo" role="button" tabIndex={0} onClick={() => setVerConsejo(true)} onKeyDown={(e) => e.key === 'Enter' && setVerConsejo(true)} style={{ left: `${m.x + m.w * 0.66}%`, top: `calc(${m.y + m.h * 0.95}% - ${Math.max(72, m.w * pxPorPct * 1.05) + 6}px)`, zIndex: 90 }}>
+                        {filosofo.aviso ? filosofo.c.titulo : `${filosofo.c.filosofo.nombre} te dejó un consejo`}
+                      </span>
+                    )}
                   </>
                 )}
               </div>
@@ -398,7 +414,7 @@ function JardinAdmin() {
 
       {verConsejo && filosofo && (
         <div className="card" style={{ marginTop: 12, padding: '12px 16px', display: 'flex', gap: 14, alignItems: 'flex-start', border: '1.5px solid #c9a24a' }}>
-          <img src={`/jardin/filosofo-${filosofo.c.filosofo.id}.webp`} alt="" style={{ width: 46, flex: 'none' }} />
+          <span aria-hidden style={{ width: 52, height: 74, flex: 'none', backgroundImage: 'url(/jardin/marco.webp)', backgroundSize: `${1168 * (74 / 207)}px ${621 * (74 / 207)}px`, backgroundPosition: `${-(16 % 8) * 146 * (74 / 207)}px ${-Math.floor(16 / 8) * 207 * (74 / 207)}px`, backgroundRepeat: 'no-repeat' }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="cap gold">{filosofo.c.filosofo.nombre}</div>
             <div style={{ fontWeight: 800, fontSize: 15, marginTop: 2 }}>{filosofo.c.titulo}</div>

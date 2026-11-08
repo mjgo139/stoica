@@ -738,10 +738,14 @@ test.describe('v0.5–v1.0', () => {
     // El filósofo: 2 días sin cumplir
     await page.getByRole('button', { name: '1 día sin cumplir' }).click();
     await page.getByRole('button', { name: '1 día sin cumplir' }).click();
-    await page.waitForTimeout(800);
+    // Marco Aurelio entra caminando hasta la planta y después habla
+    await page.locator('.marco').first().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(1500);
+    await captura(page, '28-jardin-marco-camina');
+    await expect(page.locator('.globo')).toBeVisible({ timeout: 20_000 });
+    await page.waitForTimeout(1500);
     await captura(page, '28-jardin-filosofo');
-    await page.locator('.filosofo').first().scrollIntoViewIfNeeded();
-    await page.locator('.filosofo').first().dispatchEvent('click');
+    await page.locator('.marco').first().dispatchEvent('click');
     await expect(page.getByText(/Mañana tu planta se marchita/)).toBeVisible();
     // Riego manual
     await page.getByRole('button', { name: 'Volver a lo real' }).click();
