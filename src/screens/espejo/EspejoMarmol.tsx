@@ -54,11 +54,12 @@ export function EspejoMarmol() {
           <p style={{ padding: 24, color: '#e9e2d6' }}>{error}</p>
         ) : (
           <div style={{ position: 'relative' }}>
-            <canvas ref={lienzo} style={{ width: '100%', height: 'min(68vh, 600px)', display: 'block', touchAction: 'pan-y' }} aria-label={`Estatua: ${nombreActual}`} />
+            <canvas ref={lienzo} style={{ width: '100%', height: 'min(68vh, 600px)', display: 'block', touchAction: 'none' }} aria-label={`Estatua: ${nombreActual}`} />
             {cargando && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 14, color: '#d8cfc2' }}>Trayendo tu estatua…</div>}
             <div className="cap" style={{ position: 'absolute', left: 16, top: 14, color: '#c9a24a' }}>
               {nombreActual}
             </div>
+            <div style={{ position: 'absolute', right: 14, top: 14, fontSize: 11.5, color: '#bdb3a5' }}>Arrastrá para girar · pellizcá para acercar</div>
             <div className="seg3" role="radiogroup" aria-label="Vista" style={{ position: 'absolute', left: 12, right: 12, bottom: 12, maxWidth: 260, marginInline: 'auto', background: 'var(--sf)' }}>
               {(
                 [

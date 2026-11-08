@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 export interface EtapaMarmol {
   archivo: string;
@@ -115,7 +116,7 @@ export async function crearMarmol(lienzo: HTMLCanvasElement, inicial: string): P
   clave.position.set(-8, 12, 9);
   clave.castShadow = true;
   clave.shadow.mapSize.set(2048, 2048);
-  Object.assign(clave.shadow.camera, { left: -6, right: 6, top: 12, bottom: -2, near: 1, far: 40 });
+  Object.assign(clave.shadow.camera, { left: -14, right: 14, top: 16, bottom: -8, near: 1, far: 60 });
   clave.shadow.normalBias = 0.02;
   escena.add(clave);
   const contra = new THREE.DirectionalLight(0xbfd0ff, 1.5);
@@ -124,7 +125,8 @@ export async function crearMarmol(lienzo: HTMLCanvasElement, inicial: string): P
   const relleno = new THREE.DirectionalLight(0xffffff, 0.4);
   relleno.position.set(6, 3, 10);
   escena.add(relleno);
-  const piso = new THREE.Mesh(new THREE.CircleGeometry(6, 48), new THREE.ShadowMaterial({ opacity: 0.35 }));
+  // Piso invisible que solo recibe la sombra (grande, para que no se corte).
+  const piso = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: 0.32 }));
   piso.rotation.x = -Math.PI / 2;
   piso.receiveShadow = true;
   escena.add(piso);
@@ -140,16 +142,26 @@ export async function crearMarmol(lienzo: HTMLCanvasElement, inicial: string): P
   };
 
   let vista: 'cuerpo' | 'cara' = 'cuerpo';
+  // Girar, acercar y alejar libremente (con el dedo, pellizcando o con la rueda del mouse).
+  const controles = new OrbitControls(camara, lienzo);
+  controles.enableDamping = true;
+  controles.dampingFactor = 0.08;
+  controles.enablePan = false;
+  controles.minDistance = 2.5;
+  controles.maxDistance = 45;
+  controles.minPolarAngle = 0.15;
+  controles.maxPolarAngle = Math.PI * 0.53; // no meterse debajo del piso
   const ubicar = () => {
     if (vista === 'cara') {
       const dist = Math.max(6.5, 6.5 * (0.75 / camara.aspect));
-      camara.position.set(0, ALTO * 0.88, dist);
-      camara.lookAt(0, ALTO * 0.86, 0);
+      controles.target.set(0, ALTO * 0.86, 0);
+      camara.position.set(dist * 0.35, ALTO * 0.88, dist * 0.94);
     } else {
       const dist = Math.max(25, 25 * (0.72 / camara.aspect));
-      camara.position.set(0, ALTO * 0.55, dist);
-      camara.lookAt(0, ALTO * 0.46, 0);
+      controles.target.set(0, ALTO * 0.46, 0);
+      camara.position.set(dist * 0.38, ALTO * 0.55, dist * 0.92);
     }
+    controles.update();
   };
   const ajustar = () => {
     const ancho = lienzo.clientWidth || 300;
@@ -157,9 +169,9 @@ export async function crearMarmol(lienzo: HTMLCanvasElement, inicial: string): P
     render.setSize(ancho, alto, false);
     camara.aspect = ancho / alto;
     camara.updateProjectionMatrix();
-    ubicar();
   };
   ajustar();
+  ubicar();
   const obs = new ResizeObserver(ajustar);
   obs.observe(lienzo);
 
@@ -180,37 +192,12 @@ export async function crearMarmol(lienzo: HTMLCanvasElement, inicial: string): P
   };
   await mostrar(inicial);
 
-  let giro = 0.4;
-  let arrastrando = false;
-  let ultimoX = 0;
-  let quieto = 0;
-  const abajo = (ev: PointerEvent) => {
-    arrastrando = true;
-    ultimoX = ev.clientX;
-    lienzo.setPointerCapture(ev.pointerId);
-  };
-  const mover = (ev: PointerEvent) => {
-    if (!arrastrando) return;
-    giro += (ev.clientX - ultimoX) * 0.01;
-    ultimoX = ev.clientX;
-    quieto = performance.now();
-  };
-  const soltar = () => {
-    arrastrando = false;
-    quieto = performance.now();
-  };
-  lienzo.addEventListener('pointerdown', abajo);
-  lienzo.addEventListener('pointermove', mover);
-  lienzo.addEventListener('pointerup', soltar);
-  lienzo.addEventListener('pointercancel', soltar);
-
   let cuadro = 0;
   let antes = performance.now();
   const animar = (ahora: number) => {
     const dt = Math.min(0.05, (ahora - antes) / 1000);
     antes = ahora;
-    if (!arrastrando && ahora - quieto > 2500) giro += dt * 0.22;
-    pivote.rotation.y = giro;
+    controles.update();
     if (fundido < 1 && actual) {
       fundido = Math.min(1, fundido + dt / 0.8);
       (actual.material as THREE.MeshPhysicalMaterial).opacity = fundido;
@@ -235,10 +222,7 @@ export async function crearMarmol(lienzo: HTMLCanvasElement, inicial: string): P
     destruir() {
       cancelAnimationFrame(cuadro);
       obs.disconnect();
-      lienzo.removeEventListener('pointerdown', abajo);
-      lienzo.removeEventListener('pointermove', mover);
-      lienzo.removeEventListener('pointerup', soltar);
-      lienzo.removeEventListener('pointercancel', soltar);
+      controles.dispose();
       for (const m of [actual, saliente]) if (m) (m.material as THREE.Material).dispose();
       render.dispose();
     },
