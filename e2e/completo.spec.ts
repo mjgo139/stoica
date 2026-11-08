@@ -644,6 +644,17 @@ test.describe('v0.5–v1.0', () => {
     await entrarConEjemplo(page);
     await ir(page, '/espejo');
     await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
+    // Mármol (estatuas de Meshy)
+    await expect(page.getByText('Trayendo tu estatua…')).toBeHidden({ timeout: 45_000 });
+    await expect(page.getByLabel('Estatua: Atlético')).toBeVisible();
+    await page.waitForTimeout(800);
+    await captura(page, '27-espejo-marmol');
+    await page.getByRole('radio', { name: 'Cara' }).click();
+    await page.waitForTimeout(800);
+    await captura(page, '27-espejo-marmol-cara');
+    await page.getByRole('radio', { name: 'Cuerpo' }).click();
+    // Estatua simple
+    await page.getByRole('radio', { name: 'Estatua simple' }).click();
     await expect(page.getByText('Esculpiendo tu estatua…')).toBeHidden({ timeout: 45_000 });
     await expect(page.getByRole('radiogroup', { name: 'Etapas de peso' }).locator('img')).toHaveCount(7, { timeout: 20_000 });
     await page.getByRole('radio', { name: 'Obeso' }).click();

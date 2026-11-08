@@ -23,7 +23,7 @@ const MARMOL = new THREE.Color('#efe9df').convertSRGBToLinear();
 const VETA = new THREE.Color('#9d958a').convertSRGBToLinear();
 
 /** Pinta vetas de mármol según la posición (no hace falta textura). */
-function marmolizar(g: THREE.BufferGeometry, tono = 1) {
+export function marmolizar(g: THREE.BufferGeometry, tono = 1) {
   const pos = g.getAttribute('position');
   const col = new Float32Array(pos.count * 3);
   const c = new THREE.Color();

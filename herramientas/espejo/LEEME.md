@@ -10,3 +10,15 @@ https://github.com/makehumancommunity/makehuman). Para volver a generarlo:
 El archivo trae: la malla simplificada (look facetado), las deformaciones (peso, músculo, forma de cara,
 nariz, papada…), las zonas de color (piel, remera, pantalón, zapatos, ojos, cejas, labios) y las
 cáscaras de pelo y barba. La app (src/screens/espejo/avatar.ts) mezcla todo en el celular.
+
+## Estatuas de mármol (Meshy)
+
+Cada etapa física es un modelo hecho en Meshy (licencia privada) y optimizado para el celular:
+
+```
+npx @gltf-transform/cli weld original.glb w.glb
+npx @gltf-transform/cli simplify w.glb s.glb --ratio 0.09 --error 0.0005
+npx @gltf-transform/cli meshopt s.glb public/espejo/marmol/NN-nombre.glb --level medium
+```
+
+Después se agrega a `public/espejo/marmol/indice.json` con su nombre y orden.

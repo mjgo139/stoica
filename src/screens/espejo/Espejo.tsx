@@ -7,18 +7,20 @@ import { EspejoImagen } from './EspejoImagen';
 const CON_IMAGEN = false;
 
 // Los 3D traen su motor (three.js): se cargan solo al entrar.
+const EspejoMarmol = lazy(() => import('./EspejoMarmol').then((m) => ({ default: m.EspejoMarmol })));
 const EspejoEstatua = lazy(() => import('./EspejoEstatua').then((m) => ({ default: m.EspejoEstatua })));
 const Espejo3D = lazy(() => import('./Espejo3D').then((m) => ({ default: m.Espejo3D })));
 
-type Version = 'estatua' | 'personaje' | 'imagen';
+type Version = 'marmol' | 'estatua' | 'personaje' | 'imagen';
 
 /** El Espejo (prueba, solo admin): estatua griega que cambia con el peso, personaje 3D y (pausada) versión con imágenes. */
 export function Espejo() {
   const perfil = useSesion((s) => s.perfil);
-  const [version, setVersion] = useState<Version>('estatua');
+  const [version, setVersion] = useState<Version>('marmol');
   if (perfil?.rol !== 'admin') return <Navigate to="/" replace />;
   const opciones: Array<[Version, string]> = [
-    ['estatua', 'Estatua'],
+    ['marmol', 'Mármol'],
+    ['estatua', 'Estatua simple'],
     ['personaje', 'Personaje 3D'],
     ...(CON_IMAGEN ? ([['imagen', 'Imagen']] as Array<[Version, string]>) : []),
   ];
@@ -29,7 +31,7 @@ export function Espejo() {
       <p className="mu" style={{ marginTop: 4 }}>
         Solo vos lo ves por ahora.
       </p>
-      <div className="seg3" role="radiogroup" aria-label="Versión del espejo" style={{ marginTop: 12, maxWidth: 400 }}>
+      <div className="seg3" role="radiogroup" aria-label="Versión del espejo" style={{ marginTop: 12, maxWidth: 520 }}>
         {opciones.map(([v, t]) => (
           <button key={v} type="button" role="radio" aria-checked={version === v} className={version === v ? 'on' : ''} onClick={() => setVersion(v)}>
             {t}
@@ -39,7 +41,7 @@ export function Espejo() {
       {version === 'imagen' && CON_IMAGEN ? (
         <EspejoImagen />
       ) : (
-        <Suspense fallback={<p className="mu" style={{ marginTop: 18 }}>Cargando…</p>}>{version === 'estatua' ? <EspejoEstatua /> : <Espejo3D />}</Suspense>
+        <Suspense fallback={<p className="mu" style={{ marginTop: 18 }}>Cargando…</p>}>{version === 'marmol' ? <EspejoMarmol /> : version === 'estatua' ? <EspejoEstatua /> : <Espejo3D />}</Suspense>
       )}
     </div>
   );
