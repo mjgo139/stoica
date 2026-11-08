@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSesion } from './sesion';
 import { Shell } from './Shell';
@@ -17,6 +17,8 @@ import { Comunidad, Unirse } from '@/screens/comunidad/Comunidad';
 import { Grupo } from '@/screens/comunidad/Grupo';
 import { Desafio } from '@/screens/comunidad/Desafio';
 import { Admin } from '@/screens/Admin';
+// El Espejo trae el motor 3D: se carga solo al entrar.
+const Espejo = lazy(() => import('@/screens/espejo/Espejo').then((m) => ({ default: m.Espejo })));
 import { Cargando, PantallaError, SinConexion } from '@/screens/Estados';
 import { useEnLinea } from '@/pwa/conexion';
 
@@ -56,6 +58,14 @@ export function App() {
         <Route path="enfoque" element={<Navigate to="/tareas/enfoque" replace />} />
         <Route path="memento" element={<MementoMori />} />
         <Route path="examen" element={<Examen />} />
+        <Route
+          path="espejo"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <Espejo />
+            </Suspense>
+          }
+        />
         <Route path="perfil" element={<Perfil />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

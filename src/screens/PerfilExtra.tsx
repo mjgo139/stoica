@@ -219,6 +219,12 @@ export function Accesos() {
           <span className="mu2">›</span>
         </Link>
       )}
+      {rol === 'admin' && (
+        <Link to="/espejo" className="fila" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <span style={{ flex: 1 }}>El Espejo (prueba)</span>
+          <span className="mu2">›</span>
+        </Link>
+      )}
     </>
   );
 }
