@@ -1061,6 +1061,8 @@ async function generarImagen(texto: string, imagenes: Array<{ datos: Buffer; tip
 
 export const espejoGenerar = onCall({ ...llamable, memory: '512MiB', timeoutSeconds: 180 }, async (req) => {
   const uid = exigirAdmin(req); // prueba: solo admin
+  // Pausado: la versión con imágenes no convenció. Se reactiva con ESPEJO_IMAGEN=si (no genera costo mientras tanto).
+  if (process.env.ESPEJO_IMAGEN !== 'si') throw new HttpsError('failed-precondition', 'La versión con imágenes del Espejo está pausada.');
   const { que, foto, descripcion, remera, pantalon, etapa } = (req.data ?? {}) as Record<string, unknown>;
   const ref = db().doc(`users/${uid}/espejo/reflejo`);
   const actual = ((await ref.get()).data() ?? {}) as {

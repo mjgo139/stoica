@@ -639,24 +639,14 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Enfoque' })).toBeVisible();
   });
 
-  test('el espejo (solo admin): versión con imágenes (lámina, planos, etapas) y versión 3D', async ({ page }) => {
+  test('el espejo (solo admin): versión 3D (la de imágenes está pausada)', async ({ page }) => {
     test.setTimeout(90_000);
     await entrarConEjemplo(page);
     await ir(page, '/espejo');
     await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
-    // Imagen: en modo prueba la "IA" devuelve una lámina dibujada.
-    await page.getByLabel('Algo más de vos (opcional)').fill('34 años, 1,75 m, algo de panza');
-    await page.getByRole('radiogroup', { name: 'Remera' }).getByRole('radio', { name: 'Azul' }).click();
-    await page.getByRole('button', { name: 'Crear mi reflejo' }).click();
-    await expect(page.getByRole('img', { name: 'Tu reflejo: Hoy' })).toBeVisible();
-    await page.getByRole('button', { name: 'Tu meta' }).click();
-    await expect(page.getByRole('button', { name: 'Tu meta' })).toBeHidden();
-    await page.getByLabel('Evolución').fill('300');
-    await expect(page.getByRole('img', { name: 'Tu reflejo: Tu meta' })).toBeVisible();
-    await page.getByRole('radio', { name: 'Perfil' }).click();
-    await captura(page, '27-espejo-imagen');
     // 3D
-    await page.getByRole('radio', { name: '3D' }).click();
+    // La versión con imágenes está pausada: se abre directo el 3D.
+    await expect(page.getByRole('radio', { name: 'Imagen (nueva)' })).toHaveCount(0);
     await expect(page.getByText('Preparando tu reflejo…')).toBeHidden({ timeout: 45_000 });
     await page.getByLabel('Cuerpo').fill('95');
     await page.getByRole('radio', { name: 'Grande' }).click();
