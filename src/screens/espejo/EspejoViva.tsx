@@ -101,9 +101,9 @@ export function EspejoViva() {
         </div>
         <div className="card" style={{ flex: '1 1 280px', minWidth: 0, padding: '14px 16px 18px' }}>
           {deslizante('Peso', f.peso, f.musculo > 0.001 ? 'Atlético' : nombrePeso, ['Delgado', 'Muy obeso'], (v) => setF({ peso: v, musculo: 0 }))}
-          {deslizante('Músculo', f.musculo, nombreMusculo, ['Normal', 'Fisicoculturista'], (v) => setF({ peso: PESO_ATLETICO, musculo: v }))}
+          {deslizante('Músculo', f.musculo, nombreMusculo, ['Atlético', 'Fisicoculturista'], (v) => setF({ peso: PESO_ATLETICO, musculo: v }))}
           <p className="mu2" style={{ fontSize: 11.5, marginTop: 14 }}>
-            Tus 8 estatuas de Meshy unidas: en cada etapa ves la estatua real y entre etapas se transforma de una a otra. El músculo sale desde Atlético (si movés el peso, vuelve a Normal). Por ahora se mueve a mano.
+            Tus estatuas de Meshy unidas: en cada etapa ves la estatua real y entre etapas se transforma de una a otra. El músculo sale desde Atlético (si movés el peso, el músculo vuelve a cero). Por ahora se mueve a mano.
           </p>
         </div>
       </div>

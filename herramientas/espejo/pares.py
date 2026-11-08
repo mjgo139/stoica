@@ -5,7 +5,7 @@ from scipy.spatial import cKDTree
 D = os.environ.get('MODELOS', 'modelos/')
 OUT = os.environ.get('SALIDA', 'salida/')
 os.makedirs(OUT, exist_ok=True)
-PARES = [('lean','athletic'),('athletic','stocky'),('stocky','overweight'),('overweight','obese'),('obese','extra_obese'),('athletic','heavy_muscular'),('heavy_muscular','bodybuilder')]
+PARES = [('lean','athletic'),('athletic','normal'),('normal','rellenito'),('rellenito','sobrepeso'),('sobrepeso','obeso'),('obeso','muy_obeso'),('athletic','musculoso'),('musculoso','bodybuilder')]
 
 def cargar(n):
     m = trimesh.load(D + n + '.s.glb', force='mesh')

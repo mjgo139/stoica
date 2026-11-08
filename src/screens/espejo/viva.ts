@@ -16,14 +16,15 @@ const BASE = '/espejo/viva/';
 export const ETAPAS_PESO = [
   { id: 'lean', nombre: 'Delgado' },
   { id: 'athletic', nombre: 'Atlético' },
-  { id: 'stocky', nombre: 'Fornido' },
-  { id: 'overweight', nombre: 'Con sobrepeso' },
-  { id: 'obese', nombre: 'Obeso' },
-  { id: 'extra_obese', nombre: 'Muy obeso' },
+  { id: 'normal', nombre: 'Normal' },
+  { id: 'rellenito', nombre: 'Rellenito' },
+  { id: 'sobrepeso', nombre: 'Con sobrepeso' },
+  { id: 'obeso', nombre: 'Obeso' },
+  { id: 'muy_obeso', nombre: 'Muy obeso' },
 ];
 export const ETAPAS_MUSCULO = [
-  { id: 'athletic', nombre: 'Normal' },
-  { id: 'heavy_muscular', nombre: 'Musculoso' },
+  { id: 'athletic', nombre: 'Atlético' },
+  { id: 'musculoso', nombre: 'Musculoso' },
   { id: 'bodybuilder', nombre: 'Fisicoculturista' },
 ];
 /** Posición del Atlético en el camino del peso (el músculo solo se suma desde ahí). */

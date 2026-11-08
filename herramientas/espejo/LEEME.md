@@ -30,11 +30,11 @@ En cada etapa se muestra la estatua real de Meshy. Entre dos etapas vecinas, cad
 y se funden a mitad de camino.
 
 1. Simplificar cada GLB de Meshy (weld + simplify, como arriba, sin meshopt) a `modelos/<nombre>.s.glb`
-   (lean, athletic, stocky, overweight, obese, extra_obese, heavy_muscular, bodybuilder).
+   (lean, athletic, normal, rellenito, sobrepeso, obeso, muy_obeso, musculoso, bodybuilder).
 2. `MODELOS=modelos/ SALIDA=salida/ python3 pares.py` (~3 min): deja `<etapa>_v.bin`, `<etapa>_f.bin` y `<a>__<b>.bin`.
 3. Por etapa: `node armar-etapa.mjs salida <etapa> <vecinas...> e.glb`, después
    `npx @gltf-transform/cli quantize e.glb q.glb --quantize-position 14` y
    `npx @gltf-transform/cli meshopt q.glb public/espejo/viva/<etapa>.glb` (0,5 a 1 MB cada una).
-   Vecinas: lean→athletic · athletic→lean, stocky, heavy_muscular · stocky→athletic, overweight ·
-   overweight→stocky, obese · obese→overweight, extra_obese · extra_obese→obese ·
-   heavy_muscular→athletic, bodybuilder · bodybuilder→heavy_muscular.
+   Vecinas: lean→athletic · athletic→lean, normal, musculoso · normal→athletic, rellenito ·
+   rellenito→normal, sobrepeso · sobrepeso→rellenito, obeso · obeso→sobrepeso, muy_obeso · muy_obeso→obeso ·
+   musculoso→athletic, bodybuilder · bodybuilder→musculoso (la lista de pares está en PARES, dentro de pares.py).
