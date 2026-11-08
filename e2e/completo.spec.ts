@@ -639,6 +639,21 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Enfoque' })).toBeVisible();
   });
 
+  test('el espejo (solo admin): reflejo 3D, deslizante del cuerpo y vista de la cara', async ({ page }) => {
+    test.setTimeout(90_000);
+    await entrarConEjemplo(page);
+    await ir(page, '/espejo');
+    await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
+    await expect(page.getByText('Preparando tu reflejo…')).toBeHidden({ timeout: 45_000 });
+    await page.getByLabel('Cuerpo').fill('95');
+    await page.getByRole('radio', { name: 'Grande' }).click();
+    await page.waitForTimeout(800);
+    await captura(page, '27-espejo');
+    await page.getByRole('radio', { name: 'Cara' }).click();
+    await page.waitForTimeout(800);
+    await captura(page, '27-espejo-cara');
+  });
+
   test('borrar mi cuenta', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('tab', { name: 'Crear cuenta' }).click();
