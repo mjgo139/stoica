@@ -640,13 +640,26 @@ test.describe('v0.5–v1.0', () => {
   });
 
   test('el espejo (solo admin): estatua griega que cambia con el peso, tira de 7 etapas y personaje 3D', async ({ page }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(300_000);
     page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
     await entrarConEjemplo(page);
     await ir(page, '/espejo');
     await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
     // Estatua viva (una estatua de Meshy que se deforma)
     await expect(page.getByText('Trayendo tu estatua…')).toBeHidden({ timeout: 45_000 });
+    // Mi progreso: elegir camino, etapa de hoy y hábitos; el modo prueba hace avanzar la estatua
+    await page.getByRole('radio', { name: 'Con sobrepeso' }).click();
+    await page.getByRole('checkbox').first().check();
+    await page.getByRole('button', { name: 'Empezar' }).click();
+    await expect(page.getByText('Con sobrepeso → Rellenito')).toBeVisible();
+    await page.getByRole('button', { name: /Modo prueba/ }).click();
+    await page.getByRole('button', { name: '+10 cumplidos' }).click();
+    await expect(page.getByText(/^MODO PRUEBA/)).toBeVisible();
+    await expect(page.getByText('Rellenito → Normal')).toBeVisible();
+    await page.waitForTimeout(1500);
+    await captura(page, '27-espejo-progreso');
+    // Explorar etapas a mano
+    await page.getByRole('radio', { name: 'Explorar etapas' }).click();
     await page.getByLabel('Peso', { exact: true }).fill('85');
     await expect(page.getByLabel('Estatua viva: Obeso')).toBeVisible();
     await page.waitForTimeout(800);
