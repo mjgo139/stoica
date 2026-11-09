@@ -1,125 +1,133 @@
 /**
- * Marco Aurelio animado (prueba de animación con la hoja de poses de ChatGPT):
- * entra caminando desde el costado hasta la planta, se da vuelta y habla gesticulando, y se va caminando.
- * Los cuadros están en public/jardin/marco.webp (una grilla de celdas iguales, pies abajo).
+ * Marco Aurelio animado: camina por los pasillos del jardín en 4 direcciones (hoja de ChatGPT de 4 filas × 3 pasos),
+ * llega a la planta, se da vuelta y habla, y se va caminando por donde vino.
+ * Su tamaño depende de la profundidad (más chico al fondo), siempre más alto que una planta.
  */
 import { useEffect, useRef, useState } from 'react';
 
-const ATLAS = { archivo: '/jardin/marco.webp', celda: [146, 207], columnas: 8, ancho: 1168, alto: 621 } as const;
-const ANIM = { camina: [0, 1, 2, 3, 4, 5, 6], frente: [7, 8, 9, 10, 11, 12], quieto: [13], brazos: [14], piensa: [15], habla: [16, 17], senala: [18] } as const;
+const ATLAS = { archivo: '/jardin/marco.webp', celda: [157, 224], columnas: 3, ancho: 471, alto: 896 } as const;
+/** Filas de la hoja: hacia abajo (de frente), izquierda, derecha, hacia arriba (de espaldas). */
+const DIR = { abajo: 0, izquierda: 1, derecha: 2, arriba: 3 } as const;
+type Dir = keyof typeof DIR;
+/** Ciclo de pasos: pie, parado, el otro pie, parado. */
+const PASOS = [0, 1, 2, 1];
 
-/** Secuencia mientras habla: [cuadro, segundos]. */
-const CHARLA: Array<[number, number]> = [
-  [ANIM.quieto[0], 1.4],
-  [ANIM.habla[0], 0.8],
-  [ANIM.habla[1], 0.9],
-  [ANIM.habla[0], 0.7],
-  [ANIM.quieto[0], 1.2],
-  [ANIM.piensa[0], 1.6],
-  [ANIM.senala[0], 1.1],
-  [ANIM.quieto[0], 1.0],
-  [ANIM.brazos[0], 1.6],
-];
-
-export type FaseMarco = 'llega' | 'habla' | 'seVa' | 'fuera';
+export type Punto = [number, number]; // [x %, y %] del jardín
 
 interface Props {
-  /** Destino (en % del ancho del jardín) y piso donde apoya los pies (en % del alto). */
-  x: number;
-  piso: number;
-  /** Alto en px. */
-  alto: number;
-  /** true cuando hay que irse. */
+  /** Camino de llegada (el primero puede estar fuera del jardín) y de salida. */
+  llegada: Punto[];
+  salida: Punto[];
+  /** Alto en px que debe tener parado en una profundidad y (en %). */
+  altoEn: (y: number) => number;
+  /** Tamaño del jardín en px (para caminar a velocidad pareja). */
+  anchoPx: number;
+  altoPx: number;
   irse: boolean;
   etiqueta: string;
   alTocar: () => void;
   alLlegar?: () => void;
   alIrse?: () => void;
+  /** Para dibujar el globo sobre la cabeza. */
+  alMoverse?: (x: number, y: number, alto: number, hablando: boolean) => void;
 }
 
-export function MarcoAnimado({ x, piso, alto, irse, etiqueta, alTocar, alLlegar, alIrse }: Props) {
-  const quieto = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const [fase, setFase] = useState<FaseMarco>(quieto ? 'habla' : 'llega');
-  const [pos, setPos] = useState(quieto ? x : -8);
-  const [cuadro, setCuadro] = useState<number>(quieto ? ANIM.quieto[0] : ANIM.camina[0]);
-  const ref = useRef({ fase, pos, t0: 0, charla: 0, enCharla: 0 });
-  ref.current.fase = fase;
+export function MarcoAnimado({ llegada, salida, altoEn, anchoPx, altoPx, irse, etiqueta, alTocar, alLlegar, alIrse, alMoverse }: Props) {
+  const reducido = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const destino = llegada[llegada.length - 1];
+  const [estado, setEstado] = useState<{ x: number; y: number; dir: Dir; paso: number; fase: 'llega' | 'habla' | 'seVa' | 'fuera' }>(() =>
+    reducido ? { x: destino[0], y: destino[1], dir: 'abajo', paso: 1, fase: 'habla' } : { x: llegada[0][0], y: llegada[0][1], dir: 'derecha', paso: 1, fase: 'llega' },
+  );
+  const r = useRef({ ...estado, tramo: 1, ruta: llegada, ciclo: 0 });
 
   useEffect(() => {
-    if (irse && (fase === 'habla' || fase === 'llega')) setFase('seVa');
-  }, [irse, fase]);
+    if (irse && (r.current.fase === 'habla' || r.current.fase === 'llega')) {
+      r.current.fase = 'seVa';
+      r.current.ruta = [[r.current.x, r.current.y], ...salida];
+      r.current.tramo = 1;
+    }
+  }, [irse, salida]);
 
   useEffect(() => {
-    if (fase === 'habla') alLlegar?.();
-    if (fase === 'fuera') alIrse?.();
+    if (estado.fase === 'habla') alLlegar?.();
+    if (estado.fase === 'fuera') alIrse?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fase]);
+  }, [estado.fase]);
 
   useEffect(() => {
-    if (fase === 'fuera') return;
+    alMoverse?.(estado.x, estado.y, altoEn(estado.y), estado.fase === 'habla');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado.x, estado.y, estado.fase]);
+
+  useEffect(() => {
     let raf = 0;
     let antes = performance.now();
-    let paso = 0;
-    const velocidad = 13; // % del ancho por segundo
     const tick = (ahora: number) => {
       const dt = Math.min(0.05, (ahora - antes) / 1000);
       antes = ahora;
-      const r = ref.current;
-      if (r.fase === 'llega' || r.fase === 'seVa') {
-        paso += dt * 9; // cuadros por segundo de la caminata
-        setCuadro(ANIM.camina[Math.floor(paso) % ANIM.camina.length]);
-        const meta = r.fase === 'llega' ? x : 110;
-        r.pos = Math.min(meta, r.pos + velocidad * dt);
-        setPos(r.pos);
-        if (r.pos >= meta) {
-          if (r.fase === 'llega') {
-            r.enCharla = 0;
-            r.charla = 0;
-            setFase('habla');
-          } else setFase('fuera');
+      const s = r.current;
+      if (s.fase === 'llega' || s.fase === 'seVa') {
+        const [tx, ty] = s.ruta[s.tramo];
+        const dxPx = ((tx - s.x) / 100) * anchoPx;
+        const dyPx = ((ty - s.y) / 100) * altoPx;
+        const dist = Math.hypot(dxPx, dyPx);
+        // Camina a ~0,9 de su altura por segundo (más lento al fondo, como en la vida real)
+        const vel = Math.max(25, altoEn(s.y) * 0.9);
+        const avance = vel * dt;
+        if (Math.abs(dxPx) > 0.5 || Math.abs(dyPx) > 0.5) s.dir = Math.abs(dxPx) >= Math.abs(dyPx) ? (dxPx > 0 ? 'derecha' : 'izquierda') : dyPx > 0 ? 'abajo' : 'arriba';
+        if (dist <= avance) {
+          s.x = tx;
+          s.y = ty;
+          s.tramo++;
+          if (s.tramo >= s.ruta.length) {
+            if (s.fase === 'llega') {
+              s.fase = 'habla';
+              s.dir = 'abajo';
+              s.paso = 1;
+            } else s.fase = 'fuera';
+          }
+        } else {
+          s.x += (dxPx / dist) * avance * (100 / anchoPx);
+          s.y += (dyPx / dist) * avance * (100 / altoPx);
         }
-      } else if (r.fase === 'habla') {
-        r.enCharla += dt;
-        const [c, dur] = CHARLA[r.charla % CHARLA.length];
-        setCuadro(c);
-        if (r.enCharla > dur) {
-          r.enCharla = 0;
-          r.charla++;
-        }
+        s.ciclo += dt * 7;
+        s.paso = PASOS[Math.floor(s.ciclo) % PASOS.length];
       }
-      raf = requestAnimationFrame(tick);
+      setEstado({ x: s.x, y: s.y, dir: s.dir, paso: s.paso, fase: s.fase });
+      if (s.fase !== 'fuera') raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [fase, x]);
+  }, [anchoPx, altoPx, altoEn]);
 
-  if (fase === 'fuera') return null;
+  if (estado.fase === 'fuera') return null;
   const [cw, ch] = ATLAS.celda;
+  const alto = altoEn(estado.y);
   const esc = alto / ch;
-  const col = cuadro % ATLAS.columnas;
-  const fila = Math.floor(cuadro / ATLAS.columnas);
   return (
     <button
       type="button"
-      className="marco"
+      className={`marco${estado.fase === 'habla' ? ' hablando' : ''}`}
       aria-label={etiqueta}
       onClick={alTocar}
       style={{
         position: 'absolute',
-        left: `${pos}%`,
-        top: `${piso}%`,
+        left: `${estado.x}%`,
+        top: `${estado.y}%`,
         width: cw * esc,
         height: alto,
         transform: 'translate(-50%, -100%)',
+        transformOrigin: '50% 100%',
         backgroundImage: `url(${ATLAS.archivo})`,
         backgroundSize: `${ATLAS.ancho * esc}px ${ATLAS.alto * esc}px`,
-        backgroundPosition: `${-col * cw * esc}px ${-fila * ch * esc}px`,
+        backgroundPosition: `${-estado.paso * cw * esc}px ${-DIR[estado.dir] * ch * esc}px`,
         backgroundRepeat: 'no-repeat',
         border: 0,
         padding: 0,
         cursor: 'pointer',
         filter: 'drop-shadow(2px 5px 3px rgba(60,40,10,.4))',
-        zIndex: 85,
+        // Delante de las plantas de su fila y detrás de las de adelante
+        zIndex: 3 + Math.round(estado.y),
       }}
     />
   );

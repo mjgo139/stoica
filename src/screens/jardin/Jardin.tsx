@@ -106,6 +106,7 @@ function JardinAdmin() {
   const [marcoLlego, setMarcoLlego] = useState(false);
   const [marcoIrse, setMarcoIrse] = useState(false);
   const [avisoLeido, setAvisoLeido] = useState('');
+  const [marcoPos, setMarcoPos] = useState<{ x: number; y: number; alto: number } | null>(null);
   const [conSonido, setConSonido] = useState(false);
   const sonido = useRef<SonidoJardin | null>(null);
   const [refJardin, anchoPx] = useAnchoPx<HTMLDivElement>();
@@ -235,6 +236,32 @@ function JardinAdmin() {
   const sedientas = jardin.plantas.filter((p) => p.pideAgua).map((p) => p.id);
   const rg = REGADERA[forma];
   const pxPorPct = anchoPx / 100;
+  const altoJardinPx = anchoPx / relacion;
+  // Perspectiva: ancho de los maceteros según la profundidad (recta ajustada a los 15 maceteros).
+  const anchoEnY = useMemo(() => {
+    const ms = MACETEROS[forma];
+    const my = ms.reduce((s, m) => s + m.y, 0) / ms.length;
+    const mw = ms.reduce((s, m) => s + m.w, 0) / ms.length;
+    const b = ms.reduce((s, m) => s + (m.y - my) * (m.w - mw), 0) / ms.reduce((s, m) => s + (m.y - my) ** 2, 0);
+    return (y: number) => mw + b * (y - my);
+  }, [forma]);
+  // Una persona mide como 1,8 maceteros de ancho: siempre más alta que las plantas.
+  const altoMarco = useCallback((y: number) => Math.max(56, anchoEnY(y) * pxPorPct * 1.8), [anchoEnY, pxPorPct]);
+  const rutaMarco = useMemo(() => {
+    if (!filosofo) return null;
+    const i = items.findIndex((it) => it.id === filosofo.id);
+    const m = maceteros[i];
+    if (!m) return null;
+    const fondoY = forma === 'vertical' ? 25.5 : 33; // pasillo del fondo, delante de la baranda
+    const pasillo = m.x + m.w * 0.62; // pasillo a la derecha de su macetero
+    const destinoY = m.y + m.h * 0.6;
+    const entra = pasillo < 50 ? -6 : 106;
+    const sale = entra < 0 ? 106 : -6;
+    return {
+      llegada: [[entra, fondoY], [pasillo, fondoY], [pasillo, destinoY]] as Array<[number, number]>,
+      salida: [[pasillo, fondoY], [sale, fondoY]] as Array<[number, number]>,
+    };
+  }, [filosofo, items, maceteros, forma]);
 
   return (
     <div className="entra" style={{ maxWidth: 1100, marginInline: 'auto' }}>
@@ -263,6 +290,8 @@ function JardinAdmin() {
         .filosofo img { width: 100%; display: block; }
         .globo { position: absolute; transform: translate(-50%, -100%); background: #fffaf0; color: #3b2a12; border: 1.5px solid #c9a24a; border-radius: 12px; padding: 5px 9px; font-size: 11.5px; font-weight: 700; line-height: 1.25; max-width: 170px; text-align: center; box-shadow: 0 3px 8px rgba(0,0,0,.25); animation: globo 2.6s ease-in-out infinite; cursor: pointer; }
         .globo::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -6px; border: 6px solid transparent; border-top-color: #c9a24a; border-bottom: 0; }
+        @keyframes respirar { 0%,100% { transform: translate(-50%, -100%) scale(1, 1) } 50% { transform: translate(-50%, -100%) scale(1.012, 1.018) } }
+        .marco.hablando { animation: respirar 2.6s ease-in-out infinite; }
         .hoja-planta { position: fixed; inset: 0; z-index: 200; background: rgba(20,14,6,.55); display: flex; justify-content: center; align-items: flex-end; }
         .hoja-planta > div { background: var(--bg, #f4ede1); width: min(760px, 100%); max-height: 92vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 14px 16px 28px; }
         @media (min-width: 760px) { .hoja-planta { align-items: center } .hoja-planta > div { border-radius: 22px } }
@@ -318,7 +347,6 @@ function JardinAdmin() {
             const anchoPct = (s.w / ANCHO_MAX[planta]) * m.w * escala;
             const altoPct = anchoPct * relacion * (s.h / s.w);
             const piso = m.y + m.h * 0.45;
-            const conFilosofo = filosofo?.id === it.id;
             return (
               <div key={it.id}>
                 <div
@@ -349,29 +377,31 @@ function JardinAdmin() {
                     💧
                   </span>
                 )}
-                {conFilosofo && filosofo && (
-                  <>
-                    <MarcoAnimado
-                      key={`${filosofo.id}-${diaVisita}-${filosofo.c.titulo}`}
-                      x={m.x + m.w * 0.66}
-                      piso={m.y + m.h * 0.95}
-                      alto={Math.max(72, m.w * pxPorPct * 1.05)}
-                      irse={marcoIrse}
-                      etiqueta={`${filosofo.c.filosofo.nombre}: ${filosofo.c.titulo}`}
-                      alTocar={() => setVerConsejo(true)}
-                      alLlegar={() => setMarcoLlego(true)}
-                      alIrse={marcoSeFue}
-                    />
-                    {marcoLlego && !marcoIrse && (
-                      <span className="globo" role="button" tabIndex={0} onClick={() => setVerConsejo(true)} onKeyDown={(e) => e.key === 'Enter' && setVerConsejo(true)} style={{ left: `${m.x + m.w * 0.66}%`, top: `calc(${m.y + m.h * 0.95}% - ${Math.max(72, m.w * pxPorPct * 1.05) + 6}px)`, zIndex: 90 }}>
-                        {filosofo.aviso ? filosofo.c.titulo : `${filosofo.c.filosofo.nombre} te dejó un consejo`}
-                      </span>
-                    )}
-                  </>
-                )}
+
               </div>
             );
           })}
+          {filosofo && rutaMarco && (
+            <MarcoAnimado
+              key={`${filosofo.id}-${diaVisita}-${filosofo.c.titulo}-${forma}`}
+              llegada={rutaMarco.llegada}
+              salida={rutaMarco.salida}
+              altoEn={altoMarco}
+              anchoPx={anchoPx}
+              altoPx={altoJardinPx}
+              irse={marcoIrse}
+              etiqueta={`${filosofo.c.filosofo.nombre}: ${filosofo.c.titulo}`}
+              alTocar={() => setVerConsejo(true)}
+              alLlegar={() => setMarcoLlego(true)}
+              alIrse={marcoSeFue}
+              alMoverse={(x, y, alto) => setMarcoPos({ x, y, alto })}
+            />
+          )}
+          {filosofo && marcoLlego && !marcoIrse && marcoPos && (
+            <span className="globo" role="button" tabIndex={0} onClick={() => setVerConsejo(true)} onKeyDown={(e) => e.key === 'Enter' && setVerConsejo(true)} style={{ left: `${marcoPos.x}%`, top: `calc(${marcoPos.y}% - ${marcoPos.alto + 6}px)`, zIndex: 90 }}>
+              {filosofo.aviso ? filosofo.c.titulo : `${filosofo.c.filosofo.nombre} te dejó un consejo`}
+            </span>
+          )}
           {/* Zonas tocables sobre cada macetero */}
           {items.map((it, i) => {
             const m = maceteros[i];
@@ -414,7 +444,7 @@ function JardinAdmin() {
 
       {verConsejo && filosofo && (
         <div className="card" style={{ marginTop: 12, padding: '12px 16px', display: 'flex', gap: 14, alignItems: 'flex-start', border: '1.5px solid #c9a24a' }}>
-          <span aria-hidden style={{ width: 52, height: 74, flex: 'none', backgroundImage: 'url(/jardin/marco.webp)', backgroundSize: `${1168 * (74 / 207)}px ${621 * (74 / 207)}px`, backgroundPosition: `${-(16 % 8) * 146 * (74 / 207)}px ${-Math.floor(16 / 8) * 207 * (74 / 207)}px`, backgroundRepeat: 'no-repeat' }} />
+          <span aria-hidden style={{ width: 52, height: 74, flex: 'none', backgroundImage: 'url(/jardin/marco.webp)', backgroundSize: `${471 * (74 / 224)}px ${896 * (74 / 224)}px`, backgroundPosition: `${-157 * (74 / 224)}px 0px`, backgroundRepeat: 'no-repeat' }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="cap gold">{filosofo.c.filosofo.nombre}</div>
             <div style={{ fontWeight: 800, fontSize: 15, marginTop: 2 }}>{filosofo.c.titulo}</div>
