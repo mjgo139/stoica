@@ -251,3 +251,14 @@ export function visitaDelDia(fecha: string, cantidadPlantas: number): { planta: 
   if (h % 3 !== 0) return null;
   return { planta: Math.floor(h / 3) % cantidadPlantas, semilla: Math.floor(h / 7) };
 }
+
+/**
+ * Planta de un hábito que otra persona comparte en un grupo. Solo se conoce su racha y si cumplió
+ * cada uno de los últimos 7 días (sin saber qué días le tocaban), así que es una versión aproximada:
+ * crece con la racha, y se ve marchita solo si no cumplió ningún día de la última semana.
+ */
+export function plantaCompartida(c: { racha: number; semana?: boolean[] }): { etapa: number; retonos: number } {
+  const semanaSinNada = !!c.semana && c.semana.length > 0 && c.semana.every((d) => !d);
+  if (c.racha <= 0 && semanaSinNada) return { etapa: MARCHITA, retonos: 0 };
+  return { etapa: etapaPlanta(c.racha, 0), retonos: retonos(c.racha) };
+}

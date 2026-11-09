@@ -18,6 +18,7 @@ const TRAZOS = {
   check: '<path d="M5 12l4 4 10-10"/>',
   grupo: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 2 6 5.5"/>',
   panel: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  planta: '<path d="M12 21v-9M12 12c0-4 3-7 7-7 0 4-3 7-7 7zM12 15c0-3-2.5-5.5-6-5.5 0 3.5 2.5 5.5 6 5.5zM7 21h10"/>',
 } as const;
 
 export type NombreIcono = keyof typeof TRAZOS;

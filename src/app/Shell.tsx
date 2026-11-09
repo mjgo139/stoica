@@ -79,12 +79,10 @@ export function Shell() {
               El Espejo
             </NavLink>
           )}
-          {perfil.rol === 'admin' && (
-            <NavLink to="/jardin" className={({ isActive }) => (isActive ? 'on' : '')}>
-              <Icono nombre="panel" tam={22} className="" />
-              Jardín
-            </NavLink>
-          )}
+          <NavLink to="/jardin" className={({ isActive }) => (isActive ? 'on' : '')}>
+            <Icono nombre="planta" tam={22} className="" />
+            Jardín
+          </NavLink>
         </div>
         <div className="yo">
           <NavLink to="/perfil" className={({ isActive }) => (isActive ? 'on' : '')}>

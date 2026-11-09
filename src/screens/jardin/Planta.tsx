@@ -9,12 +9,6 @@ import { calcularJardin, useGuardado, type PlantaCalc, type RetonoCalc } from '.
 
 /** Página de una planta (ruta /jardin/:id). Dentro del jardín se abre la misma vista encima. */
 export function PlantaJardin() {
-  const perfil = useSesion((s) => s.perfil);
-  if (perfil?.rol !== 'admin') return <Navigate to="/" replace />;
-  return <Pagina />;
-}
-
-function Pagina() {
   const { id } = useParams();
   const uid = useSesion((s) => s.usuario?.uid ?? '');
   const hoy = useHoy();

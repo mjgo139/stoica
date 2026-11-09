@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
 import { useSesion } from '@/app/sesion';
 import { alCien, consejo, DIAS_PARA_MARCHITAR, DIAS_POR_RETONO, ETAPAS_PLANTA, faltanParaCrecer, hashTexto, MARCHITA, MAX_RETONOS, PLANTA_DE_VIRTUD, UMBRALES, visitaDelDia, type Consejo } from '@core/jardin';
 import { NOMBRE_VIRTUD, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
 import { useAvisos } from '@/ui/avisos';
 import { alternarSiNo, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
-import { FONDOS, MACETEROS, SPRITES } from './disposicion';
+import { FONDOS, MACETEROS } from './disposicion';
+import { fuerzaNoche, maceterosOrdenados, tinte, ubicarPlanta, useAncho } from './escena';
 import { Noche } from './Noche';
 import { crearSonido, type SonidoJardin } from './sonido';
 import { ESTILOS_GRAFICOS, Medalla } from './Graficos';
@@ -13,42 +13,13 @@ import { VistaPlanta } from './Planta';
 import { MarcoAnimado } from './Marco';
 import { calcularJardin, MAX_MACETEROS, useGuardado, type ModoRiego, type PlantaCalc } from './estado';
 
-/** Ancho máximo de cada planta (su etapa más grande), para que la adulta ocupe el ancho del macetero. */
-const ANCHO_MAX: Record<string, number> = Object.fromEntries(Object.entries(SPRITES).map(([k, v]) => [k, Math.max(...v.map((s) => s.w))]));
 /** Dónde está la regadera dibujada en cada fondo (en %). */
 const REGADERA = { vertical: { x: 12, y: 90, w: 20, h: 10 }, horizontal: { x: 8, y: 82, w: 13, h: 18 } } as const;
-
-function fuerzaNoche(h: number): number {
-  if (h >= 20 || h < 6) return 1;
-  if (h >= 18) return 0.6;
-  if (h < 7) return 0.4;
-  return 0;
-}
-/** Tinte según la hora: amanecer, día, atardecer, noche. */
-function tinte(h: number): { color: string; opacidad: number } {
-  if (h >= 20 || h < 6) return { color: '#101b45', opacidad: 0.64 };
-  if (h < 8) return { color: '#ffb27a', opacidad: 0.16 };
-  if (h >= 17) return { color: '#ff9a4a', opacidad: 0.2 };
-  return { color: '#fff', opacidad: 0 };
-}
 
 const azar = (semilla: number) => {
   let s = semilla % 2147483647 || 1;
   return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
 };
-
-function useAncho(): boolean {
-  const consulta = '(min-width: 760px)';
-  const [ancho, setAncho] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(consulta).matches);
-  useEffect(() => {
-    const m = window.matchMedia?.(consulta);
-    if (!m) return;
-    const f = () => setAncho(m.matches);
-    m.addEventListener('change', f);
-    return () => m.removeEventListener('change', f);
-  }, []);
-  return !!ancho;
-}
 
 /** Ancho en px de un elemento (para dibujar medallas y filósofos a escala). */
 function useAnchoPx<T extends HTMLElement>(): [React.RefObject<T>, number] {
@@ -75,12 +46,7 @@ interface Item {
 
 /** El Jardín estoico: cada hábito es una planta de su virtud que crece con la racha. */
 export function Jardin() {
-  const perfil = useSesion((s) => s.perfil);
-  if (perfil?.rol !== 'admin') return <Navigate to="/" replace />;
-  return <JardinAdmin />;
-}
-
-function JardinAdmin() {
+  const esAdmin = useSesion((s) => s.perfil?.rol === 'admin');
   const uid = useSesion((s) => s.usuario?.uid ?? '');
   const avisar = useAvisos((s) => s.mostrar);
   const hoy = useHoy();
@@ -90,7 +56,7 @@ function JardinAdmin() {
   const forma = ancho ? 'horizontal' : 'vertical';
   const fondo = FONDOS[forma];
   // Se llenan de adelante (los más grandes y visibles) hacia atrás.
-  const maceteros = useMemo(() => [...MACETEROS[forma]].sort((a, b) => b.y - a.y || a.x - b.x), [forma]);
+  const maceteros = useMemo(() => maceterosOrdenados(forma), [forma]);
   const [g, setG] = useGuardado(uid);
   const modo = g.modo;
   const [elegido, setElegido] = useState<string | null>(null);
@@ -297,7 +263,7 @@ function JardinAdmin() {
         @media (min-width: 760px) { .hoja-planta { align-items: center } .hoja-planta > div { border-radius: 22px } }
         @media (prefers-reduced-motion: reduce) { .jardin-planta img, .pide-agua, .medalla-pie, .filosofo, .globo { animation: none } }
       `}</style>
-      <div className="cap gold">Jardín estoico · prueba</div>
+      <div className="cap gold">Jardín estoico</div>
       <h1 className="titulo">Tu jardín</h1>
       <p className="mu" style={{ marginTop: 4 }}>
         Cada hábito es una planta de su virtud. Crece con tu constancia, llega al 100 % (medalla de laurel), da retoños y se marchita si lo dejás.
@@ -342,16 +308,13 @@ function JardinAdmin() {
           {items.map((it, i) => {
             const m = maceteros[i];
             const planta = PLANTA_DE_VIRTUD[it.virtud].id;
-            const s = SPRITES[planta][it.etapa];
-            const escala = it.retonoDe ? 0.85 : 1.1;
-            const anchoPct = (s.w / ANCHO_MAX[planta]) * m.w * escala;
-            const altoPct = anchoPct * relacion * (s.h / s.w);
-            const piso = m.y + m.h * 0.45;
+            const u = ubicarPlanta(planta, it.etapa, m, relacion, !!it.retonoDe);
+            const { piso, altoPct } = u;
             return (
               <div key={it.id}>
                 <div
                   className={`jardin-planta${it.etapa === MARCHITA ? ' seca' : ''}${regando.has(it.id) ? ' regando' : ''}${elegido === it.id ? ' elegida' : ''}${it.retonoDe ? ' retono' : ''}`}
-                  style={{ left: `${m.x - (s.ax / s.w) * anchoPct}%`, top: `${piso - altoPct}%`, width: `${anchoPct}%`, zIndex: 2 + Math.round(m.y) }}
+                  style={{ left: `${u.left}%`, top: `${u.top}%`, width: `${u.ancho}%`, zIndex: 2 + Math.round(m.y) }}
                 >
                   <img key={`${planta}-${it.etapa}`} src={`/jardin/${planta}-${it.etapa}.webp`} alt="" draggable={false} style={{ animationDelay: `0s, ${-(i * 0.7) % 4.5}s` }} />
                 </div>
@@ -461,7 +424,7 @@ function JardinAdmin() {
         <Ficha item={sel} prueba={!!prueba} modo={modo} dificil={g.dificil} alCerrar={() => setElegido(null)} alMarcar={marcarHoy} alRegar={() => regar([sel.id])} alAbrir={(id) => setPagina(id)} />
       ) : (
         <p className="mu2" style={{ fontSize: 13, marginTop: 10 }}>
-          {items.length ? 'Tocá una planta para ver su hábito y abrir su página. La medalla de laurel al pie del macetero marca las plantas al 100 %.' : 'Todavía no tenés hábitos: creá uno y aparece su semilla en el jardín (o probá el modo prueba).'}
+          {items.length ? 'Tocá una planta para ver su hábito y abrir su página. La medalla de laurel al pie del macetero marca las plantas al 100 %.' : `Todavía no tenés hábitos: creá uno y aparece su semilla en el jardín${esAdmin ? ' (o probá el modo prueba)' : ''}.`}
           {habitos.length > MAX_MACETEROS && ` Tenés ${habitos.length} hábitos; el jardín muestra los primeros ${MAX_MACETEROS}.`}
         </p>
       )}
@@ -510,7 +473,7 @@ function JardinAdmin() {
           );
         })()}
 
-      <Prueba activa={!!prueba} total={jardin.plantas.length || MAX_MACETEROS} modo={modo} pasarDias={pasarDias} salir={() => setPrueba(null)} reiniciar={() => setPrueba({})} hora={horaPrueba} setHora={setHoraPrueba} />
+      {esAdmin && <Prueba activa={!!prueba} total={jardin.plantas.length || MAX_MACETEROS} modo={modo} pasarDias={pasarDias} salir={() => setPrueba(null)} reiniciar={() => setPrueba({})} hora={horaPrueba} setHora={setHoraPrueba} />}
     </div>
   );
 }

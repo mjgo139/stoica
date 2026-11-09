@@ -397,6 +397,18 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('group', { name: 'Reaccionar a Epicteto' }).getByRole('button', { name: 'Fuerza' }).click();
     await expect(page.getByRole('group', { name: 'Reaccionar a Epicteto' }).getByRole('button', { name: 'Fuerza' })).toHaveAttribute('aria-pressed', 'true');
 
+    // Ver el jardín de otro miembro (armado con lo que comparte en el grupo)
+    await page.getByRole('button', { name: 'Ver el jardín de Epicteto' }).click();
+    const jardinOtro = page.getByRole('dialog', { name: 'Jardín de Epicteto' });
+    await expect(jardinOtro).toBeVisible();
+    await expect(jardinOtro.getByRole('heading', { name: 'Jardín de Epicteto' })).toBeVisible();
+    await page.waitForTimeout(800);
+    await captura(page, '16-grupo-jardin-de-otro');
+    await jardinOtro.getByRole('button', { name: /:/ }).first().click();
+    await expect(jardinOtro.getByText(/racha \d+/)).toBeVisible();
+    await jardinOtro.getByRole('button', { name: 'Cerrar' }).click();
+    await expect(jardinOtro).toHaveCount(0);
+
     // La semana de los demás se ve en rombos chicos
     await expect(page.getByRole('img', { name: /Epicteto, Meditar: \d de 7 días/ })).toBeVisible();
 
@@ -701,7 +713,7 @@ test.describe('v0.5–v1.0', () => {
     await captura(page, '27-espejo-3d');
   });
 
-  test('jardín estoico (solo admin): plantas por hábito, ficha y modo prueba', async ({ page }) => {
+  test('jardín estoico: plantas por hábito, ficha y modo prueba', async ({ page }) => {
     test.setTimeout(240_000);
     await entrarConEjemplo(page);
     await ir(page, '/jardin');

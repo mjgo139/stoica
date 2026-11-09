@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analizar, buenosDesde, diasSinCumplir, estadoPorDias, estadoSimulado, alCien, consejo, visitaDelDia, rachaRetono, retonos, etapaPlanta, faltanParaCrecer, MARCHITA } from './jardin.js';
+import { analizar, buenosDesde, diasSinCumplir, estadoPorDias, estadoSimulado, alCien, consejo, visitaDelDia, rachaRetono, retonos, etapaPlanta, faltanParaCrecer, MARCHITA, plantaCompartida } from './jardin.js';
 import type { Habito, Registro } from './habitos.js';
 
 describe('jardín estoico', () => {
@@ -94,5 +94,17 @@ describe('jardín: medallas, retoños y modo difícil', () => {
     const con = dias.filter((d) => visitaDelDia(d, 5)).length;
     expect(con).toBeGreaterThan(60);
     expect(con).toBeLessThan(140);
+  });
+});
+
+describe('jardín de otra persona del grupo', () => {
+  it('crece con la racha compartida y da retoños', () => {
+    expect(plantaCompartida({ racha: 0, semana: [true, false, false, false, false, false, false] })).toEqual({ etapa: 0, retonos: 0 });
+    expect(plantaCompartida({ racha: 12 })).toEqual({ etapa: 3, retonos: 0 });
+    expect(plantaCompartida({ racha: 65 })).toEqual({ etapa: 4, retonos: 2 });
+  });
+  it('se ve marchita solo si no cumplió ningún día de la semana', () => {
+    expect(plantaCompartida({ racha: 0, semana: Array(7).fill(false) }).etapa).toBe(MARCHITA);
+    expect(plantaCompartida({ racha: 0 }).etapa).toBe(0);
   });
 });

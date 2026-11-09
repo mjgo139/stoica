@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, REACCIONES, semanaAlDia, validarDesafio, validarNombreGrupo, type Compartido, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
 import { fechaCorta, sumarDias } from '@core/fechas';
@@ -22,6 +22,9 @@ import { diasConFoto, FotoDelHabito, FotosDeHoy, HojaFotosHabito, HojaSubirFoto,
 import { PanelPlan, usePlan } from './Plan';
 import { recordarGrupoWidget } from '@/nativo/widget';
 import type { EstadoPlan, FotoHabito } from '@core/plan';
+
+/** El jardín de otro miembro se carga recién cuando se abre. */
+const JardinDeOtro = lazy(() => import('@/screens/jardin/JardinDeOtro'));
 
 export function Grupo() {
   const { id = '' } = useParams();
@@ -201,6 +204,7 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
   const mia = recibidas.find((r) => r.de === uid);
   const actualizado = m.fecha === hoy;
   const conteo = REACCIONES.map((x) => ({ ...x, n: recibidas.filter((r) => r.tipo === x.id).length })).filter((x) => x.n > 0);
+  const [verJardin, setVerJardin] = useState(false);
   return (
     <div style={{ padding: '14px 0', borderBottom: '1px solid var(--ln2)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -218,7 +222,17 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
             </span>
           )}
         </span>
+        {m.compartidos.length > 0 && (
+          <button type="button" className="ghost" style={{ minHeight: 34, padding: '0 12px', fontSize: 13 }} onClick={() => setVerJardin(true)} aria-label={esYo ? 'Ver mi jardín como lo ve el grupo' : `Ver el jardín de ${m.nombre}`}>
+            🌿 Jardín
+          </button>
+        )}
       </div>
+      {verJardin && (
+        <Suspense fallback={null}>
+          <JardinDeOtro nombre={esYo ? `${m.nombre} (vos)` : m.nombre} compartidos={m.compartidos} fecha={m.fecha} hoy={hoy} alCerrar={() => setVerJardin(false)} />
+        </Suspense>
+      )}
       {m.compartidos.length === 0 && <p className="vacio-mini" style={{ padding: '8px 0 0' }}>No comparte hábitos.</p>}
       {m.compartidos.map((c) => (
         <FilaDelGrupo key={c.habitId} c={c} m={m} esYo={esYo} alDia={actualizado} hoy={hoy} grupoId={grupoId} plan={plan} fotos={fotos} />

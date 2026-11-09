@@ -71,6 +71,10 @@ export function Hoy() {
                 Memento mori · {quedan} {quedan === 1 ? 'día' : 'días'} ›
               </Link>
             )}
+            <Link to="/jardin" className="chip-fecha" style={{ textDecoration: 'none' }}>
+              <Icono nombre="planta" tam={15} />
+              Tu jardín ›
+            </Link>
           </div>
         </div>
         <figure className="hq" style={{ margin: 0 }}>

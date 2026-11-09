@@ -225,12 +225,10 @@ export function Accesos() {
           <span className="mu2">›</span>
         </Link>
       )}
-      {rol === 'admin' && (
-        <Link to="/jardin" className="fila" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <span style={{ flex: 1 }}>Jardín estoico (prueba)</span>
-          <span className="mu2">›</span>
-        </Link>
-      )}
+      <Link to="/jardin" className="fila" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <span style={{ flex: 1 }}>Jardín estoico</span>
+        <span className="mu2">›</span>
+      </Link>
     </>
   );
 }
