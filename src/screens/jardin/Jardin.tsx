@@ -444,7 +444,7 @@ function JardinAdmin() {
 
       {verConsejo && filosofo && (
         <div className="card" style={{ marginTop: 12, padding: '12px 16px', display: 'flex', gap: 14, alignItems: 'flex-start', border: '1.5px solid #c9a24a' }}>
-          <span aria-hidden style={{ width: 52, height: 74, flex: 'none', backgroundImage: 'url(/jardin/marco.webp)', backgroundSize: `${471 * (74 / 224)}px ${896 * (74 / 224)}px`, backgroundPosition: `${-157 * (74 / 224)}px 0px`, backgroundRepeat: 'no-repeat' }} />
+          <span aria-hidden style={{ width: 52, height: 74, flex: 'none', backgroundImage: 'url(/jardin/marco-4dir.webp)', backgroundSize: `${471 * (74 / 224)}px ${896 * (74 / 224)}px`, backgroundPosition: `${-157 * (74 / 224)}px 0px`, backgroundRepeat: 'no-repeat' }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="cap gold">{filosofo.c.filosofo.nombre}</div>
             <div style={{ fontWeight: 800, fontSize: 15, marginTop: 2 }}>{filosofo.c.titulo}</div>

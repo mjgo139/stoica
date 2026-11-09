@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 
-const ATLAS = { archivo: '/jardin/marco.webp', celda: [157, 224], columnas: 3, ancho: 471, alto: 896 } as const;
+const ATLAS = { archivo: '/jardin/marco-4dir.webp', celda: [157, 224], columnas: 3, ancho: 471, alto: 896 } as const;
 /** Filas de la hoja: hacia abajo (de frente), izquierda, derecha, hacia arriba (de espaldas). */
 const DIR = { abajo: 0, izquierda: 1, derecha: 2, arriba: 3 } as const;
 type Dir = keyof typeof DIR;
