@@ -7,7 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { create } from 'zustand';
 import { sumarDias } from '@core/fechas';
 import { cumplido, porcentaje, racha, type Habito } from '@core/habitos';
-import { finDesafio, idReaccion, type Compartido, type Desafio, type Grupo, type Miembro, type Progreso, type TipoReaccion } from '@core/comunidad';
+import { finDesafio, idReaccion, type JardinCompartido, type Compartido, type Desafio, type Grupo, type Miembro, type Progreso, type TipoReaccion } from '@core/comunidad';
 import { esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError, type ConId } from '@/data/tipos';
 import { useAvisos } from '@/ui/avisos';
@@ -166,6 +166,18 @@ function misPlantas(hoy: string) {
   return plantasParaCompartir({ habitos: habitos.filter((h) => !h.archivado), registros, hoy, g: leerGuardado(uidActual()) });
 }
 
+/** Cómo acomodé mi jardín, solo para los hábitos que comparto en un grupo (y sus retoños). */
+function miJardinCompartido(ids: string[]): JardinCompartido {
+  const g = leerGuardado(uidActual());
+  const propio = (k: string) => ids.some((id) => k === id || k.startsWith(`${id}-r`));
+  const filtrar = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).filter(([k]) => propio(k)));
+  return {
+    pos: { vertical: filtrar(g.pos.vertical), horizontal: filtrar(g.pos.horizontal) },
+    adornos: { vertical: { ...g.adornos.vertical }, horizontal: { ...g.adornos.horizontal } },
+    logros: g.logros,
+  };
+}
+
 /** Resumen de un hábito para el grupo, con su planta del jardín. */
 function resumirConPlanta(h: Habito, hoy: string, plantas: ReturnType<typeof misPlantas>): Compartido {
   const planta = plantas.get(h.id);
@@ -207,9 +219,10 @@ async function actualizarResumenes() {
         .map((c) => habitos.find((h) => h.id === c.habitId && !h.archivado))
         .filter((h): h is ConId<Habito> => !!h)
         .map((h) => resumirConPlanta(h, hoy, plantas));
-      const cambio = JSON.stringify(compartidos) !== JSON.stringify(g.yo.compartidos) || g.yo.fecha !== hoy || g.yo.nombre !== nombre;
+      const jardin = miJardinCompartido(compartidos.map((c) => c.habitId));
+      const cambio = JSON.stringify(compartidos) !== JSON.stringify(g.yo.compartidos) || JSON.stringify(jardin) !== JSON.stringify(g.yo.jardin) || g.yo.fecha !== hoy || g.yo.nombre !== nombre;
       if (cambio) {
-        const yo = { nombre, compartidos, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid };
+        const yo = { nombre, compartidos, jardin, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid };
         try {
           await d.guardar(`groups/${g.grupo.id}/members/${uid}`, yo);
           actualizarGrupo(g.grupo.id, { yo });
@@ -267,7 +280,7 @@ export async function elegirCompartidos(grupoId: string, habitIds: string[]) {
     .filter((h): h is ConId<Habito> => !!h)
     .map((h) => resumirConPlanta(h, hoy, plantas));
   await intentar(async () =>
-    (await obtenerDriver()).guardar(`groups/${grupoId}/members/${uid}`, { nombre: useSesion.getState().perfil?.nombre ?? '', compartidos, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid }),
+    (await obtenerDriver()).guardar(`groups/${grupoId}/members/${uid}`, { nombre: useSesion.getState().perfil?.nombre ?? '', compartidos, jardin: miJardinCompartido(compartidos.map((c) => c.habitId)), fecha: hoy, actualizado: Date.now(), actualizadoPor: uid }),
   );
 }
 

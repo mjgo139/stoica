@@ -244,6 +244,26 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // ----- Jardín estoico: jardin/config (riego, dificultad, dónde puso macetas y adornos) -----
+      match /jardin/{doc} {
+        allow read, delete: if esDueno(uid);
+        allow create, update: if esDueno(uid) && doc == 'config'
+          && nuevo().keys().hasOnly(['modo', 'dificil', 'riegos', 'retonosPrevios', 'fortunaEspantada', 'pos', 'adornos', 'logros', 'fuego', 'vistas', 'actualizado', 'actualizadoPor'])
+          && nuevo().modo in ['auto', 'manual']
+          && nuevo().dificil is bool
+          && nuevo().riegos is map && nuevo().riegos.size() <= 60
+          && nuevo().retonosPrevios is map && nuevo().retonosPrevios.size() <= 60
+          && texto(nuevo().fortunaEspantada, 0, 40)
+          && nuevo().pos is map && nuevo().pos.keys().hasOnly(['vertical', 'horizontal'])
+          && nuevo().pos.get('vertical', {}).size() <= 120 && nuevo().pos.get('horizontal', {}).size() <= 120
+          && nuevo().adornos is map && nuevo().adornos.keys().hasOnly(['vertical', 'horizontal'])
+          && nuevo().adornos.get('vertical', {}).size() <= 40 && nuevo().adornos.get('horizontal', {}).size() <= 40
+          && entero(nuevo().logros, 0, 10000)
+          && texto(nuevo().fuego, 0, 20)
+          && nuevo().vistas is map && nuevo().vistas.size() <= 120
+          && firmado(uid);
+      }
+
       // ----- Hitos: milestones/{habitId}_{días} -----
       match /milestones/{mid} {
         allow read, delete: if esDueno(uid);
@@ -344,9 +364,10 @@ service cloud.firestore {
         allow read: if esMiembro();
         allow delete: if esDueno(mid);
         allow create, update: if esDueno(mid) && esMiembro()
-          && nuevo().keys().hasOnly(['nombre', 'compartidos', 'fecha', 'actualizado', 'actualizadoPor'])
+          && nuevo().keys().hasOnly(['nombre', 'compartidos', 'jardin', 'fecha', 'actualizado', 'actualizadoPor'])
           && texto(nuevo().nombre, 0, 40)
           && nuevo().compartidos is list && nuevo().compartidos.size() <= 12
+          && (!('jardin' in nuevo()) || (nuevo().jardin is map && nuevo().jardin.keys().hasOnly(['pos', 'adornos', 'logros'])))
           && claveDia(nuevo().fecha)
           && firmado(mid);
       }

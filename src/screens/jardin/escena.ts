@@ -1,24 +1,74 @@
 /** Cálculos de dibujo compartidos entre tu jardín y el jardín de otra persona del grupo. */
 import { useEffect, useState } from 'react';
-import { MACETEROS, SPRITES } from './disposicion';
+import { ADORNOS, FONDOS, MACETA, SPRITES } from './disposicion';
+import { celdas, TERRENOS, type Forma } from './terreno';
 
-/** Ancho máximo de cada planta (su etapa más grande), para que la adulta ocupe el ancho del macetero. */
+export type { Forma };
+
+/** Ancho máximo de cada planta (su etapa más grande), para que la adulta ocupe el ancho de la tierra. */
 export const ANCHO_MAX: Record<string, number> = Object.fromEntries(Object.entries(SPRITES).map(([k, v]) => [k, Math.max(...v.map((s) => s.w))]));
 
-export type Forma = 'vertical' | 'horizontal';
-
-/** Maceteros ordenados de adelante (más grandes y visibles) hacia atrás. */
-export function maceterosOrdenados(forma: Forma) {
-  return [...MACETEROS[forma]].sort((a, b) => b.y - a.y || a.x - b.x);
+/** Perspectiva: lo del fondo se ve un poco más chico que lo de adelante. */
+function escala(forma: Forma, y: number) {
+  const d = TERRENOS[forma];
+  const t = Math.min(1, Math.max(0, (y - d.y0) / (d.y1 - d.y0)));
+  return 0.86 + 0.22 * t;
 }
 
-/** Dónde y de qué tamaño va una planta dentro de su macetero (todo en % del jardín). */
-export function ubicarPlanta(planta: string, etapa: number, m: { x: number; y: number; w: number; h: number }, relacion: number, retono: boolean) {
+/** Ancho de una maceta (en % del ancho del fondo) a la profundidad y. */
+export function anchoMaceta(forma: Forma, y: number): number {
+  const f = FONDOS[forma];
+  // Tamaño de un lugar para macetas (no de un pasillo)
+  const c = celdas(forma).find((x) => x.tipo === 'libre')!;
+  const cw = (c.w / 100) * f.ancho;
+  const ch = (c.h / 100) * f.alto;
+  const px = Math.min(cw * 0.9, ch * 1.0 * (MACETA.w / MACETA.h)) * escala(forma, y);
+  return (px / f.ancho) * 100;
+}
+
+/** Rectángulos (en %) de la maceta de una celda y el punto donde se apoya la planta. */
+export function lugarMaceta(forma: Forma, celda: number) {
+  const f = FONDOS[forma];
+  const c = celdas(forma)[celda];
+  const w = anchoMaceta(forma, c.y);
+  const h = ((w / 100) * f.ancho * (MACETA.h / MACETA.w) * 100) / f.alto;
+  const piso = c.y + c.h * 0.42;
+  const top = piso - h;
+  const left = c.x - w / 2;
+  return {
+    left,
+    top,
+    w,
+    h,
+    piso,
+    // Donde va la base de la planta: en la tierra, un poco detrás del centro
+    plantaX: left + (w * MACETA.tierra.x) / 100,
+    plantaY: top + (h * (MACETA.tierra.y + 8)) / 100,
+    anchoTierra: (w * MACETA.tierra.w) / 100,
+  };
+}
+
+/** Dónde y de qué tamaño va una planta sobre su maceta (todo en %). */
+export function ubicarPlanta(forma: Forma, planta: string, etapa: number, celda: number, retono: boolean) {
+  const f = FONDOS[forma];
+  const relacion = f.ancho / f.alto;
+  const m = lugarMaceta(forma, celda);
   const s = SPRITES[planta][etapa];
-  const anchoPct = (s.w / ANCHO_MAX[planta]) * m.w * (retono ? 0.85 : 1.1);
-  const altoPct = anchoPct * relacion * (s.h / s.w);
-  const piso = m.y + m.h * 0.45;
-  return { left: m.x - (s.ax / s.w) * anchoPct, top: piso - altoPct, ancho: anchoPct, piso, altoPct };
+  const ancho = (s.w / ANCHO_MAX[planta]) * m.anchoTierra * (retono ? 1.3 : 1.6);
+  const alto = ancho * relacion * (s.h / s.w);
+  return { left: m.plantaX - (s.ax / s.w) * ancho, top: m.plantaY - alto, ancho, alto, maceta: m };
+}
+
+/** Dónde va un adorno (apoyado en el piso de su celda). */
+export function ubicarAdorno(forma: Forma, id: string, celda: number) {
+  const f = FONDOS[forma];
+  const relacion = f.ancho / f.alto;
+  const c = celdas(forma)[celda];
+  const a = ADORNOS.find((x) => x.id === id)!;
+  const ancho = anchoMaceta(forma, c.y) * 1.05 * (a.w / 260);
+  const alto = ancho * relacion * (a.h / a.w);
+  const piso = c.y + c.h * 0.42;
+  return { left: c.x - ancho / 2, top: piso - alto, ancho, alto, piso };
 }
 
 export function fuerzaNoche(h: number): number {
@@ -34,6 +84,8 @@ export function tinte(h: number): { color: string; opacidad: number } {
   if (h >= 17) return { color: '#ff9a4a', opacidad: 0.2 };
   return { color: '#fff', opacidad: 0 };
 }
+/** Es de noche para encender el fuego (desde las 18 h hasta las 6 h). */
+export const esNocheDeFuego = (h: number) => h >= 18 || h < 6;
 
 /** Pantalla ancha: jardín horizontal. */
 export function useAncho(): boolean {

@@ -18,8 +18,7 @@ export const UMBRALES = [0, 1, 4, 11, 30] as const;
 export const PLANTA_DE_VIRTUD: Record<Virtud, { id: string; nombre: string }> = {
   sabiduria: { id: 'olivo', nombre: 'Olivo' },
   coraje: { id: 'laurel', nombre: 'Laurel' },
-  // Por ahora el lirio; cuando esté el granado se cambia acá.
-  justicia: { id: 'lirio', nombre: 'Lirio' },
+  justicia: { id: 'granado', nombre: 'Granado' },
   templanza: { id: 'lavanda', nombre: 'Lavanda' },
 };
 

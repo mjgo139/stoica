@@ -1,30 +1,29 @@
 import { useMemo } from 'react';
 
-/** Puntos de luz de cada fondo (en %). */
+/** Puntos de luz de cada terraza (en %). */
 const LUCES = {
   vertical: {
-    cielo: { x0: 22, x1: 98, y0: 0, y1: 9 },
-    luna: { x: 86, y: 4 },
-    templo: { x: 65, y: 8, w: 30, h: 10 },
-    fuente: { x: 92, y: 30, w: 26, h: 9 },
-    braseros: [
-      { x: 27, y: 17.6 },
-      { x: 84, y: 17.6 },
-    ],
-    zona: { x0: 12, x1: 92, y0: 26, y1: 82 },
+    cielo: { x0: 26, x1: 96, y0: 0, y1: 11 },
+    luna: { x: 82, y: 5 },
+    templo: { x: 66, y: 7.5, w: 34, h: 10 },
+    fuente: { x: 91, y: 32, w: 26, h: 12 },
+    zona: { x0: 14, x1: 92, y0: 30, y1: 92 },
   },
   horizontal: {
-    cielo: { x0: 30, x1: 82, y0: 0, y1: 11 },
-    luna: { x: 74, y: 5 },
-    templo: { x: 59, y: 8, w: 18, h: 14 },
-    fuente: { x: 92, y: 38, w: 16, h: 14 },
-    braseros: [
-      { x: 29, y: 16.5 },
-      { x: 82.3, y: 16.5 },
-    ],
-    zona: { x0: 15, x1: 90, y0: 30, y1: 92 },
+    cielo: { x0: 30, x1: 84, y0: 0, y1: 13 },
+    luna: { x: 78, y: 5 },
+    templo: { x: 60, y: 8, w: 20, h: 14 },
+    fuente: { x: 92, y: 32, w: 18, h: 20 },
+    zona: { x0: 18, x1: 86, y0: 34, y1: 94 },
   },
 } as const;
+
+export interface Luz {
+  x: number;
+  y: number;
+  /** Tamaño del resplandor en px. */
+  r: number;
+}
 
 const azar = (semilla: number) => {
   let s = semilla;
@@ -32,7 +31,7 @@ const azar = (semilla: number) => {
 };
 
 /** Luces de noche dibujadas encima del jardín. `fuerza`: 0 de día, ~0,5 al atardecer, 1 de noche. */
-export function Noche({ forma, fuerza }: { forma: keyof typeof LUCES; fuerza: number }) {
+export function Noche({ forma, fuerza, luces = [] }: { forma: keyof typeof LUCES; fuerza: number; luces?: Luz[] }) {
   const L = LUCES[forma];
   const estrellas = useMemo(() => {
     const r = azar(7);
@@ -66,10 +65,10 @@ export function Noche({ forma, fuerza }: { forma: keyof typeof LUCES; fuerza: nu
       />
       {/* Fuente iluminada desde abajo */}
       <span style={{ position: 'absolute', left: `${L.fuente.x - L.fuente.w / 2}%`, top: `${L.fuente.y - L.fuente.h / 2}%`, width: `${L.fuente.w}%`, height: `${L.fuente.h}%`, background: 'radial-gradient(ellipse, rgba(120,210,255,.8), rgba(80,170,255,0) 70%)', mixBlendMode: 'screen' }} />
-      {/* Luz cálida sobre las ánforas (la llama dibujada vuelve cuando haya una imagen pintada) */}
-      {L.braseros.map((b, i) => (
+      {/* Luz cálida del fuego y de los faroles */}
+      {luces.map((b, i) => (
         <div key={i} style={{ position: 'absolute', left: `${b.x}%`, top: `${b.y}%` }}>
-          <span className="noche-anim" style={{ position: 'absolute', left: -90, top: -90, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,175,80,.5), rgba(255,130,40,.14) 45%, rgba(255,120,30,0) 70%)', mixBlendMode: 'screen', animation: `resplandor ${1.6 + i * 0.3}s ease-in-out infinite` }} />
+          <span className="noche-anim" style={{ position: 'absolute', left: -b.r, top: -b.r, width: b.r * 2, height: b.r * 2, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,175,80,.55), rgba(255,130,40,.16) 45%, rgba(255,120,30,0) 70%)', mixBlendMode: 'screen', animation: `resplandor ${1.6 + i * 0.3}s ease-in-out infinite` }} />
         </div>
       ))}
       {/* Luciérnagas */}

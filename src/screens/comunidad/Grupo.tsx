@@ -230,7 +230,16 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
       </div>
       {verJardin && (
         <Suspense fallback={null}>
-          <JardinDeOtro nombre={esYo ? `${m.nombre} (vos)` : m.nombre} compartidos={m.compartidos} fecha={m.fecha} hoy={hoy} alCerrar={() => setVerJardin(false)} />
+          <JardinDeOtro
+            nombre={esYo ? `${m.nombre} (vos)` : m.nombre}
+            compartidos={m.compartidos}
+            jardin={m.jardin}
+            fecha={m.fecha}
+            hoy={hoy}
+            alCerrar={() => setVerJardin(false)}
+            laureles={recibidas.filter((r) => r.tipo === 'laurel').length}
+            regalo={esYo ? undefined : { dado: mia?.tipo === 'laurel', alDar: () => void reaccionar(grupoId, m.id, 'laurel') }}
+          />
         </Suspense>
       )}
       {m.compartidos.length === 0 && <p className="vacio-mini" style={{ padding: '8px 0 0' }}>No comparte hábitos.</p>}

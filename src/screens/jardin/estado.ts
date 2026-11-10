@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { programarResumenGrupos } from '@/app/datos';
+import { obtenerDriver } from '@/data';
 import type { PlantaCompartida } from '@core/comunidad';
 import { sumarDias } from '@core/fechas';
 import { cumplido, esDiaActivo, VIRTUDES, type Habito, type Registro, type Virtud } from '@core/habitos';
@@ -13,6 +14,11 @@ export const VENTANA = 120;
 export const MAX_MACETEROS = 15;
 
 export type ModoRiego = 'auto' | 'manual';
+/** id (hábito, retoño o adorno) → celda, por forma de jardín. -1 = guardado en el depósito. */
+export interface Acomodo {
+  vertical: Record<string, number>;
+  horizontal: Record<string, number>;
+}
 export interface Guardado {
   modo: ModoRiego;
   dificil: boolean;
@@ -22,24 +28,98 @@ export interface Guardado {
   retonosPrevios: Record<string, number>;
   /** Visita del filósofo ya leída: fecha. */
   fortunaEspantada: string;
+  /** Dónde puso la persona sus macetas y sus adornos. */
+  pos: Acomodo;
+  adornos: Acomodo;
+  /** Medallas ganadas (la mayor cantidad vista: los adornos desbloqueados no se pierden). */
+  logros: number;
+  /** Noche (fecha) en que el filósofo ya encendió el fuego. */
+  fuego: string;
+  /** Última etapa vista de cada planta (para festejar cuando crece). */
+  vistas: Record<string, number>;
 }
 
-const DEFECTO: Guardado = { modo: 'auto', dificil: false, riegos: {}, retonosPrevios: {}, fortunaEspantada: '' };
+const DEFECTO: Guardado = {
+  modo: 'auto',
+  dificil: false,
+  riegos: {},
+  retonosPrevios: {},
+  fortunaEspantada: '',
+  pos: { vertical: {}, horizontal: {} },
+  adornos: { vertical: {}, horizontal: {} },
+  logros: 0,
+  fuego: '',
+  vistas: {},
+};
 
-/** Lo guardado del jardín en este dispositivo (sin hook). */
+const completar = (x: Partial<Guardado>): Guardado => ({
+  ...DEFECTO,
+  ...x,
+  pos: { ...DEFECTO.pos, ...(x.pos ?? {}) },
+  adornos: { ...DEFECTO.adornos, ...(x.adornos ?? {}) },
+});
+
+/** Campos que se guardan en la nube (users/{uid}/jardin/config). */
+const CAMPOS: Array<keyof Guardado> = ['modo', 'dificil', 'riegos', 'retonosPrevios', 'fortunaEspantada', 'pos', 'adornos', 'logros', 'fuego', 'vistas'];
+const soloCampos = (g: Guardado) => Object.fromEntries(CAMPOS.map((k) => [k, g[k]])) as unknown as Guardado;
+
+/** Lo guardado del jardín en este dispositivo (sin hook): copia de lo que está en la nube. */
 export function leerGuardado(uid: string): Guardado {
   try {
     const crudo = localStorage.getItem(`stoica.jardin.${uid}`);
-    if (crudo) return { ...DEFECTO, ...(JSON.parse(crudo) as Partial<Guardado>) };
+    if (crudo) return completar(JSON.parse(crudo) as Partial<Guardado>);
   } catch {
     /* sin almacenamiento */
   }
   return DEFECTO;
 }
 
+/**
+ * El jardín de la persona: se guarda en la nube (así sigue igual en otro celular y el grupo ve lo mismo)
+ * y queda una copia en el dispositivo para abrir al instante y sin conexión.
+ */
 export function useGuardado(uid: string): [Guardado, (f: (g: Guardado) => Guardado) => void] {
   const clave = `stoica.jardin.${uid}`;
+  const ruta = `users/${uid}/jardin/config`;
   const [g, setG] = useState<Guardado>(() => leerGuardado(uid));
+  const local = useRef(false); // el último cambio lo hizo la persona (hay que subirlo)
+  const subido = useRef('');
+  const nubeVista = useRef(false);
+
+  // Escuchar la nube
+  useEffect(() => {
+    if (!uid) return;
+    let cancelar: (() => void) | undefined;
+    let vivo = true;
+    void obtenerDriver().then((d) => {
+      if (!vivo) return;
+      cancelar = d.observarDoc<Partial<Guardado>>(
+        ruta,
+        (doc) => {
+          nubeVista.current = true;
+          if (!doc) {
+            // Primera vez: se sube lo que había en este dispositivo
+            local.current = true;
+            setG((x) => ({ ...x }));
+            return;
+          }
+          const nuevo = completar(doc);
+          const json = JSON.stringify(soloCampos(nuevo));
+          if (json === subido.current) return; // es lo que acabo de subir
+          subido.current = json;
+          local.current = false;
+          setG(nuevo);
+        },
+        () => undefined,
+      );
+    });
+    return () => {
+      vivo = false;
+      cancelar?.();
+    };
+  }, [uid, ruta]);
+
+  // Copia local + subir a la nube (agrupando cambios seguidos)
   const primera = useRef(true);
   useEffect(() => {
     try {
@@ -47,11 +127,32 @@ export function useGuardado(uid: string): [Guardado, (f: (g: Guardado) => Guarda
     } catch {
       /* sin almacenamiento */
     }
+    if (primera.current) {
+      primera.current = false;
+      return;
+    }
     // Regar o cambiar el riego/la dificultad cambia las plantas que ven tus grupos.
-    if (primera.current) primera.current = false;
-    else programarResumenGrupos();
-  }, [g, clave]);
-  return [g, (f) => setG((x) => f(x))];
+    programarResumenGrupos();
+    if (!local.current || !uid) return;
+    const t = setTimeout(() => {
+      const datos = soloCampos(g);
+      const json = JSON.stringify(datos);
+      if (json === subido.current) return;
+      subido.current = json;
+      void obtenerDriver()
+        .then((d) => d.guardar(ruta, { ...datos, actualizado: Date.now(), actualizadoPor: uid }))
+        .catch(() => undefined);
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [g, clave, ruta, uid]);
+
+  return [
+    g,
+    (f) => {
+      local.current = true;
+      setG((x) => f(x));
+    },
+  ];
 }
 
 export interface PlantaCalc {
@@ -84,7 +185,7 @@ export interface RetonoCalc {
 export interface Jardin {
   plantas: PlantaCalc[];
   retonos: RetonoCalc[];
-  /** Retoños que no entran en los 15 maceteros. */
+  /** (sin uso: los que no entran se calculan al acomodar) */
   enVivero: number;
 }
 
@@ -140,8 +241,8 @@ export function calcularJardin({ habitos, registros, hoy, g, prueba }: Entrada):
       return { id: `${p.id}-r${k}`, madre: p, k, racha, etapa: etapaPlanta(racha, p.a.sinCumplir) };
     }),
   );
-  const libres = Math.max(0, MAX_MACETEROS - plantas.length);
-  return { plantas, retonos: todos.slice(0, libres), enVivero: Math.max(0, todos.length - libres) };
+  // Cuántos entran en el jardín lo decide el terreno (ver terreno.ts → ubicar).
+  return { plantas, retonos: todos, enVivero: 0 };
 }
 
 /** Plantas reales de tus hábitos, para compartirlas en los grupos (hábito → planta). */
@@ -153,4 +254,9 @@ export function plantasParaCompartir(entrada: Omit<Entrada, 'prueba'>): Map<stri
       { etapa: p.a.etapa, ciclo: p.ciclo, retonos: Array.from({ length: p.retonos }, (_, k) => etapaPlanta(rachaRetono(p.ciclo, k), p.a.sinCumplir)) },
     ]),
   );
+}
+
+/** Medallas ganadas: cada 30 días seguidos sin marchitarse (el mejor ciclo de cada planta) es una medalla. */
+export function medallasGanadas(plantas: Array<Pick<PlantaCalc, 'mejor' | 'ciclo'>>): number {
+  return plantas.reduce((s, p) => s + Math.floor(Math.max(p.mejor, p.ciclo) / 30), 0);
 }

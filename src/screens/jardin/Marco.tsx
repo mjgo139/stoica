@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 const ATLAS = { archivo: '/jardin/marco-4dir.webp', celda: [157, 224], columnas: 3, ancho: 471, alto: 896 } as const;
 /** Filas de la hoja: hacia abajo (de frente), izquierda, derecha, hacia arriba (de espaldas). */
 const DIR = { abajo: 0, izquierda: 1, derecha: 2, arriba: 3 } as const;
-type Dir = keyof typeof DIR;
+export type Dir = keyof typeof DIR;
 /** Ciclo de pasos: pie, parado, el otro pie, parado. */
 const PASOS = [0, 1, 2, 1];
 
@@ -24,6 +24,8 @@ interface Props {
   anchoPx: number;
   altoPx: number;
   irse: boolean;
+  /** Hacia dónde mira al llegar (de frente si no se dice). */
+  mirar?: Dir;
   etiqueta: string;
   alTocar: () => void;
   alLlegar?: () => void;
@@ -32,11 +34,11 @@ interface Props {
   alMoverse?: (x: number, y: number, alto: number, hablando: boolean) => void;
 }
 
-export function MarcoAnimado({ llegada, salida, altoEn, anchoPx, altoPx, irse, etiqueta, alTocar, alLlegar, alIrse, alMoverse }: Props) {
+export function MarcoAnimado({ llegada, salida, altoEn, anchoPx, altoPx, irse, mirar = 'abajo', etiqueta, alTocar, alLlegar, alIrse, alMoverse }: Props) {
   const reducido = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const destino = llegada[llegada.length - 1];
   const [estado, setEstado] = useState<{ x: number; y: number; dir: Dir; paso: number; fase: 'llega' | 'habla' | 'seVa' | 'fuera' }>(() =>
-    reducido ? { x: destino[0], y: destino[1], dir: 'abajo', paso: 1, fase: 'habla' } : { x: llegada[0][0], y: llegada[0][1], dir: 'derecha', paso: 1, fase: 'llega' },
+    reducido ? { x: destino[0], y: destino[1], dir: mirar, paso: 1, fase: 'habla' } : { x: llegada[0][0], y: llegada[0][1], dir: 'derecha', paso: 1, fase: 'llega' },
   );
   const r = useRef({ ...estado, tramo: 1, ruta: llegada, ciclo: 0 });
 
@@ -82,7 +84,7 @@ export function MarcoAnimado({ llegada, salida, altoEn, anchoPx, altoPx, irse, e
           if (s.tramo >= s.ruta.length) {
             if (s.fase === 'llega') {
               s.fase = 'habla';
-              s.dir = 'abajo';
+              s.dir = mirar;
               s.paso = 1;
             } else s.fase = 'fuera';
           }
@@ -98,6 +100,7 @@ export function MarcoAnimado({ llegada, salida, altoEn, anchoPx, altoPx, irse, e
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchoPx, altoPx, altoEn]);
 
   if (estado.fase === 'fuera') return null;

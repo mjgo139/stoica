@@ -67,10 +67,18 @@ export function semanaAlDia(semana: boolean[] | undefined, fecha: string, hoy: s
   return [...base.slice(n), ...Array<boolean | null>(n).fill(null)];
 }
 
+/** Cómo acomodó su jardín (solo las plantas de los hábitos que comparte, y sus adornos). */
+export interface JardinCompartido {
+  pos: { vertical: Record<string, number>; horizontal: Record<string, number> };
+  adornos: { vertical: Record<string, number>; horizontal: Record<string, number> };
+  logros: number;
+}
+
 /** groups/{id}/members/{uid} */
 export interface Miembro {
   nombre: string;
   compartidos: Compartido[];
+  jardin?: JardinCompartido;
   fecha: string; // día del resumen
   actualizado: number;
   actualizadoPor: string;

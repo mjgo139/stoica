@@ -11,14 +11,44 @@ export interface Macetero {
   h: number;
 }
 
+/** Terraza sin maceteros (las macetas se acomodan encima, ver terreno.ts). */
 export const FONDOS = {
-  vertical: { archivo: '/jardin/fondo-vertical.webp', ancho: 941, alto: 1672 },
-  horizontal: {
-    archivo: '/jardin/fondo-horizontal.webp',
-    ancho: 1671,
-    alto: 941,
-  },
+  vertical: { archivo: '/jardin/terraza-vertical.webp', ancho: 941, alto: 1672 },
+  horizontal: { archivo: '/jardin/terraza-horizontal.webp', ancho: 1671, alto: 941 },
 } as const;
+
+/** La maceta (public/jardin/maceta.webp) y dónde está su tierra (en % de la imagen). */
+export const MACETA = { archivo: '/jardin/maceta.webp', w: 416, h: 320, tierra: { x: 48.6, y: 35.0, w: 71.0, h: 59.0 } } as const;
+
+/** Fuego animado (public/jardin/fuego.webp) que va sobre el brasero apagado. */
+export const FUEGO = { archivo: '/jardin/fuego.webp', w: 184, h: 276, sobre: { x: 50, y: 37.3, w: 43.9 } } as const;
+
+export interface Adorno {
+  id: string;
+  nombre: string;
+  w: number;
+  h: number;
+  /** Medallas que hacen falta para desbloquearlo. */
+  medallas: number;
+  /** Da luz de noche. */
+  luz?: boolean;
+}
+
+/** Adornos (public/jardin/adorno-<id>.webp), en el orden en que se desbloquean con las medallas. */
+export const ADORNOS: Adorno[] = [
+  { id: 'brasero', nombre: 'Brasero', w: 244, h: 260, medallas: 0, luz: true },
+  { id: 'farol', nombre: 'Farol', w: 183, h: 260, medallas: 1, luz: true },
+  { id: 'flores', nombre: 'Cántaro con flores', w: 260, h: 248, medallas: 2 },
+  { id: 'reloj-sol', nombre: 'Reloj de sol', w: 259, h: 260, medallas: 3 },
+  { id: 'lira', nombre: 'Lira', w: 246, h: 260, medallas: 4 },
+  { id: 'reloj-arena', nombre: 'Reloj de arena', w: 228, h: 260, medallas: 5 },
+  { id: 'pergamino', nombre: 'Pergamino sellado', w: 260, h: 188, medallas: 6 },
+  { id: 'libros', nombre: 'Libros de los estoicos', w: 260, h: 216, medallas: 7 },
+  { id: 'pergaminos', nombre: 'Pergaminos y pluma', w: 259, h: 260, medallas: 8 },
+  { id: 'esfera', nombre: 'Esfera armilar', w: 225, h: 260, medallas: 9 },
+  { id: 'cojin-laurel', nombre: 'Corona sobre cojín', w: 260, h: 230, medallas: 10 },
+  { id: 'corona', nombre: 'Corona de laurel', w: 231, h: 260, medallas: 11 },
+];
 
 /** 15 maceteros, de atrás hacia adelante y de izquierda a derecha. */
 export const MACETEROS: Record<keyof typeof FONDOS, Macetero[]> = {
@@ -92,6 +122,14 @@ export const SPRITES: Record<string, Sprite[]> = {
     { w: 222, h: 228, ax: 110.5, base: 131.0 },
     { w: 256, h: 267, ax: 121.0, base: 134.0 },
     { w: 191, h: 210, ax: 90.5, base: 125.0 },
+  ],
+  granado: [
+    { w: 95, h: 49, ax: 48.0, base: 58.0 },
+    { w: 102, h: 117, ax: 50.5, base: 93.0 },
+    { w: 148, h: 169, ax: 77.5, base: 121.0 },
+    { w: 235, h: 245, ax: 122.5, base: 139.0 },
+    { w: 256, h: 262, ax: 117.0, base: 148.0 },
+    { w: 194, h: 213, ax: 97.5, base: 141.0 },
   ],
   lirio: [
     { w: 60, h: 40, ax: 29.5, base: 59.0 },

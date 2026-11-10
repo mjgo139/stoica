@@ -414,6 +414,9 @@ test.describe('v0.5–v1.0', () => {
     await captura(page, '16-grupo-jardin-de-otro');
     await jardinOtro.getByRole('button', { name: /:/ }).first().click();
     await expect(jardinOtro.getByText(/racha \d+/)).toBeVisible();
+    // Dejarle un laurel en su jardín
+    await jardinOtro.getByRole('button', { name: 'Dejarle un laurel' }).click();
+    await expect(jardinOtro.getByRole('button', { name: 'Le dejaste un laurel hoy' })).toBeVisible();
     await jardinOtro.getByRole('button', { name: 'Cerrar' }).click();
     await expect(jardinOtro).toHaveCount(0);
 
@@ -749,6 +752,8 @@ test.describe('v0.5–v1.0', () => {
     await captura(page, '28-jardin-prueba');
     // De noche: braseros, templo, fuente y luciérnagas
     await page.getByLabel('Hora del jardín').fill('22');
+    // De noche, la primera vez, el filósofo viene a encender el brasero
+    await expect(page.locator('[data-fuego="encendido"]')).toBeVisible({ timeout: 25_000 });
     await page.waitForTimeout(800);
     await captura(page, '28-jardin-noche');
     // Medallas y retoños: 90 días cumpliendo todo
@@ -787,6 +792,37 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('button', { name: 'Ver su página' }).click();
     await expect(page.getByText('Últimos 30 días')).toBeVisible();
     await captura(page, '28-jardin-planta');
+    await page.getByRole('button', { name: 'Volver al jardín' }).first().click().catch(() => undefined);
+    await page.keyboard.press('Escape');
+    // Acomodar: mover una maceta tocando y un adorno arrastrando; el camino queda libre
+    await ir(page, '/jardin');
+    await page.getByRole('button', { name: 'Acomodar' }).click();
+    await expect(page.getByText(/Las franjas oscuras son el camino del filósofo/)).toBeVisible();
+    const maceta = page.getByRole('button', { name: /racha/ }).first();
+    const antes = (await maceta.boundingBox())!;
+    await maceta.click();
+    const libre = page.getByRole('button', { name: /^Lugar libre/ }).last();
+    await libre.click();
+    await expect.poll(async () => (await page.getByRole('button', { name: /racha/ }).first().boundingBox())?.y).not.toBe(antes.y);
+    const brasero = page.getByRole('button', { name: 'Adorno: Brasero' });
+    const b0 = (await brasero.boundingBox())!;
+    const destino = (await page.getByRole('button', { name: /^Lugar libre/ }).first().boundingBox())!;
+    await page.mouse.move(b0.x + b0.width / 2, b0.y + b0.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b0.x + b0.width / 2 + 20, b0.y + b0.height / 2 + 20, { steps: 4 });
+    await page.mouse.move(destino.x + destino.width / 2, destino.y + destino.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(async () => (await page.getByRole('button', { name: 'Adorno: Brasero' }).boundingBox())?.x).not.toBe(b0.x);
+    await captura(page, '28-jardin-acomodar');
+    // Guardar el brasero en el depósito y volver a ponerlo
+    await page.getByRole('button', { name: 'Adorno: Brasero' }).click();
+    await page.getByRole('button', { name: 'Guardar en el depósito' }).click();
+    await expect(page.getByRole('button', { name: 'Poner Brasero' })).toBeVisible();
+    await page.getByRole('button', { name: 'Poner Brasero' }).click();
+    await page.getByRole('button', { name: /^Lugar libre/ }).first().click();
+    await expect(page.getByRole('button', { name: 'Adorno: Brasero' })).toBeVisible();
+    await page.getByRole('button', { name: 'Listo' }).click();
+    await expect(page.getByRole('button', { name: /^Lugar libre/ })).toHaveCount(0);
   });
 
   test('borrar mi cuenta', async ({ page }) => {

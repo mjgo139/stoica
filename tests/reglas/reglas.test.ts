@@ -222,6 +222,31 @@ describe('tareas, enfoque, examen, hitos y dispositivos', () => {
     await assertSucceeds(setDoc(doc(db, 'users/ana/devices/d1'), { token: 'x'.repeat(150), plataforma: 'celular', actualizado: ahora(), actualizadoPor: 'ana' }));
     await assertFails(getDoc(doc(usuario('beto'), 'users/ana/devices/d1')));
   });
+  it('jardín: solo la dueña guarda y lee su jardín, con campos válidos', async () => {
+    const jardin = {
+      modo: 'manual',
+      dificil: true,
+      riegos: { h1: [HOY] },
+      retonosPrevios: { h1: 1 },
+      fortunaEspantada: '',
+      pos: { vertical: { h1: 11 }, horizontal: {} },
+      adornos: { vertical: { brasero: 5 }, horizontal: { farol: -1 } },
+      logros: 2,
+      fuego: HOY,
+      vistas: { h1: 3 },
+      actualizado: ahora(),
+      actualizadoPor: 'ana',
+    };
+    const db = usuario('ana');
+    await assertSucceeds(setDoc(doc(db, 'users/ana/jardin/config'), jardin));
+    await assertSucceeds(getDoc(doc(db, 'users/ana/jardin/config')));
+    await assertFails(getDoc(doc(usuario('beto'), 'users/ana/jardin/config')));
+    await assertFails(setDoc(doc(usuario('beto'), 'users/ana/jardin/config'), { ...jardin, actualizadoPor: 'beto' }));
+    await assertFails(setDoc(doc(db, 'users/ana/jardin/otro'), jardin));
+    await assertFails(setDoc(doc(db, 'users/ana/jardin/config'), { ...jardin, modo: 'loco' }));
+    await assertFails(setDoc(doc(db, 'users/ana/jardin/config'), { ...jardin, extra: 1 }));
+    await assertFails(setDoc(doc(db, 'users/ana/jardin/config'), { ...jardin, pos: { otra: {} } }));
+  });
   it('colecciones desconocidas están cerradas', async () => {
     await assertFails(setDoc(doc(usuario('ana'), 'users/ana/inventada/x'), { actualizado: ahora(), actualizadoPor: 'ana' }));
     await assertFails(setDoc(doc(usuario('ana'), 'users/ana/notes/x'), { actualizado: ahora(), actualizadoPor: 'ana' }));

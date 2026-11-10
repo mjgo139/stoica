@@ -7,6 +7,8 @@ export interface SonidoJardin {
   noche(es: boolean): void;
   regar(): void;
   lira(): void;
+  /** El fuego que se prende y queda crepitando (hasta que se apaga). */
+  fuego(prendido: boolean): void;
   detener(): void;
 }
 
@@ -36,6 +38,8 @@ export function crearSonido(): SonidoJardin {
   maestro.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 2.5);
   maestro.connect(ctx.destination);
   const buf = ruido(ctx);
+  let llamas: { g: GainNode } | null = null;
+  let crepita = false;
 
   const fuenteRuido = (filtro: BiquadFilterType, f: number, q: number, vol: number) => {
     const s = ctx.createBufferSource();
@@ -172,6 +176,56 @@ export function crearSonido(): SonidoJardin {
           o.stop(t + 1.7);
         });
       });
+    },
+    fuego(prendido) {
+      if (ctx.state === 'suspended') void ctx.resume();
+      if (!prendido) {
+        crepita = false;
+        llamas?.g.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+        return;
+      }
+      if (!llamas) llamas = fuenteRuido('lowpass', 500, 0.7, 0);
+      llamas.g.gain.setTargetAtTime(0.08, ctx.currentTime, 0.5);
+      // Bocanada al prender
+      const t = ctx.currentTime;
+      const s = ctx.createBufferSource();
+      s.buffer = buf;
+      const bq = ctx.createBiquadFilter();
+      bq.type = 'lowpass';
+      bq.frequency.setValueAtTime(300, t);
+      bq.frequency.exponentialRampToValueAtTime(2400, t + 0.5);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.45, t + 0.25);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+      s.connect(bq).connect(g).connect(maestro);
+      s.start(t);
+      s.stop(t + 1.3);
+      if (!crepita) {
+        crepita = true;
+        const chispa = () => {
+          if (!vivo || !crepita) return;
+          const n = 1 + Math.floor(Math.random() * 3);
+          for (let i = 0; i < n; i++) {
+            const tt = ctx.currentTime + i * 0.04;
+            const c = ctx.createBufferSource();
+            c.buffer = buf;
+            c.playbackRate.value = 2 + Math.random() * 2;
+            const f = ctx.createBiquadFilter();
+            f.type = 'highpass';
+            f.frequency.value = 2500;
+            const gg = ctx.createGain();
+            gg.gain.setValueAtTime(0.0001, tt);
+            gg.gain.exponentialRampToValueAtTime(0.18 * Math.random() + 0.05, tt + 0.004);
+            gg.gain.exponentialRampToValueAtTime(0.0001, tt + 0.05);
+            c.connect(f).connect(gg).connect(maestro);
+            c.start(tt, Math.random() * 3);
+            c.stop(tt + 0.06);
+          }
+          despues(120 + Math.random() * 700, chispa);
+        };
+        chispa();
+      }
     },
     detener() {
       vivo = false;
