@@ -234,6 +234,7 @@ describe('tareas, enfoque, examen, hitos y dispositivos', () => {
       logros: 2,
       fuego: HOY,
       vistas: { h1: 3 },
+      repisa: false,
       actualizado: ahora(),
       actualizadoPor: 'ana',
     };
@@ -246,6 +247,7 @@ describe('tareas, enfoque, examen, hitos y dispositivos', () => {
     await assertFails(setDoc(doc(db, 'users/ana/jardin/config'), { ...jardin, modo: 'loco' }));
     await assertFails(setDoc(doc(db, 'users/ana/jardin/config'), { ...jardin, extra: 1 }));
     await assertFails(setDoc(doc(db, 'users/ana/jardin/config'), { ...jardin, pos: { otra: {} } }));
+    await assertFails(setDoc(doc(db, 'users/ana/jardin/config'), { ...jardin, repisa: 'si' }));
   });
   it('colecciones desconocidas están cerradas', async () => {
     await assertFails(setDoc(doc(usuario('ana'), 'users/ana/inventada/x'), { actualizado: ahora(), actualizadoPor: 'ana' }));

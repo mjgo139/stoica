@@ -412,7 +412,7 @@ test.describe('v0.5–v1.0', () => {
     await expect(jardinOtro.getByRole('heading', { name: 'Jardín de Epicteto' })).toBeVisible();
     await page.waitForTimeout(800);
     await captura(page, '16-grupo-jardin-de-otro');
-    await jardinOtro.getByRole('button', { name: /:/ }).first().click();
+    await jardinOtro.getByRole('button', { name: /: (Olivo|Laurel|Lavanda|Granado),/ }).first().click();
     await expect(jardinOtro.getByText(/racha \d+/)).toBeVisible();
     // Dejarle un laurel en su jardín
     await jardinOtro.getByRole('button', { name: 'Dejarle un laurel' }).click();
@@ -753,7 +753,7 @@ test.describe('v0.5–v1.0', () => {
     // De noche: braseros, templo, fuente y luciérnagas
     await page.getByLabel('Hora del jardín').fill('22');
     // De noche, la primera vez, el filósofo viene a encender el brasero
-    await expect(page.locator('[data-fuego="encendido"]')).toBeVisible({ timeout: 25_000 });
+    await expect(page.locator('[data-fuego="encendido"]')).toHaveCount(4, { timeout: 40_000 });
     await page.waitForTimeout(800);
     await captura(page, '28-jardin-noche');
     // Medallas y retoños: 90 días cumpliendo todo
@@ -774,14 +774,12 @@ test.describe('v0.5–v1.0', () => {
     // El filósofo: 2 días sin cumplir
     await page.getByRole('button', { name: '1 día sin cumplir' }).click();
     await page.getByRole('button', { name: '1 día sin cumplir' }).click();
-    // Marco Aurelio entra caminando hasta la planta y después habla
-    await page.locator('.marco').first().scrollIntoViewIfNeeded();
-    await page.waitForTimeout(1500);
-    await captura(page, '28-jardin-marco-camina');
-    await expect(page.locator('.globo')).toBeVisible({ timeout: 20_000 });
+    // Marco Aurelio o Epicteto entra caminando hasta la planta y después habla
+    await expect(page.locator('.globo')).toBeVisible({ timeout: 40_000 });
+    await page.locator('.filosofo').first().scrollIntoViewIfNeeded();
     await page.waitForTimeout(1500);
     await captura(page, '28-jardin-filosofo');
-    await page.locator('.marco').first().dispatchEvent('click');
+    await page.locator('.filosofo').first().dispatchEvent('click');
     await expect(page.getByText(/Mañana tu planta se marchita/)).toBeVisible();
     // Riego manual
     await page.getByRole('button', { name: 'Volver a lo real' }).click();
@@ -789,40 +787,37 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByText(/Riego manual: además de cumplir/)).toBeVisible();
     // Página de una planta (la primera ya está elegida desde el principio)
     await page.getByRole('button', { name: /racha/ }).nth(1).click();
-    await page.getByRole('button', { name: 'Ver su página' }).click();
+    await page.getByRole('button', { name: 'Ver su página', exact: true }).click();
     await expect(page.getByText('Últimos 30 días')).toBeVisible();
     await captura(page, '28-jardin-planta');
     await page.getByRole('button', { name: 'Volver al jardín' }).first().click().catch(() => undefined);
     await page.keyboard.press('Escape');
-    // Acomodar: mover una maceta tocando y un adorno arrastrando; el camino queda libre
+    // Mover una maceta manteniéndola apretada; el camino del filósofo queda libre
     await ir(page, '/jardin');
-    await page.getByRole('button', { name: 'Acomodar' }).click();
-    await expect(page.getByText(/Las franjas oscuras son el camino del filósofo/)).toBeVisible();
     const maceta = page.getByRole('button', { name: /racha/ }).first();
-    const antes = (await maceta.boundingBox())!;
-    await maceta.click();
-    const libre = page.getByRole('button', { name: /^Lugar libre/ }).last();
-    await libre.click();
-    await expect.poll(async () => (await page.getByRole('button', { name: /racha/ }).first().boundingBox())?.y).not.toBe(antes.y);
-    const brasero = page.getByRole('button', { name: 'Adorno: Brasero' });
-    const b0 = (await brasero.boundingBox())!;
-    const destino = (await page.getByRole('button', { name: /^Lugar libre/ }).first().boundingBox())!;
-    await page.mouse.move(b0.x + b0.width / 2, b0.y + b0.height / 2);
+    await maceta.scrollIntoViewIfNeeded();
+    const m0 = (await maceta.boundingBox())!;
+    await page.mouse.move(m0.x + m0.width * 0.4, m0.y + m0.height * 0.45);
     await page.mouse.down();
-    await page.mouse.move(b0.x + b0.width / 2 + 20, b0.y + b0.height / 2 + 20, { steps: 4 });
-    await page.mouse.move(destino.x + destino.width / 2, destino.y + destino.height / 2, { steps: 8 });
+    await page.waitForTimeout(650);
+    await expect(page.getByText(/Soltala en un lugar libre/)).toBeVisible();
+    await page.mouse.move(m0.x + m0.width * 0.4, m0.y + m0.height * 0.45 - 40, { steps: 6 });
+    await captura(page, '28-jardin-moviendo');
+    // Soltar en el primer lugar libre (marcado con línea punteada)
+    const libre = (await page.locator('.celda-libre').first().boundingBox())!;
+    await page.mouse.move(libre.x + libre.width / 2, libre.y + libre.height / 2, { steps: 10 });
     await page.mouse.up();
-    await expect.poll(async () => (await page.getByRole('button', { name: 'Adorno: Brasero' }).boundingBox())?.x).not.toBe(b0.x);
-    await captura(page, '28-jardin-acomodar');
-    // Guardar el brasero en el depósito y volver a ponerlo
-    await page.getByRole('button', { name: 'Adorno: Brasero' }).click();
-    await page.getByRole('button', { name: 'Guardar en el depósito' }).click();
-    await expect(page.getByRole('button', { name: 'Poner Brasero' })).toBeVisible();
-    await page.getByRole('button', { name: 'Poner Brasero' }).click();
-    await page.getByRole('button', { name: /^Lugar libre/ }).first().click();
-    await expect(page.getByRole('button', { name: 'Adorno: Brasero' })).toBeVisible();
-    await page.getByRole('button', { name: 'Listo' }).click();
-    await expect(page.getByRole('button', { name: /^Lugar libre/ })).toHaveCount(0);
+    await expect(page.locator('.celda-libre')).toHaveCount(0);
+    await expect.poll(async () => JSON.stringify(await page.getByRole('button', { name: /racha/ }).first().boundingBox())).not.toBe(JSON.stringify(m0));
+    // La repisa de logros: su página y guardarla bajo el piso
+    await page.getByRole('button', { name: 'Repisa de logros: ver su página' }).click();
+    await expect(page.getByRole('dialog', { name: 'Tu repisa' })).toBeVisible();
+    await captura(page, '28-jardin-repisa');
+    await page.getByRole('dialog', { name: 'Tu repisa' }).getByRole('button', { name: 'Cerrar' }).click();
+    await page.getByRole('button', { name: 'Guardar la repisa' }).click();
+    await expect(page.locator('[data-repisa="oculta"]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Sacar la repisa' }).click();
+    await expect(page.locator('[data-repisa="visible"]')).toHaveCount(1);
   });
 
   test('borrar mi cuenta', async ({ page }) => {

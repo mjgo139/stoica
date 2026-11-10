@@ -18,3 +18,11 @@
   sus pruebas (`terreno.test.ts`) verifican que el filósofo llega a cualquier lugar sin pisar nada.
 - Medidas de la maceta, el fuego y los adornos (y con cuántas medallas se desbloquea cada uno): `disposicion.ts`.
 - Lo que acomoda cada persona, el riego, la dificultad y la noche del fuego se guardan en `users/{uid}/jardin/config`.
+
+## Jardín v3: repisa, braseros fijos y filósofos animados
+
+- `armar_filosofos.py <carpeta> public/jardin` arma `marco-v2.webp` (camina, habla en 4 direcciones, antorcha) y
+  `epicteto-v1.webp` (camina y habla) a la misma escala, más `repisa-v1.webp` y `regadera-v1.webp`.
+  Las medidas de las hojas están en `src/screens/jardin/filosofos.ts`.
+- Una sola terraza (la vertical) para celular y computadora. Repisa de logros contra la baranda (`REPISA` en
+  `disposicion.ts`); 4 braseros fijos en las esquinas, al final de los pasillos (`BRASEROS` en `terreno.ts`).

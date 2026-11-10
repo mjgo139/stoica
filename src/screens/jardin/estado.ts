@@ -37,6 +37,8 @@ export interface Guardado {
   fuego: string;
   /** Última etapa vista de cada planta (para festejar cuando crece). */
   vistas: Record<string, number>;
+  /** La repisa de logros se ve (o está escondida bajo el piso). */
+  repisa: boolean;
 }
 
 const DEFECTO: Guardado = {
@@ -50,6 +52,7 @@ const DEFECTO: Guardado = {
   logros: 0,
   fuego: '',
   vistas: {},
+  repisa: true,
 };
 
 const completar = (x: Partial<Guardado>): Guardado => ({
@@ -60,7 +63,7 @@ const completar = (x: Partial<Guardado>): Guardado => ({
 });
 
 /** Campos que se guardan en la nube (users/{uid}/jardin/config). */
-const CAMPOS: Array<keyof Guardado> = ['modo', 'dificil', 'riegos', 'retonosPrevios', 'fortunaEspantada', 'pos', 'adornos', 'logros', 'fuego', 'vistas'];
+const CAMPOS: Array<keyof Guardado> = ['modo', 'dificil', 'riegos', 'retonosPrevios', 'fortunaEspantada', 'pos', 'adornos', 'logros', 'fuego', 'vistas', 'repisa'];
 const soloCampos = (g: Guardado) => Object.fromEntries(CAMPOS.map((k) => [k, g[k]])) as unknown as Guardado;
 
 /** Lo guardado del jardín en este dispositivo (sin hook): copia de lo que está en la nube. */

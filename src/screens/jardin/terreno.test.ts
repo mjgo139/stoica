@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { caminoHasta, celdas, celdaDePunto, libresEnOrden, ubicar, TERRENOS, type Forma } from './terreno';
+import { BRASEROS, caminoDeSalida, caminoHasta, celdas, celdaDePunto, libresEnOrden, rondaDeBraseros, ubicar, TERRENOS, type Forma } from './terreno';
 
 const FORMAS: Forma[] = ['vertical', 'horizontal'];
 
@@ -58,5 +58,32 @@ describe('terreno del jardín', () => {
     const muchas = Array.from({ length: 40 }, (_, i) => `p${i}`);
     const lleno = ubicar('horizontal', muchas, ['brasero'], {}, {});
     expect(lleno.sinLugar.length).toBe(40 + 1 - libresEnOrden('horizontal').length);
+  });
+});
+
+describe('braseros', () => {
+  it('cada brasero está fuera de la cuadrícula y se enciende desde un pasillo', () => {
+    for (const f of FORMAS) {
+      for (const b of BRASEROS[f]) {
+        expect(celdaDePunto(f, b.x, b.y)?.tipo ?? 'fuera').toBe('fuera');
+        const c = celdas(f)[b.parada[0] * TERRENOS[f].cols + b.parada[1]];
+        expect(c.tipo).toBe('pasillo');
+      }
+    }
+  });
+  it('la ronda recorre los 4 braseros solo por pasillos y vuelve a salir', () => {
+    for (const f of FORMAS) {
+      const ronda = rondaDeBraseros(f);
+      expect(ronda.map((r) => r.brasero).sort()).toEqual([0, 1, 2, 3]);
+      const todos = [...ronda.flatMap((r) => r.puntos.slice(1))];
+      for (let k = 1; k < todos.length; k++) {
+        const [ax, ay] = todos[k - 1];
+        const [bx, by] = todos[k];
+        for (let t = 0; t <= 1; t += 0.05) expect(celdaDePunto(f, ax + (bx - ax) * t, ay + (by - ay) * t)?.tipo).toBe('pasillo');
+      }
+      const ultimo = ronda[ronda.length - 1].puntos.at(-1)!;
+      const salida = caminoDeSalida(f, celdaDePunto(f, ultimo[0], ultimo[1])!.i);
+      expect(salida.at(-1)![1]).toBeGreaterThan(100);
+    }
   });
 });

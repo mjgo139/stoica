@@ -25,11 +25,11 @@ interface Definicion {
 }
 
 export const TERRENOS: Record<Forma, Definicion> = {
-  // Terraza vertical (941 × 1672): piso desde la baranda (28 %) hasta abajo.
+  // Terraza vertical (941 × 1672): la repisa va contra la baranda; el piso acomodable empieza delante (33 %).
   vertical: {
     x0: 14,
     x1: 92,
-    y0: 28,
+    y0: 33,
     y1: 100,
     cols: 5,
     filas: 10,
@@ -137,6 +137,34 @@ export function celdaDePunto(forma: Forma, x: number, y: number): Celda | null {
 
 export const ADORNO_BRASERO = 'brasero';
 
+export interface Brasero {
+  /** Pie del brasero (en %). */
+  x: number;
+  y: number;
+  /** Pasillo donde se para el filósofo para encenderlo, y hacia dónde mira. */
+  parada: [number, number];
+  mirar: 'izquierda' | 'derecha';
+}
+
+/**
+ * Los 4 braseros fijos, en las esquinas: al final de los pasillos y por fuera de la cuadrícula,
+ * así el filósofo los enciende parado en el pasillo sin pisar ninguna maceta.
+ */
+export const BRASEROS: Record<Forma, Brasero[]> = {
+  vertical: [
+    { x: 8.5, y: 37.4, parada: [0, 0], mirar: 'izquierda' }, // atrás a la izquierda
+    { x: 96, y: 57.6, parada: [3, 4], mirar: 'derecha' }, // atrás a la derecha (la fuente ocupa la esquina)
+    { x: 8.5, y: 78.6, parada: [6, 0], mirar: 'izquierda' }, // adelante a la izquierda
+    { x: 96, y: 78.6, parada: [6, 4], mirar: 'derecha' }, // adelante a la derecha
+  ],
+  horizontal: [
+    { x: 14, y: 38, parada: [0, 0], mirar: 'izquierda' },
+    { x: 90, y: 66, parada: [3, 6], mirar: 'derecha' },
+    { x: 14, y: 66, parada: [3, 0], mirar: 'izquierda' },
+    { x: 90, y: 96, parada: [6, 6], mirar: 'derecha' },
+  ],
+};
+
 /**
  * Dónde va cada cosa.
  * - `plantas`: ids en el orden del jardín (hábitos y después retoños).
@@ -188,14 +216,14 @@ export type Dir = 'abajo' | 'izquierda' | 'derecha' | 'arriba';
  * Camino del filósofo desde la entrada hasta una celda (por los pasillos), con el punto donde se para
  * y hacia dónde mira. null si no hay camino (no debería pasar: toda libre toca un pasillo).
  */
-export function caminoHasta(forma: Forma, destino: number): { puntos: Array<[number, number]>; mirar: Dir } | null {
+export function caminoHasta(forma: Forma, destino: number, desde?: number): { puntos: Array<[number, number]>; mirar: Dir; fin: number } | null {
   const d = TERRENOS[forma];
   const todas = celdas(forma);
   const obj = todas[destino];
   if (!obj) return null;
   const pasillo = (f: number, c: number) => f >= 0 && c >= 0 && f < d.filas && c < d.cols && todas[f * d.cols + c].tipo === 'pasillo';
   // Arranca en la última celda del pasillo del medio (al lado de la entrada)
-  const inicio = (d.filas - 1) * d.cols + d.pasilloCol;
+  const inicio = desde ?? (d.filas - 1) * d.cols + d.pasilloCol;
   const vecinas = (i: number) => {
     const f = Math.floor(i / d.cols);
     const c = i % d.cols;
@@ -241,7 +269,8 @@ export function caminoHasta(forma: Forma, destino: number): { puntos: Array<[num
   const ruta: number[] = [];
   for (let i = fin; i !== -1; i = previo.get(i)!) ruta.unshift(i);
   // Solo las esquinas (camina derecho entre ellas)
-  const puntos: Array<[number, number]> = [[todas[inicio].x, d.entrada[1]]];
+  // Desde la entrada (fuera del dibujo) o desde donde está parado
+  const puntos: Array<[number, number]> = desde === undefined ? [[todas[inicio].x, d.entrada[1]]] : [[todas[inicio].x, todas[inicio].y]];
   ruta.forEach((i, k) => {
     const a = ruta[k - 1];
     const b = ruta[k + 1];
@@ -250,5 +279,33 @@ export function caminoHasta(forma: Forma, destino: number): { puntos: Array<[num
   });
   const parado = todas[fin];
   const mirar: Dir = obj.i === fin ? 'abajo' : obj.col < parado.col ? 'izquierda' : obj.col > parado.col ? 'derecha' : 'abajo';
-  return { puntos, mirar };
+  return { puntos, mirar, fin };
+}
+
+/** Recorrido para encender los braseros: de uno al otro por los pasillos. */
+export function rondaDeBraseros(forma: Forma): Array<{ puntos: Array<[number, number]>; mirar: Dir; brasero: number }> {
+  const d = TERRENOS[forma];
+  const res: Array<{ puntos: Array<[number, number]>; mirar: Dir; brasero: number }> = [];
+  // Orden: adelante izquierda, atrás izquierda, atrás derecha, adelante derecha (sin volver sobre sus pasos)
+  const orden = [2, 0, 1, 3];
+  let desde: number | undefined;
+  for (const b of orden) {
+    const br = BRASEROS[forma][b];
+    const celda = br.parada[0] * d.cols + br.parada[1];
+    const c = caminoHasta(forma, celda, desde);
+    if (!c) continue;
+    res.push({ puntos: c.puntos, mirar: br.mirar, brasero: b });
+    desde = c.fin;
+  }
+  return res;
+}
+
+/** Camino de salida desde una celda de pasillo hasta la entrada. */
+export function caminoDeSalida(forma: Forma, desde: number): Array<[number, number]> {
+  const d = TERRENOS[forma];
+  const todas = celdas(forma);
+  const inicio = (d.filas - 1) * d.cols + d.pasilloCol;
+  const c = caminoHasta(forma, inicio, desde);
+  const pts = c ? c.puntos : [[todas[desde].x, todas[desde].y] as [number, number]];
+  return [...pts, [todas[inicio].x, d.entrada[1]]];
 }

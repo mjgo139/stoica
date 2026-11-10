@@ -248,7 +248,8 @@ service cloud.firestore {
       match /jardin/{doc} {
         allow read, delete: if esDueno(uid);
         allow create, update: if esDueno(uid) && doc == 'config'
-          && nuevo().keys().hasOnly(['modo', 'dificil', 'riegos', 'retonosPrevios', 'fortunaEspantada', 'pos', 'adornos', 'logros', 'fuego', 'vistas', 'actualizado', 'actualizadoPor'])
+          && nuevo().keys().hasOnly(['modo', 'dificil', 'riegos', 'retonosPrevios', 'fortunaEspantada', 'pos', 'adornos', 'logros', 'fuego', 'vistas', 'repisa', 'actualizado', 'actualizadoPor'])
+          && nuevo().get('repisa', true) is bool
           && nuevo().modo in ['auto', 'manual']
           && nuevo().dificil is bool
           && nuevo().riegos is map && nuevo().riegos.size() <= 60

@@ -34,9 +34,35 @@ export interface Adorno {
   luz?: boolean;
 }
 
-/** Adornos (public/jardin/adorno-<id>.webp), en el orden en que se desbloquean con las medallas. */
+/** El brasero (4 fijos en las esquinas) y su medida. */
+export const BRASERO = { apagado: '/jardin/adorno-brasero-apagado.webp', w: 244, h: 260 } as const;
+
+/** Regadera que aparece al regar. */
+export const REGADERA = { archivo: '/jardin/regadera-v1.webp', w: 360, h: 250 } as const;
+
+/**
+ * Repisa de logros (public/jardin/repisa-v1.webp, 2 filas × 9 nichos) apoyada contra la baranda.
+ * `nichos`: centro de cada nicho y su piso, en % de la imagen de la repisa.
+ */
+export const REPISA = {
+  archivo: '/jardin/repisa-v1.webp',
+  w: 1400,
+  h: 458,
+  /** Dónde va en la terraza vertical (en % del fondo): borde izquierdo, ancho y piso. */
+  lugar: { x: 18, ancho: 63, piso: 28.5 },
+  columnas: [8.7, 19, 29.4, 39.9, 50.5, 61, 71.5, 81.8, 92.2],
+  filas: [
+    { piso: 53, alto: 21 },
+    { piso: 77, alto: 18.5 },
+  ],
+  anchoNicho: 8.6,
+} as const;
+
+/** Orden en que se llenan los nichos: del centro hacia los costados, primero arriba. */
+export const ORDEN_NICHOS: Array<[number, number]> = [0, 1].flatMap((f) => [4, 3, 5, 2, 6, 1, 7, 0, 8].map((c) => [f, c] as [number, number]));
+
+/** Adornos (public/jardin/adorno-<id>.webp), en el orden en que se desbloquean con las medallas (van en la repisa). */
 export const ADORNOS: Adorno[] = [
-  { id: 'brasero', nombre: 'Brasero', w: 244, h: 260, medallas: 0, luz: true },
   { id: 'farol', nombre: 'Farol', w: 183, h: 260, medallas: 1, luz: true },
   { id: 'flores', nombre: 'Cántaro con flores', w: 260, h: 248, medallas: 2 },
   { id: 'reloj-sol', nombre: 'Reloj de sol', w: 259, h: 260, medallas: 3 },
