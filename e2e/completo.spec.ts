@@ -728,6 +728,17 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Tu jardín' })).toBeVisible();
     await page.waitForTimeout(1200);
     await captura(page, '28-jardin');
+    // El menú de abajo queda siempre encima del jardín (las plantas no se dibujan sobre él)
+    const nav = page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Hoy' });
+    if (await nav.isVisible()) {
+      await page.locator('[aria-label^="Jardín con"]').evaluate((el) => el.scrollIntoView({ block: 'end' }));
+      await page.evaluate(() => window.scrollBy(0, -120));
+      const caja = (await nav.boundingBox())!;
+      const arriba = await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('nav'), [caja.x + caja.width / 2, caja.y + caja.height / 2]);
+      expect(arriba).toBe(true);
+      await page.screenshot({ path: `e2e/capturas/${test.info().project.name}-28-jardin-menu.png` });
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
     const primera = page.getByRole('button', { name: /racha/ }).first();
     await primera.click();
     await expect(page.getByText(/Te falta|Te faltan|Florecida|sin cumplir/).first()).toBeVisible();

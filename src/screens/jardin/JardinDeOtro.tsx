@@ -93,7 +93,7 @@ export default function JardinDeOtro({ nombre, compartidos, fecha, hoy, alCerrar
         </p>
 
         <div className="card" style={{ padding: 0, overflow: 'hidden', border: 'none' }}>
-          <div style={{ position: 'relative', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` }} role="img" aria-label={`Jardín de ${nombre} con ${items.length} plantas`}>
+          <div style={{ position: 'relative', isolation: 'isolate', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` }} role="img" aria-label={`Jardín de ${nombre} con ${items.length} plantas`}>
             {items.map((it, i) => {
               const m = maceteros[i];
               const planta = PLANTA_DE_VIRTUD[it.virtud].id;

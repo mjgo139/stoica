@@ -3,6 +3,7 @@ import { useSesion } from '@/app/sesion';
 import { alCien, consejo, DIAS_PARA_MARCHITAR, DIAS_POR_RETONO, ETAPAS_PLANTA, faltanParaCrecer, hashTexto, MARCHITA, MAX_RETONOS, PLANTA_DE_VIRTUD, UMBRALES, visitaDelDia, type Consejo } from '@core/jardin';
 import { NOMBRE_VIRTUD, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
 import { useAvisos } from '@/ui/avisos';
+import { Icono } from '@/ui/Iconos';
 import { alternarSiNo, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
 import { FONDOS, MACETEROS } from './disposicion';
 import { fuerzaNoche, maceterosOrdenados, tinte, ubicarPlanta, useAncho } from './escena';
@@ -245,6 +246,7 @@ export function Jardin() {
         .jardin-planta.regando img { filter: drop-shadow(0 0 8px rgba(150,215,255,.95)) brightness(1.08); }
         .jardin-planta.retono img { filter: saturate(1.05); }
         .jardin-nombre { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; background: rgba(30,24,16,.78); color: #f3e6c8; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; pointer-events: none; }
+        .pide-agua svg { fill: rgba(110,190,250,.9); stroke: #eaf7ff; display: block; }
         .pide-agua { position: absolute; font-size: 15px; animation: latir 1.4s ease-in-out infinite; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); pointer-events: none; }
         .orbita { position: absolute; width: 0; height: 0; pointer-events: none; }
         .orbita > span { position: absolute; display: block; animation: orbita var(--t) linear infinite; animation-delay: var(--d); }
@@ -295,7 +297,8 @@ export function Jardin() {
           ))}
         </div>
         <button type="button" className="ghost" aria-pressed={conSonido} onClick={() => setConSonido(!conSonido)}>
-          {conSonido ? '🔊 Sonido activado' : '🔈 Activar sonido'}
+          <Icono nombre={conSonido ? 'lira' : 'liraMuda'} tam={20} />
+          {conSonido ? 'Sonido activado' : 'Activar sonido'}
         </button>
       </div>
       <p className="mu2" style={{ fontSize: 12.5, marginTop: 6 }}>
@@ -304,7 +307,7 @@ export function Jardin() {
       </p>
 
       <div className="card" style={{ marginTop: 10, padding: 0, overflow: 'hidden', border: 'none' }}>
-        <div ref={refJardin} style={{ position: 'relative', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` }} aria-label={`Jardín con ${items.length} plantas`} role="img">
+        <div ref={refJardin} style={{ position: 'relative', isolation: 'isolate', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` }} aria-label={`Jardín con ${items.length} plantas`} role="img">
           {items.map((it, i) => {
             const m = maceteros[i];
             const planta = PLANTA_DE_VIRTUD[it.virtud].id;
@@ -337,7 +340,7 @@ export function Jardin() {
                 )}
                 {it.planta?.pideAgua && elegido !== it.id && (
                   <span className="pide-agua" style={{ left: `${m.x}%`, top: `${piso - altoPct - 0.5}%`, zIndex: 61 }} aria-hidden>
-                    💧
+                    <Icono nombre="gota" tam={16} />
                   </span>
                 )}
 
@@ -397,7 +400,7 @@ export function Jardin() {
       {modo === 'manual' && !prueba && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
           <button type="button" className="btn" style={{ width: 'auto', flex: '1 1 220px' }} disabled={!sedientas.length} onClick={() => regar(sedientas)}>
-            💧 {sedientas.length ? `Regar ${sedientas.length === 1 ? '1 planta' : `${sedientas.length} plantas`}` : 'Nada para regar'}
+            <Icono nombre="gota" tam={17} /> {sedientas.length ? `Regar ${sedientas.length === 1 ? '1 planta' : `${sedientas.length} plantas`}` : 'Nada para regar'}
           </button>
           <span className="mu2" style={{ fontSize: 12.5, flex: '1 1 220px' }}>
             {sedientas.length ? 'Cumpliste estos hábitos hoy: regá sus plantas para que el día cuente (o tocá la regadera).' : 'Solo se pueden regar las plantas de los hábitos que ya cumpliste hoy.'}
@@ -546,7 +549,7 @@ function Ficha({ item, prueba, modo, dificil, alCerrar, alMarcar, alRegar, alAbr
           )}
           {p?.pideAgua && !prueba && (
             <button type="button" className="ghost" onClick={alRegar}>
-              💧 Regar
+              <Icono nombre="gota" tam={16} /> Regar
             </button>
           )}
           <button type="button" className="ghost" onClick={() => alAbrir(p?.id ?? item.retonoDe!.id)}>
@@ -586,8 +589,8 @@ function Prueba({
   const n = Math.min(cumplidos, total);
   return (
     <div className="card" style={{ marginTop: 14, padding: '10px 16px' }}>
-      <button type="button" className="mu2" style={{ fontSize: 13, fontWeight: 700 }} onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
-        🧪 Modo prueba {abierto ? '▲' : '▼'}
+      <button type="button" className="mu2" style={{ fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
+        <Icono nombre="enfoque" tam={15} /> Modo prueba {abierto ? '▲' : '▼'}
       </button>
       {abierto && (
         <div style={{ marginTop: 8 }}>

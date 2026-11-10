@@ -224,7 +224,7 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
         </span>
         {m.compartidos.length > 0 && (
           <button type="button" className="ghost" style={{ minHeight: 34, padding: '0 12px', fontSize: 13 }} onClick={() => setVerJardin(true)} aria-label={esYo ? 'Ver mi jardín como lo ve el grupo' : `Ver el jardín de ${m.nombre}`}>
-            🌿 Jardín
+            <Icono nombre="planta" tam={16} /> Jardín
           </button>
         )}
       </div>

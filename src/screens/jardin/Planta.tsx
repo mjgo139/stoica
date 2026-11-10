@@ -5,6 +5,7 @@ import { alCien, DIAS_PARA_MARCHITAR, DIAS_POR_RETONO, ETAPAS_PLANTA, faltanPara
 import { NOMBRE_VIRTUD, type Habito } from '@core/habitos';
 import { alternarSiNo, useDatos, useHabitosActivos, useHoy } from '@/app/datos';
 import { ESTILOS_GRAFICOS, Medalla } from './Graficos';
+import { Icono } from '@/ui/Iconos';
 import { calcularJardin, useGuardado, type PlantaCalc, type RetonoCalc } from './estado';
 
 /** Página de una planta (ruta /jardin/:id). Dentro del jardín se abre la misma vista encima. */
@@ -55,7 +56,7 @@ export function VistaPlanta({ p, retonos, dificil, prueba, alMarcar, alRegar }: 
       </div>
       <h1 className="titulo">{p.nombre}</h1>
 
-      <div className="card" style={{ marginTop: 12, padding: '18px 16px 14px', background: 'radial-gradient(ellipse at 50% 35%, #fff4dc 0%, #ead7b2 60%, #d9c19a 100%)', border: 'none', position: 'relative', overflow: 'hidden' }}>
+      <div className="card" style={{ marginTop: 12, padding: '18px 16px 14px', background: 'radial-gradient(ellipse at 50% 35%, #fff4dc 0%, #ead7b2 60%, #d9c19a 100%)', border: 'none', position: 'relative', isolation: 'isolate', overflow: 'hidden' }}>
         <img className="planta-grande" src={`/jardin/${especie.id}-${p.a.etapa}.webp`} alt={`${especie.nombre}: ${ETAPAS_PLANTA[p.a.etapa]}`} />
         {cien && (
           <div style={{ position: 'absolute', right: 14, top: 12, textAlign: 'center' }}>
@@ -154,7 +155,7 @@ export function VistaPlanta({ p, retonos, dificil, prueba, alMarcar, alRegar }: 
           )}
           {p.pideAgua && (
             <button type="button" className="ghost" onClick={alRegar}>
-              💧 Regar
+              <Icono nombre="gota" tam={16} /> Regar
             </button>
           )}
           <Link to={`/habitos/${h.id}`} className="ghost">

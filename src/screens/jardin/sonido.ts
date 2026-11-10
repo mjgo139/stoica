@@ -32,7 +32,8 @@ export function crearSonido(): SonidoJardin {
   const ctx = new Ctx();
   const maestro = ctx.createGain();
   maestro.gain.value = 0;
-  maestro.gain.linearRampToValueAtTime(0.9, ctx.currentTime + 1.5);
+  // Volumen bajo: es un fondo, no tiene que tapar nada.
+  maestro.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 2.5);
   maestro.connect(ctx.destination);
   const buf = ruido(ctx);
 
