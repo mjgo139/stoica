@@ -16,6 +16,16 @@ import { useAvisos } from '@/ui/avisos';
 import { useComunidad } from '@/app/comunidad';
 import { useSesion } from '@/app/sesion';
 import { esNativo } from './nativo';
+import { PLANTA_DE_VIRTUD } from '@core/jardin';
+import { calcularJardin, leerGuardado } from '@/screens/jardin/estado';
+
+/** Hasta 5 plantas para el widget del jardín. */
+function plantasParaWidget(uid: string, hoy: string) {
+  if (!uid) return [];
+  const { habitos, registros } = useDatos.getState();
+  const j = calcularJardin({ habitos: habitos.filter((h) => !h.archivado), registros, hoy, g: leerGuardado(uid), prueba: null });
+  return j.plantas.slice(0, 5).map((p) => ({ nombre: p.nombre, especie: PLANTA_DE_VIRTUD[p.virtud].id, etapa: p.a.etapa, peligro: p.riesgo > 0, cien: p.a.etapa === 4 }));
+}
 
 type Datos = Record<string, unknown>;
 
@@ -262,6 +272,8 @@ export function useWidgetHoy() {
       hechas: hechasDiarias,
       grupos: gruposWidget,
       // Memento mori: el celular cuenta los días solo.
+      // Jardín: las plantas de tus primeros hábitos, como las ves en el jardín (con tu riego y tu dificultad).
+      jardin: plantasParaWidget(uid ?? '', hoy),
       memento: { nacimiento, esperanza: esperanza ?? 73, contadores: (contadores ?? []).map((c) => ({ nombre: c.nombre, fecha: c.fecha })) },
     };
     const clave = JSON.stringify({ ...datos, frase: '' });

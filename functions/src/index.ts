@@ -23,7 +23,8 @@ import { logger } from 'firebase-functions';
 import { ROLES, type Rol } from './core/validaciones.js';
 import { calcularMetricas, type Cuenta } from './core/admin.js';
 import { esCodigo, generarCodigo, MAX_GRUPOS_POR_USUARIO, MAX_MIEMBROS, normalizarCodigo, REACCIONES, validarNombreGrupo, type Grupo, type Miembro, type Reaccion } from './core/comunidad.js';
-import { claveDia, minutoActual, ZONA_POR_DEFECTO } from './core/fechas.js';
+import { claveDia, minutoActual, sumarDias, ZONA_POR_DEFECTO } from './core/fechas.js';
+import { avisoDelJardin, plantasEnPeligro } from './core/jardin.js';
 import { cumplido, esDiaActivo, idRegistro, type Habito, type Registro } from './core/habitos.js';
 import { examenCompleto, idTareaHecha, tareaDelDia, tareaHecha, type Examen, type Tarea, type TareaHecha } from './core/rutina.js';
 import { limpiarNombre } from './core/validaciones.js';
@@ -482,6 +483,34 @@ export const enviarRecordatorios = onSchedule({ schedule: 'every 1 minutes', tim
     }
   }
 
+  // ----- Jardín: plantas que se marchitan mañana (3 horas antes del examen nocturno) -----
+  // Solo a quien ya abrió el jardín alguna vez (tiene jardin/config). ~1 lectura por minuto aunque no haya nadie.
+  const jardineros = await db().collection('users').where('examenMin', '==', (min + 180) % 1440).get();
+  let nJardin = 0;
+  for (const d of jardineros.docs) {
+    const p = d.data() as Perfil;
+    if (!p.notificaciones) continue;
+    const cfg = (await db().doc(`users/${d.id}/jardin/config`).get()).data() as { modo?: string; riegos?: Record<string, string[]> } | undefined;
+    if (!cfg) continue;
+    const hoy = claveDia(ahora, p.zonaHoraria);
+    const habs = (await db().collection(`users/${d.id}/habits`).get()).docs
+      .map((x) => ({ id: x.id, ...x.data() }) as Habito)
+      .filter((h) => !h.archivado)
+      .sort((a, b) => a.orden - b.orden)
+      .slice(0, 15);
+    if (!habs.length) continue;
+    const regs = new Map<string, Map<string, Registro>>();
+    for (const l of (await db().collection(`users/${d.id}/logs`).where('fecha', '>=', sumarDias(hoy, -10)).get()).docs) {
+      const r = l.data() as Registro;
+      if (!regs.has(r.habitId)) regs.set(r.habitId, new Map());
+      regs.get(r.habitId)!.set(r.fecha, r);
+    }
+    const peligro = plantasEnPeligro(habs, regs, hoy, cfg);
+    if (!peligro.length) continue;
+    nJardin++;
+    enviados += await avisar(d.id, { ...avisoDelJardin(peligro), url: '/jardin', tag: 'jardin' });
+  }
+
   // ----- Tareas con hora -----
   const tareas = await db().collectionGroup('tasks').where('avisoMin', '==', min).get();
   for (const d of tareas.docs) {
@@ -498,7 +527,7 @@ export const enviarRecordatorios = onSchedule({ schedule: 'every 1 minutes', tim
     enviados += await avisar(uid, { titulo: t.titulo.slice(0, 80), cuerpo: 'Tarea para ahora. Si depende de ti, hacela; si no, soltala.', url: '/tareas', tag: `tarea-${t.id}` });
   }
 
-  if (nHabitos || yaExamen.size || tareas.size) logger.info('Recordatorios', { min, habitos: nHabitos, examen: yaExamen.size, tareas: tareas.size, enviados });
+  if (nHabitos || yaExamen.size || tareas.size || nJardin) logger.info('Recordatorios', { min, habitos: nHabitos, examen: yaExamen.size, tareas: tareas.size, jardin: nJardin, enviados });
 });
 
 /** Aviso cuando alguien reacciona a tu día (v0.9). */

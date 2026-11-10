@@ -445,5 +445,6 @@ final class Estado {
         for (int id : ids(c, GrupoWidget.class)) GrupoWidget.dibujar(c, m, id);
         for (int id : ids(c, TarjetaWidget.class)) TarjetaWidget.dibujar(c, m, id);
         for (int id : ids(c, MementoWidget.class)) MementoWidget.dibujar(c, m, id);
+        for (int id : ids(c, JardinWidget.class)) JardinWidget.dibujar(c, m, id);
     }
 }

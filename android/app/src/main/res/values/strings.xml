@@ -11,6 +11,7 @@
     <string name="widget_grupo_descripcion">Tu grupo: cómo van hoy tus compañeros</string>
     <string name="widget_habito_descripcion">Un hábito: racha y marcar de un toque</string>
     <string name="widget_tarjeta_descripcion">Tarjeta de un hábito: su semana, racha y marcar hoy</string>
+    <string name="widget_jardin_descripcion">Tu jardín estoico: tus plantas, cuáles están al 100 % y cuáles te necesitan hoy</string>
     <string name="widget_memento_descripcion">Memento mori: lo que probablemente te queda, en días y en años</string>
     <string name="widget_habito_elegir">Elegí un hábito</string>
     <string name="widget_descripcion">Tus hábitos de hoy: cuántos llevás y cuáles faltan</string>

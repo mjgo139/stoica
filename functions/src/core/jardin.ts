@@ -261,3 +261,35 @@ export function plantaCompartida(c: { racha: number; semana?: boolean[] }): { et
   if (c.racha <= 0 && semanaSinNada) return { etapa: MARCHITA, retonos: 0 };
   return { etapa: etapaPlanta(c.racha, 0), retonos: retonos(c.racha) };
 }
+
+/**
+ * Plantas que se marchitan mañana si hoy no se cumple su hábito (para el aviso de la noche).
+ * Respeta el riego manual: en ese modo un día cuenta solo si se cumplió y se regó.
+ * `registros`: hábito → (fecha → registro), con al menos los últimos días.
+ */
+export function plantasEnPeligro(
+  habitos: Habito[],
+  registros: Map<string, Map<string, import('./habitos.js').Registro>>,
+  hoy: string,
+  jardin?: { modo?: string; riegos?: Record<string, string[]> },
+): Habito[] {
+  const manual = jardin?.modo === 'manual';
+  return habitos.filter((h) => {
+    if (h.archivado || !esDiaActivo(h, hoy)) return false;
+    const regs = registros.get(h.id) ?? new Map();
+    const regados = new Set(jardin?.riegos?.[h.id] ?? []);
+    const bueno = (d: string) => cumplido(h, regs.get(d)) && (!manual || regados.has(d));
+    if (bueno(hoy)) return false;
+    return estadoPorDias(h, hoy, bueno, 30).sinCumplir === DIAS_PARA_MARCHITAR - 1;
+  });
+}
+
+/** Texto del aviso del jardín. */
+export function avisoDelJardin(enPeligro: Array<Pick<Habito, 'nombre' | 'virtud'>>): { titulo: string; cuerpo: string } {
+  if (enPeligro.length === 1) {
+    const h = enPeligro[0];
+    const planta = PLANTA_DE_VIRTUD[h.virtud].nombre.toLowerCase();
+    return { titulo: `Tu ${planta} se marchita mañana`, cuerpo: `Cumplí «${h.nombre}» hoy y sigue creciendo. Lo que depende de ti, hacelo ahora.` };
+  }
+  return { titulo: `${enPeligro.length} plantas se marchitan mañana`, cuerpo: `Cumplí hoy: ${enPeligro.map((h) => h.nombre).join(' · ')}.` };
+}

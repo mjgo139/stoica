@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analizar, buenosDesde, diasSinCumplir, estadoPorDias, estadoSimulado, alCien, consejo, visitaDelDia, rachaRetono, retonos, etapaPlanta, faltanParaCrecer, MARCHITA, plantaCompartida } from './jardin.js';
+import { analizar, buenosDesde, diasSinCumplir, estadoPorDias, estadoSimulado, alCien, consejo, visitaDelDia, rachaRetono, retonos, etapaPlanta, faltanParaCrecer, MARCHITA, plantaCompartida, plantasEnPeligro, avisoDelJardin } from './jardin.js';
 import type { Habito, Registro } from './habitos.js';
 
 describe('jardín estoico', () => {
@@ -106,5 +106,28 @@ describe('jardín de otra persona del grupo', () => {
   it('se ve marchita solo si no cumplió ningún día de la semana', () => {
     expect(plantaCompartida({ racha: 0, semana: Array(7).fill(false) }).etapa).toBe(MARCHITA);
     expect(plantaCompartida({ racha: 0 }).etapa).toBe(0);
+  });
+});
+
+describe('aviso del jardín', () => {
+  const h = { id: 'a', nombre: 'Meditar', virtud: 'sabiduria', tipo: 'sino', meta: 1, dias: [0, 1, 2, 3, 4, 5, 6], inicio: '2026-11-01' } as unknown as Habito;
+  const r = (hecho: boolean) => ({ hecho }) as unknown as Registro;
+  it('avisa cuando lleva 2 días sin cumplir y hoy todavía no', () => {
+    const regs = new Map([['a', new Map([['2026-11-07', r(true)]])]]);
+    expect(plantasEnPeligro([h], regs, '2026-11-10').map((x) => x.id)).toEqual(['a']);
+    // Hoy ya cumplido: no avisa
+    regs.get('a')!.set('2026-11-10', r(true));
+    expect(plantasEnPeligro([h], regs, '2026-11-10')).toEqual([]);
+    // Solo 1 día sin cumplir: todavía no
+    expect(plantasEnPeligro([h], new Map([['a', new Map([['2026-11-08', r(true)]])]]), '2026-11-10')).toEqual([]);
+  });
+  it('en riego manual, cumplir sin regar no salva la planta', () => {
+    const regs = new Map([['a', new Map([['2026-11-07', r(true)], ['2026-11-08', r(true)], ['2026-11-09', r(true)]])]]);
+    expect(plantasEnPeligro([h], regs, '2026-11-10', { modo: 'manual', riegos: { a: ['2026-11-07'] } }).length).toBe(1);
+    expect(plantasEnPeligro([h], regs, '2026-11-10', { modo: 'auto' }).length).toBe(0);
+  });
+  it('el texto nombra la planta de la virtud', () => {
+    expect(avisoDelJardin([h]).titulo).toBe('Tu olivo se marchita mañana');
+    expect(avisoDelJardin([h, { ...h, nombre: 'Leer' }]).titulo).toContain('2 plantas');
   });
 });
