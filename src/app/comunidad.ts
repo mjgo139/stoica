@@ -172,7 +172,7 @@ function miJardinCompartido(ids: string[]): JardinCompartido {
   const propio = (k: string) => ids.some((id) => k === id || k.startsWith(`${id}-r`));
   const filtrar = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).filter(([k]) => propio(k)));
   return {
-    pos: { vertical: filtrar(g.pos.vertical), horizontal: filtrar(g.pos.horizontal) },
+    pos: { vertical: filtrar(g.pos.vertical), horizontal: {} },
     adornos: { vertical: { ...g.adornos.vertical }, horizontal: { ...g.adornos.horizontal } },
     logros: g.logros,
   };

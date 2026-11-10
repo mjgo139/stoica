@@ -4,8 +4,20 @@ import { BRASEROS, caminoDeSalida, caminoHasta, celdas, celdaDePunto, libresEnOr
 const FORMAS: Forma[] = ['vertical', 'horizontal'];
 
 describe('terreno del jardín', () => {
-  it('hay lugar para al menos 15 macetas en cada forma', () => {
-    for (const f of FORMAS) expect(libresEnOrden(f).length).toBeGreaterThanOrEqual(15);
+  it('hay lugar para al menos 15 macetas en cada forma, sin huecos', () => {
+    for (const f of FORMAS) {
+      expect(libresEnOrden(f).length).toBeGreaterThanOrEqual(15);
+      expect(celdas(f).some((c) => c.tipo === 'bloqueada')).toBe(false);
+    }
+  });
+
+  it('los dos bloques son iguales (mismos lugares a la izquierda y a la derecha) y la cuadrícula es la misma en las dos formas', () => {
+    for (const f of FORMAS) {
+      const libres = libresEnOrden(f);
+      const d = TERRENOS[f];
+      expect(libres.filter((c) => c.col < d.pasilloCol).length).toBe(libres.filter((c) => c.col > d.pasilloCol).length);
+    }
+    expect(celdas('vertical').map((c) => `${c.fila},${c.col},${c.tipo}`)).toEqual(celdas('horizontal').map((c) => `${c.fila},${c.col},${c.tipo}`));
   });
 
   it('cada lugar libre toca un pasillo y el filósofo llega a todos sin pisar nada', () => {

@@ -105,7 +105,7 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
   // Luz de noche: los braseros encendidos
   const luces: Luz[] = braseros.filter((b) => fuegos[b.i]).map((b) => ({ x: b.x, y: b.top + b.alto * 0.25, r: Math.max(55, b.ancho * pxPorPct * 1.9) }));
   // Repisa
-  const R = REPISA.lugar;
+  const R = REPISA.lugar[forma];
   const altoRepisa = R.ancho * relacion * (REPISA.h / REPISA.w);
   const nichos = nichosDeRepisa(logros);
   return (
@@ -115,7 +115,7 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
       aria-label={etiqueta}
       role="img"
     >
-      {forma === 'vertical' && (
+      {(
         <div className="esc-repisa" style={{ left: `${R.x}%`, top: `${R.piso - altoRepisa}%`, width: `${R.ancho}%`, height: `${altoRepisa}%`, zIndex: 2 }}>
           <div className={`esc-repisa-dentro${repisaVisible ? '' : ' oculta'}`} data-repisa={repisaVisible ? 'visible' : 'oculta'}>
             <img className="fondo" src={REPISA.archivo} alt="" draggable={false} />
@@ -192,7 +192,7 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
           </div>
         );
       })}
-      {forma === 'vertical' && repisaVisible && alTocarRepisa && (
+      {repisaVisible && alTocarRepisa && (
         <button
           type="button"
           aria-label="Repisa de logros: ver su página"

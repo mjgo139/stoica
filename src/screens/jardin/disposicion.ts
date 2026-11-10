@@ -48,8 +48,8 @@ export const REPISA = {
   archivo: '/jardin/repisa-v1.webp',
   w: 1400,
   h: 458,
-  /** Dónde va en la terraza vertical (en % del fondo): borde izquierdo, ancho y piso. */
-  lugar: { x: 18, ancho: 63, piso: 28.5 },
+  /** Dónde va en cada terraza (en % del fondo): borde izquierdo, ancho y piso. */
+  lugar: { vertical: { x: 18, ancho: 63, piso: 28.5 }, horizontal: { x: 33, ancho: 34, piso: 34.5 } },
   columnas: [8.7, 19, 29.4, 39.9, 50.5, 61, 71.5, 81.8, 92.2],
   filas: [
     { piso: 53, alto: 21 },

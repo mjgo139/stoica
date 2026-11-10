@@ -9,7 +9,7 @@ import { diferenciaDias } from '@core/fechas';
 import { NOMBRE_VIRTUD, type Virtud } from '@core/habitos';
 import type { Compartido, JardinCompartido } from '@core/comunidad';
 import { Icono } from '@/ui/Iconos';
-import { esNocheDeFuego } from './escena';
+import { esNocheDeFuego, useAncho } from './escena';
 import { PaginaRepisa } from './Repisa';
 import { Escena, ESTILOS_ESCENA, type PlantaEnEscena } from './Escena';
 import { ESTILOS_GRAFICOS } from './Graficos';
@@ -39,8 +39,8 @@ interface Props {
 }
 
 export default function JardinDeOtro({ nombre, compartidos, jardin, fecha, hoy, alCerrar, laureles = 0, regalo }: Props) {
-  // La misma terraza que ves en tu jardín, en el celular y en la computadora
-  const forma: Forma = 'vertical';
+  // Como en tu jardín: vertical en el celular, horizontal en la computadora (misma cuadrícula)
+  const forma: Forma = useAncho() ? 'horizontal' : 'vertical';
   const [verRepisa, setVerRepisa] = useState(false);
   const [elegido, setElegido] = useState<string | null>(null);
   const hora = new Date().getHours();
@@ -79,7 +79,7 @@ export default function JardinDeOtro({ nombre, compartidos, jardin, fecha, hoy, 
 
   // Cómo acomodó sus macetas (si su app ya lo comparte); su repisa se llena con sus medallas
   const logros = jardin?.logros ?? 0;
-  const acomodo = useMemo(() => ubicar(forma, items.map((i) => i.id), [], jardin?.pos[forma] ?? {}, {}), [forma, items, jardin]);
+  const acomodo = useMemo(() => ubicar(forma, items.map((i) => i.id), [], jardin?.pos.vertical ?? {}, {}), [forma, items, jardin]);
   const visibles = items.filter((i) => acomodo.lugar.has(i.id));
   const enEscena: PlantaEnEscena[] = visibles.map((i) => ({ id: i.id, nombre: i.nombre, virtud: i.virtud, etapa: i.etapa, retono: i.retono, celda: acomodo.lugar.get(i.id)! }));
 
@@ -92,7 +92,7 @@ export default function JardinDeOtro({ nombre, compartidos, jardin, fecha, hoy, 
         ${ESTILOS_GRAFICOS}
         ${ESTILOS_ESCENA}
         .hoja-planta { position: fixed; inset: 0; z-index: 200; background: rgba(20,14,6,.55); display: flex; justify-content: center; align-items: flex-end; }
-        .hoja-planta > div { background: var(--bg, #f4ede1); width: min(560px, 100%); max-height: 94vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 14px 16px 24px; }
+        .hoja-planta > div { background: var(--bg, #f4ede1); width: min(1000px, 100%); max-height: 94vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 14px 16px 24px; }
         @media (min-width: 760px) { .hoja-planta { align-items: center } .hoja-planta > div { border-radius: 22px } }
       `}</style>
       <div>

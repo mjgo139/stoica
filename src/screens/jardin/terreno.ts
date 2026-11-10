@@ -24,42 +24,37 @@ interface Definicion {
   brasero: [number, number];
 }
 
+/**
+ * Las dos terrazas usan la MISMA cuadrícula (5 columnas × 7 filas): dos bloques iguales de 2 × 4 lugares,
+ * uno a cada lado del pasillo del medio, sin huecos. Así una maceta queda en el mismo lugar en el celular
+ * (terraza vertical) y en la computadora (horizontal). Los rectángulos esquivan la fuente, el busto y los arbustos.
+ */
 export const TERRENOS: Record<Forma, Definicion> = {
-  // Terraza vertical (941 × 1672): la repisa va contra la baranda; el piso acomodable empieza delante (33 %).
+  // Terraza vertical (941 × 1672): delante de la repisa, entre el busto y la fuente.
   vertical: {
-    x0: 14,
-    x1: 92,
-    y0: 33,
-    y1: 100,
+    x0: 16,
+    x1: 84,
+    y0: 38.4,
+    y1: 82,
     cols: 5,
-    filas: 10,
-    pasilloFilas: [0, 3, 6, 9],
+    filas: 7,
+    pasilloFilas: [0, 3, 6],
     pasilloCol: 2,
-    bloqueadas: [
-      [0, 4], // fuente
-      [1, 4],
-      [7, 4], // arbustos de abajo a la derecha
-      [8, 3],
-      [8, 4],
-      [9, 4],
-    ],
-    entrada: [53, 106],
+    bloqueadas: [],
+    entrada: [50, 106],
     brasero: [1, 0],
   },
   // Terraza horizontal (1671 × 941)
   horizontal: {
-    x0: 18,
-    x1: 86,
-    y0: 32,
-    y1: 100,
-    cols: 7,
+    x0: 20,
+    x1: 84,
+    y0: 34,
+    y1: 98,
+    cols: 5,
     filas: 7,
     pasilloFilas: [0, 3, 6],
-    pasilloCol: 3,
-    bloqueadas: [
-      [0, 6], // fuente
-      [1, 6],
-    ],
+    pasilloCol: 2,
+    bloqueadas: [],
     entrada: [52, 108],
     brasero: [1, 0],
   },
@@ -152,16 +147,16 @@ export interface Brasero {
  */
 export const BRASEROS: Record<Forma, Brasero[]> = {
   vertical: [
-    { x: 8.5, y: 37.4, parada: [0, 0], mirar: 'izquierda' }, // atrás a la izquierda
-    { x: 96, y: 57.6, parada: [3, 4], mirar: 'derecha' }, // atrás a la derecha (la fuente ocupa la esquina)
-    { x: 8.5, y: 78.6, parada: [6, 0], mirar: 'izquierda' }, // adelante a la izquierda
-    { x: 96, y: 78.6, parada: [6, 4], mirar: 'derecha' }, // adelante a la derecha
+    { x: 10.5, y: 40.9, parada: [0, 0], mirar: 'izquierda' }, // atrás a la izquierda
+    { x: 89.5, y: 44.5, parada: [0, 4], mirar: 'derecha' }, // atrás a la derecha (delante de la fuente)
+    { x: 10.5, y: 81.2, parada: [6, 0], mirar: 'izquierda' }, // adelante a la izquierda
+    { x: 89.5, y: 81.2, parada: [6, 4], mirar: 'derecha' }, // adelante a la derecha
   ],
   horizontal: [
-    { x: 14, y: 38, parada: [0, 0], mirar: 'izquierda' },
-    { x: 90, y: 66, parada: [3, 6], mirar: 'derecha' },
-    { x: 14, y: 66, parada: [3, 0], mirar: 'izquierda' },
-    { x: 90, y: 96, parada: [6, 6], mirar: 'derecha' },
+    { x: 16.5, y: 67.5, parada: [3, 0], mirar: 'izquierda' },
+    { x: 87.5, y: 67.5, parada: [3, 4], mirar: 'derecha' },
+    { x: 16.5, y: 97.4, parada: [6, 0], mirar: 'izquierda' },
+    { x: 87.5, y: 97.4, parada: [6, 4], mirar: 'derecha' },
   ],
 };
 

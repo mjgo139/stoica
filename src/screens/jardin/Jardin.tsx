@@ -10,7 +10,7 @@ import { useComunidad } from '@/app/comunidad';
 import { obtenerDriver } from '@/data';
 import type { Reaccion } from '@core/comunidad';
 import { ADORNOS, FONDOS } from './disposicion';
-import { anchoMaceta, esNocheDeFuego, fuerzaNoche } from './escena';
+import { anchoMaceta, esNocheDeFuego, fuerzaNoche, useAncho } from './escena';
 import { Escena, ESTILOS_ESCENA, type PlantaEnEscena } from './Escena';
 import { crearSonido, type SonidoJardin } from './sonido';
 import { ESTILOS_GRAFICOS } from './Graficos';
@@ -88,7 +88,9 @@ export function Jardin() {
   const hoy = useHoy();
   const habitos = useHabitosActivos();
   const registros = useDatos((s) => s.registros);
-  const forma: Forma = 'vertical';
+  // Celular: terraza vertical; computadora: horizontal. Las dos usan la misma cuadrícula, así cada
+  // maceta queda en el mismo lugar en las dos (se guarda una sola vez).
+  const forma: Forma = useAncho() ? 'horizontal' : 'vertical';
   const fondo = FONDOS[forma];
   const [g, setG] = useGuardado(uid);
   const modo = g.modo;
@@ -161,7 +163,7 @@ export function Jardin() {
   }, [prueba, medallas, g.logros]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dónde va cada maceta
-  const posGuardadas = g.pos[forma];
+  const posGuardadas = g.pos.vertical;
   const acomodo = useMemo(() => ubicar(forma, todosItems.map((i) => i.id), [], posGuardadas, {}), [forma, todosItems, posGuardadas]);
   const items = todosItems.filter((i) => acomodo.lugar.has(i.id));
   const enVivero = todosItems.length - items.length;
@@ -382,13 +384,13 @@ export function Jardin() {
     const otro = [...acomodo.lugar.entries()].find(([, i]) => i === destino)?.[0];
     const desde = acomodo.lugar.get(id);
     setG((x) => {
-      const pos = { ...x.pos[forma] };
+      const pos = { ...x.pos.vertical };
       pos[id] = destino;
       if (otro && otro !== id) {
         if (desde !== undefined) pos[otro] = desde;
         else delete pos[otro];
       }
-      return { ...x, pos: { ...x.pos, [forma]: pos } };
+      return { ...x, pos: { vertical: pos, horizontal: {} } };
     });
   };
   const alBajar = (id: string) => (e: PE<HTMLElement>) => {
@@ -503,9 +505,10 @@ export function Jardin() {
         .jardin-pagina { max-width: 1100px; margin-inline: auto; }
         .jardin-cols { display: block; }
         .jardin-lienzo { max-width: 560px; margin-inline: auto; }
-        @media (min-width: 900px) {
-          .jardin-cols { display: grid; grid-template-columns: minmax(340px, 520px) 1fr; gap: 22px; align-items: start; }
-          .jardin-lienzo { position: sticky; top: 12px; margin: 0; }
+        .jardin-panel { max-width: 560px; margin-inline: auto; }
+        @media (min-width: 760px) {
+          .jardin-lienzo { max-width: 1000px; }
+          .jardin-panel { max-width: 1000px; }
         }
         @keyframes latir { 0%,100% { transform: translate(-50%, -100%) scale(1); opacity: .9 } 50% { transform: translate(-50%, -100%) scale(1.15); opacity: 1 } }
         .jardin-nombre { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; background: rgba(30,24,16,.78); color: #f3e6c8; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; pointer-events: none; }
@@ -638,7 +641,7 @@ export function Jardin() {
                 </span>
               )}
               {visita?.tipo === 'fuego' && parada === 0 && filosofoPos?.parado && (
-                <span className="nube" style={{ left: `${filosofoPos.x}%`, top: `calc(${filosofoPos.y}% - ${filosofoPos.alto + 6}px)`, zIndex: 165, cursor: 'default' }}>
+                <span className="nube" style={{ left: `${filosofoPos.x}%`, top: `calc(${filosofoPos.y}% - ${filosofoPos.alto + 6}px)`, zIndex: 165, cursor: 'default', pointerEvents: 'none' }}>
                   Que la llama acompañe tu noche
                 </span>
               )}
@@ -652,7 +655,7 @@ export function Jardin() {
           </p>
         </div>
 
-        <div>
+        <div className="jardin-panel" style={{ marginTop: 12 }}>
           {controles}
 
           {modo === 'manual' && !prueba && (
@@ -716,7 +719,7 @@ export function Jardin() {
                 </li>
                 <li>
                   <b>Mover:</b> mantené apretada una maceta y arrastrala a cualquier lugar libre; el camino del filósofo siempre queda despejado.{' '}
-                  <button type="button" className="link" style={{ padding: 0, display: 'inline' }} onClick={() => setG((x) => ({ ...x, pos: { ...x.pos, [forma]: {} } }))}>
+                  <button type="button" className="link" style={{ padding: 0, display: 'inline' }} onClick={() => setG((x) => ({ ...x, pos: { vertical: {}, horizontal: {} } }))}>
                     Volver a acomodar como al principio
                   </button>
                 </li>

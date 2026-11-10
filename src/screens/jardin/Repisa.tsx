@@ -44,7 +44,7 @@ export function PaginaRepisa({ titulo, logros, porHabito, alCerrar }: Props) {
             const tiene = a.medallas <= logros;
             return (
               <div key={a.id} className="card" style={{ padding: 8, textAlign: 'center', opacity: tiene ? 1 : 0.6, borderStyle: tiene ? 'solid' : 'dashed' }}>
-                <img src={`/jardin/adorno-${a.id}.webp`} alt="" style={{ width: 64, height: 64, objectFit: 'contain', filter: tiene ? 'none' : 'grayscale(1) brightness(.7)' }} />
+                <img src={`/jardin/adorno-${a.id}.webp`} alt="" style={{ width: 64, height: 64, objectFit: 'contain', display: 'block', margin: '0 auto 4px', filter: tiene ? 'none' : 'grayscale(1) brightness(.7)' }} />
                 <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{a.nombre}</div>
                 <div className="mu2" style={{ fontSize: 11 }}>
                   {tiene ? `Medalla ${a.medallas}` : `Con ${a.medallas} ${a.medallas === 1 ? 'medalla' : 'medallas'}`}
