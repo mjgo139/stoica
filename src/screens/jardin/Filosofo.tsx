@@ -143,6 +143,12 @@ export function Filosofo({ atlas, paradas, salida, seguir, irse, altoEn, anchoPx
   const [cw, ch] = atlas.celda;
   const esc = alto / ch;
   return (
+    <>
+      {/* Sombra en el piso, bajo los pies */}
+      <span
+        aria-hidden
+        style={{ position: 'absolute', left: `${s.x}%`, top: `${s.y}%`, width: cw * esc * 0.62, height: cw * esc * 0.17, transform: 'translate(-50%, -50%)', borderRadius: '50%', background: 'radial-gradient(ellipse at center, rgba(45,28,10,.5), rgba(45,28,10,0) 70%)', pointerEvents: 'none', zIndex: 2 }}
+      />
     <button
       type="button"
       className={`filosofo${s.fase === 'parado' ? ' hablando' : ''}`}
@@ -163,10 +169,11 @@ export function Filosofo({ atlas, paradas, salida, seguir, irse, altoEn, anchoPx
         border: 0,
         padding: 0,
         cursor: 'pointer',
-        filter: 'drop-shadow(2px 5px 3px rgba(60,40,10,.4))',
+        filter: 'drop-shadow(1px 3px 2px rgba(60,40,10,.3))',
         // Delante de las plantas de su fila y detrás de las de adelante
         zIndex: 3 + Math.round(s.y),
       }}
     />
+    </>
   );
 }

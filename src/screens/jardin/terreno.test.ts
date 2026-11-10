@@ -83,6 +83,14 @@ describe('braseros', () => {
       }
     }
   });
+  it('dos braseros arriba y dos abajo, cada par en la misma línea', () => {
+    for (const f of FORMAS) {
+      const [a, b, c, d] = BRASEROS[f];
+      expect(a.y).toBe(b.y);
+      expect(c.y).toBe(d.y);
+      expect(a.y).toBeLessThan(c.y);
+    }
+  });
   it('la ronda recorre los 4 braseros solo por pasillos y vuelve a salir', () => {
     for (const f of FORMAS) {
       const ronda = rondaDeBraseros(f);

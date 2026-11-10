@@ -3,7 +3,7 @@
  * la terraza, la repisa de logros, los 4 braseros, las macetas con sus plantas, la luz según la hora y la noche.
  * Lo interactivo (tocar, mover, el filósofo) lo agrega quien la usa como `children` o con los avisos.
  */
-import type { ReactNode, Ref } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { alCien, MARCHITA, PLANTA_DE_VIRTUD } from '@core/jardin';
 import type { Virtud } from '@core/habitos';
 import { ADORNOS, BRASERO, FONDOS, FUEGO, MACETA, ORDEN_NICHOS, REGADERA, REPISA } from './disposicion';
@@ -29,6 +29,11 @@ export const ESTILOS_ESCENA = `
   @keyframes crecer { 0% { transform: scale(1) } 30% { transform: scale(1.18) } 60% { transform: scale(.96) } 100% { transform: scale(1) } }
   @keyframes rayos { from { transform: translate(-50%, -50%) rotate(0deg) } to { transform: translate(-50%, -50%) rotate(360deg) } }
   @keyframes regar { 0% { opacity: 0; transform: translate(-10%, -100%) rotate(0deg) } 15% { opacity: 1 } 35%,75% { transform: translate(-10%, -100%) rotate(-28deg) } 100% { opacity: 0; transform: translate(-10%, -100%) rotate(0deg) } }
+  .esc-sombra { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(ellipse at center, rgba(45,28,10,.55) 0%, rgba(45,28,10,.3) 42%, rgba(45,28,10,0) 72%); }
+  @keyframes polvo { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.35) } 18% { opacity: .85 } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% - var(--dy))) scale(1.9) } }
+  .esc-polvo { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(168,136,94,1), rgba(192,162,118,.72) 42%, rgba(214,190,150,0) 72%); filter: blur(1.5px); animation: polvo var(--t) ease-out var(--d) both; }
+  @keyframes temblar { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-.25%) } 75% { transform: translateX(.25%) } }
+  .esc-repisa.tiembla { animation: temblar .18s linear 8; }
   .esc-maceta { position: absolute; pointer-events: none; }
   .esc-maceta img { width: 100%; display: block; }
   .esc-planta { position: absolute; transform-origin: 50% 100%; pointer-events: none; }
@@ -46,12 +51,13 @@ export const ESTILOS_ESCENA = `
   .esc-fuego.prende { animation: prender 1.2s ease-out; }
   .esc-medalla { position: absolute; transform: translate(-50%, -30%); animation: brillo-medalla 3s ease-in-out infinite; background: none; border: 0; padding: 0; cursor: pointer; }
   .esc-repisa { position: absolute; overflow: hidden; }
+  .esc-sombra-repisa { transition: opacity 1.4s; }
   .esc-repisa-dentro { position: absolute; inset: 0; transition: transform 1.5s cubic-bezier(.5,.05,.3,1); }
   .esc-repisa-dentro.oculta { transform: translateY(102%); }
   .esc-repisa img.fondo { width: 100%; height: 100%; display: block; }
   .esc-nicho { position: absolute; transform: translate(-50%, -100%); display: flex; align-items: flex-end; justify-content: center; }
   .esc-nicho img { width: 100%; display: block; filter: drop-shadow(0 2px 2px rgba(60,40,10,.35)); }
-  @media (prefers-reduced-motion: reduce) { .esc-planta img, .esc-medalla, .esc-fuego, .esc-planta.crece, .esc-regadera, .esc-repisa-dentro { animation: none; transition: none } }
+  @media (prefers-reduced-motion: reduce) { .esc-planta img, .esc-medalla, .esc-fuego, .esc-planta.crece, .esc-regadera, .esc-repisa-dentro, .esc-repisa.tiembla { animation: none; transition: none } .esc-polvo { display: none } }
 `;
 
 /** Qué hay en cada nicho de la repisa: los adornos desbloqueados y, después, una medalla por cada medalla extra. */
@@ -96,6 +102,20 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
   const fondo = FONDOS[forma];
   const relacion = fondo.ancho / fondo.alto;
   const t = tinte(hora);
+  // Polvo cuando la repisa sale del piso o se hunde (no al abrir el jardín)
+  const [polvo, setPolvo] = useState(0);
+  const antes = useRef(repisaVisible);
+  useEffect(() => {
+    if (antes.current === repisaVisible) return;
+    antes.current = repisaVisible;
+    setPolvo(Date.now());
+    const tm = window.setTimeout(() => setPolvo(0), 3400);
+    return () => clearTimeout(tm);
+  }, [repisaVisible]);
+  /** Sombra en el piso (centro y ancho en %): que nada se vea flotando. */
+  const sombra = (x: number, y: number, ancho: number, z: number, extra?: string) => (
+    <span className={`esc-sombra${extra ? ` ${extra}` : ''}`} style={{ left: `${x}%`, top: `${y}%`, width: `${ancho}%`, height: `${ancho * relacion * 0.3}%`, zIndex: z }} />
+  );
   const pxPorPct = anchoPx / 100;
   const braseros = BRASEROS[forma].map((b, i) => {
     const ancho = anchoMaceta(forma, b.y) * 0.78;
@@ -116,7 +136,7 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
       role="img"
     >
       {(
-        <div className="esc-repisa" style={{ left: `${R.x}%`, top: `${R.piso - altoRepisa}%`, width: `${R.ancho}%`, height: `${altoRepisa}%`, zIndex: 2 }}>
+        <div className={`esc-repisa${polvo ? ' tiembla' : ''}`} style={{ left: `${R.x}%`, top: `${R.piso - altoRepisa}%`, width: `${R.ancho}%`, height: `${altoRepisa}%`, zIndex: 1 }}>
           <div className={`esc-repisa-dentro${repisaVisible ? '' : ' oculta'}`} data-repisa={repisaVisible ? 'visible' : 'oculta'}>
             <img className="fondo" src={REPISA.archivo} alt="" draggable={false} />
             {nichos.map((n) => {
@@ -137,8 +157,36 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
           </div>
         </div>
       )}
+      <span className="esc-sombra esc-sombra-repisa" style={{ left: `${R.x + R.ancho / 2}%`, top: `${R.piso - 0.4}%`, width: `${R.ancho * 1.06}%`, height: `${R.ancho * relacion * 0.05}%`, zIndex: 2, opacity: repisaVisible ? 1 : 0, borderRadius: '50%' }} />
+      {polvo > 0 &&
+        Array.from({ length: 40 }, (_, k) => {
+          // Nubecitas a lo largo del borde del piso, que suben y se abren
+          const r = (n: number) => ((Math.sin((k + 1) * 12.9898 + n * 78.233 + polvo) * 43758.5453) % 1 + 1) % 1;
+          const x = R.x - R.ancho * 0.03 + R.ancho * 1.06 * (k % 20) / 19;
+          const tam = R.ancho * (k < 20 ? 0.09 + r(1) * 0.08 : 0.05 + r(1) * 0.05);
+          return (
+            <span
+              key={`p${polvo}-${k}`}
+              className="esc-polvo"
+              style={
+                {
+                  left: `${x}%`,
+                  top: `${R.piso - 0.3}%`,
+                  width: `${tam}%`,
+                  height: `${tam * relacion}%`,
+                  zIndex: 3,
+                  '--dx': `${(r(2) - 0.5) * 80}px`,
+                  '--dy': `${14 + r(3) * (k < 20 ? 30 : 60)}px`,
+                  '--d': `${r(4) * 1.1}s`,
+                  '--t': `${1.2 + r(5) * 1}s`,
+                } as React.CSSProperties
+              }
+            />
+          );
+        })}
       {braseros.map((b) => (
         <div key={`brasero-${b.i}`}>
+          {sombra(b.x, b.y - 0.3, b.ancho * 1.25, 2)}
           <div className="esc-brasero" style={{ left: `${b.left}%`, top: `${b.top}%`, width: `${b.ancho}%`, zIndex: 3 + Math.round(b.y) }}>
             <img src={BRASERO.apagado} alt="" draggable={false} />
           </div>
@@ -162,6 +210,7 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
         const fuera = levantada === p.id;
         return (
           <div key={p.id}>
+            {!fuera && sombra(m.left + m.w / 2, m.piso - m.h * 0.06, m.w * 1.18, 2)}
             <div className="esc-maceta" style={{ left: `${m.left}%`, top: `${m.top}%`, width: `${m.w}%`, zIndex: z, opacity: fuera ? 0.35 : 1 }}>
               <img src={MACETA.archivo} alt="" draggable={false} />
             </div>

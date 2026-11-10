@@ -147,14 +147,15 @@ export interface Brasero {
  */
 export const BRASEROS: Record<Forma, Brasero[]> = {
   vertical: [
-    { x: 10.5, y: 40.9, parada: [0, 0], mirar: 'izquierda' }, // atrás a la izquierda
-    { x: 89.5, y: 44.5, parada: [0, 4], mirar: 'derecha' }, // atrás a la derecha (delante de la fuente)
+    // Dos arriba y dos abajo, cada par en la misma línea
+    { x: 10.5, y: 42, parada: [0, 0], mirar: 'izquierda' }, // atrás a la izquierda
+    { x: 89.5, y: 42, parada: [0, 4], mirar: 'derecha' }, // atrás a la derecha (delante de la fuente)
     { x: 10.5, y: 81.2, parada: [6, 0], mirar: 'izquierda' }, // adelante a la izquierda
     { x: 89.5, y: 81.2, parada: [6, 4], mirar: 'derecha' }, // adelante a la derecha
   ],
   horizontal: [
-    { x: 16.5, y: 67.5, parada: [3, 0], mirar: 'izquierda' },
-    { x: 87.5, y: 67.5, parada: [3, 4], mirar: 'derecha' },
+    { x: 17, y: 39.5, parada: [0, 0], mirar: 'izquierda' },
+    { x: 87, y: 39.5, parada: [0, 4], mirar: 'derecha' },
     { x: 16.5, y: 97.4, parada: [6, 0], mirar: 'izquierda' },
     { x: 87.5, y: 97.4, parada: [6, 4], mirar: 'derecha' },
   ],

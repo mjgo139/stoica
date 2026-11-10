@@ -816,6 +816,7 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('dialog', { name: 'Tu repisa' }).getByRole('button', { name: 'Cerrar' }).click();
     await page.getByRole('button', { name: 'Guardar la repisa' }).click();
     await expect(page.locator('[data-repisa="oculta"]')).toHaveCount(1);
+    await expect(page.locator('.esc-polvo').first()).toBeAttached();
     await page.getByRole('button', { name: 'Sacar la repisa' }).click();
     await expect(page.locator('[data-repisa="visible"]')).toHaveCount(1);
   });
