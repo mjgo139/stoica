@@ -1,9 +1,10 @@
 /**
- * Jardín de otra persona del grupo (solo para mirar). Se arma con lo que esa persona ya comparte
- * en el grupo —nombre del hábito, virtud, racha y su última semana—, sin leer nada más de su cuenta.
+ * Jardín de otra persona del grupo (solo para mirar): las plantas reales de los hábitos que comparte
+ * (su celular sube la etapa, los días sin marchitarse y los retoños junto con el resumen del grupo).
+ * Si el resumen es de una versión vieja de la app, la planta se aproxima con la racha.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { alCien, ETAPAS_PLANTA, MARCHITA, PLANTA_DE_VIRTUD, plantaCompartida, rachaRetono, etapaPlanta } from '@core/jardin';
+import { alCien, DIAS_PARA_MARCHITAR, ETAPAS_PLANTA, MARCHITA, PLANTA_DE_VIRTUD, plantaCompartida, rachaRetono, etapaPlanta } from '@core/jardin';
 import { diferenciaDias } from '@core/fechas';
 import { NOMBRE_VIRTUD, type Virtud } from '@core/habitos';
 import type { Compartido } from '@core/comunidad';
@@ -18,6 +19,7 @@ interface Item {
   virtud: Virtud;
   etapa: number;
   racha: number | null;
+  ciclo: number | null;
   retono: boolean;
 }
 
@@ -36,18 +38,24 @@ export default function JardinDeOtro({ nombre, compartidos, fecha, hoy, alCerrar
     return () => window.removeEventListener('keydown', f);
   }, [alCerrar]);
 
+  const atraso = Math.max(0, diferenciaDias(fecha, hoy));
+  // Si pasó días sin abrir la app no pudo cumplir nada: a los 3 días su jardín real ya está marchito.
+  const seco = atraso >= DIAS_PARA_MARCHITAR;
+  const aproximadas = compartidos.some((c) => !c.planta);
+
   const items = useMemo(() => {
     const plantas: Item[] = [];
     const brotes: Item[] = [];
     for (const c of compartidos) {
-      const p = plantaCompartida(c);
-      plantas.push({ id: c.habitId, nombre: c.nombre, virtud: c.virtud, etapa: p.etapa, racha: c.racha, retono: false });
-      for (let k = 0; k < p.retonos; k++) brotes.push({ id: `${c.habitId}-r${k}`, nombre: `Retoño de ${c.nombre}`, virtud: c.virtud, etapa: etapaPlanta(rachaRetono(c.racha, k), 0), racha: null, retono: true });
+      const real = c.planta;
+      const etapas = real ? real.retonos : Array.from({ length: plantaCompartida(c).retonos }, (_, k) => etapaPlanta(rachaRetono(c.racha, k), 0));
+      const etapa = seco ? MARCHITA : real ? real.etapa : plantaCompartida(c).etapa;
+      plantas.push({ id: c.habitId, nombre: c.nombre, virtud: c.virtud, etapa, racha: c.racha, ciclo: real && !seco ? real.ciclo : null, retono: false });
+      if (!seco) etapas.forEach((e, k) => brotes.push({ id: `${c.habitId}-r${k}`, nombre: `Retoño de ${c.nombre}`, virtud: c.virtud, etapa: e, racha: null, ciclo: null, retono: true }));
     }
     return [...plantas, ...brotes].slice(0, maceteros.length);
-  }, [compartidos, maceteros.length]);
+  }, [compartidos, maceteros.length, seco]);
 
-  const atraso = Math.max(0, diferenciaDias(fecha, hoy));
   const sel = items.find((i) => i.id === elegido);
   const flor = items.filter((i) => alCien(i.etapa)).length;
 
@@ -79,8 +87,9 @@ export default function JardinDeOtro({ nombre, compartidos, fecha, hoy, alCerrar
           </button>
         </div>
         <p className="mu2" style={{ fontSize: 12.5, margin: '4px 0 10px' }}>
-          {compartidos.length === 1 ? 'Con el hábito que comparte en este grupo: crece con su racha.' : `Con los ${compartidos.length} hábitos que comparte en este grupo: crecen con su racha.`}
-          {atraso >= 1 && ` Actualizado hace ${atraso === 1 ? '1 día' : `${atraso} días`} (cuando abre la app se pone al día).`}
+          {compartidos.length === 1 ? 'Su planta real del hábito que comparte en este grupo.' : `Sus plantas reales de los ${compartidos.length} hábitos que comparte en este grupo.`}
+          {atraso >= 1 && ` Actualizado hace ${atraso === 1 ? '1 día' : `${atraso} días`}${seco ? ': sin cumplir esos días, su jardín se marchitó' : ''}.`}
+          {aproximadas && !seco && ' Todavía tiene una versión vieja de la app: hasta que la actualice, sus plantas se calculan con la racha.'}
         </p>
 
         <div className="card" style={{ padding: 0, overflow: 'hidden', border: 'none' }}>
@@ -122,6 +131,7 @@ export default function JardinDeOtro({ nombre, compartidos, fecha, hoy, alCerrar
               <div className="mu2" style={{ fontSize: 12.5 }}>
                 {PLANTA_DE_VIRTUD[sel.virtud].nombre} ({NOMBRE_VIRTUD[sel.virtud]}) · {ETAPAS_PLANTA[sel.etapa]}
                 {sel.racha !== null && ` · racha ${sel.racha}`}
+                {sel.ciclo !== null && ` · ${sel.ciclo} días sin marchitarse`}
                 {alCien(sel.etapa) && ' · 100 %'}
               </div>
             </div>

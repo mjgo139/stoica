@@ -2,7 +2,9 @@
  * Cálculo del jardín (compartido entre el jardín y la pantalla de cada planta):
  * plantas de los hábitos, medallas, retoños, plagas, modo difícil y lo guardado en el dispositivo.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { programarResumenGrupos } from '@/app/datos';
+import type { PlantaCompartida } from '@core/comunidad';
 import { sumarDias } from '@core/fechas';
 import { cumplido, esDiaActivo, VIRTUDES, type Habito, type Registro, type Virtud } from '@core/habitos';
 import { analizar, buenosDesde, etapaPlanta, nivelRiesgo, rachaRetono, retonos, type Analisis, type Dia } from '@core/jardin';
@@ -24,23 +26,30 @@ export interface Guardado {
 
 const DEFECTO: Guardado = { modo: 'auto', dificil: false, riegos: {}, retonosPrevios: {}, fortunaEspantada: '' };
 
+/** Lo guardado del jardín en este dispositivo (sin hook). */
+export function leerGuardado(uid: string): Guardado {
+  try {
+    const crudo = localStorage.getItem(`stoica.jardin.${uid}`);
+    if (crudo) return { ...DEFECTO, ...(JSON.parse(crudo) as Partial<Guardado>) };
+  } catch {
+    /* sin almacenamiento */
+  }
+  return DEFECTO;
+}
+
 export function useGuardado(uid: string): [Guardado, (f: (g: Guardado) => Guardado) => void] {
   const clave = `stoica.jardin.${uid}`;
-  const [g, setG] = useState<Guardado>(() => {
-    try {
-      const crudo = localStorage.getItem(clave);
-      if (crudo) return { ...DEFECTO, ...(JSON.parse(crudo) as Partial<Guardado>) };
-    } catch {
-      /* sin almacenamiento */
-    }
-    return DEFECTO;
-  });
+  const [g, setG] = useState<Guardado>(() => leerGuardado(uid));
+  const primera = useRef(true);
   useEffect(() => {
     try {
       localStorage.setItem(clave, JSON.stringify(g));
     } catch {
       /* sin almacenamiento */
     }
+    // Regar o cambiar el riego/la dificultad cambia las plantas que ven tus grupos.
+    if (primera.current) primera.current = false;
+    else programarResumenGrupos();
   }, [g, clave]);
   return [g, (f) => setG((x) => f(x))];
 }
@@ -133,4 +142,15 @@ export function calcularJardin({ habitos, registros, hoy, g, prueba }: Entrada):
   );
   const libres = Math.max(0, MAX_MACETEROS - plantas.length);
   return { plantas, retonos: todos.slice(0, libres), enVivero: Math.max(0, todos.length - libres) };
+}
+
+/** Plantas reales de tus hábitos, para compartirlas en los grupos (hábito → planta). */
+export function plantasParaCompartir(entrada: Omit<Entrada, 'prueba'>): Map<string, PlantaCompartida> {
+  const { plantas } = calcularJardin({ ...entrada, prueba: null });
+  return new Map(
+    plantas.map((p) => [
+      p.id,
+      { etapa: p.a.etapa, ciclo: p.ciclo, retonos: Array.from({ length: p.retonos }, (_, k) => etapaPlanta(rachaRetono(p.ciclo, k), p.a.sinCumplir)) },
+    ]),
+  );
 }

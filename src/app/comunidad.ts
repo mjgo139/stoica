@@ -12,6 +12,7 @@ import { esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError, type ConId } from '@/data/tipos';
 import { useAvisos } from '@/ui/avisos';
 import { useSesion } from './sesion';
+import { leerGuardado, plantasParaCompartir } from '@/screens/jardin/estado';
 import { hoyActual, registrarActualizadorGrupos, registrosDe, uidActual, useDatos, VENTANA_DIAS } from './datos';
 
 interface EstadoGrupo {
@@ -159,6 +160,18 @@ function SincronizarProgresos() {
 }
 
 // ---------- Cálculos (nunca valores reales de medición ni el examen) ----------
+/** Tus plantas reales del jardín (con el riego y la dificultad de este dispositivo). */
+function misPlantas(hoy: string) {
+  const { habitos, registros } = useDatos.getState();
+  return plantasParaCompartir({ habitos: habitos.filter((h) => !h.archivado), registros, hoy, g: leerGuardado(uidActual()) });
+}
+
+/** Resumen de un hábito para el grupo, con su planta del jardín. */
+function resumirConPlanta(h: Habito, hoy: string, plantas: ReturnType<typeof misPlantas>): Compartido {
+  const planta = plantas.get(h.id);
+  return planta ? { ...resumirHabito(h, hoy), planta } : resumirHabito(h, hoy);
+}
+
 export function resumirHabito(h: Habito, hoy: string): Compartido {
   const regs = registrosDe(useDatos.getState().registros, h.id);
   return {
@@ -187,12 +200,13 @@ async function actualizarResumenes() {
   const { habitos } = useDatos.getState();
   const d = await obtenerDriver();
   const nombre = useSesion.getState().perfil?.nombre ?? '';
+  const plantas = misPlantas(hoy);
   for (const g of useComunidad.getState().grupos.values()) {
     if (g.yo) {
       const compartidos = g.yo.compartidos
         .map((c) => habitos.find((h) => h.id === c.habitId && !h.archivado))
         .filter((h): h is ConId<Habito> => !!h)
-        .map((h) => resumirHabito(h, hoy));
+        .map((h) => resumirConPlanta(h, hoy, plantas));
       const cambio = JSON.stringify(compartidos) !== JSON.stringify(g.yo.compartidos) || g.yo.fecha !== hoy || g.yo.nombre !== nombre;
       if (cambio) {
         const yo = { nombre, compartidos, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid };
@@ -247,10 +261,11 @@ export async function elegirCompartidos(grupoId: string, habitIds: string[]) {
   const uid = uidActual();
   const hoy = hoyActual();
   const { habitos } = useDatos.getState();
+  const plantas = misPlantas(hoy);
   const compartidos = habitIds
     .map((id) => habitos.find((h) => h.id === id))
     .filter((h): h is ConId<Habito> => !!h)
-    .map((h) => resumirHabito(h, hoy));
+    .map((h) => resumirConPlanta(h, hoy, plantas));
   await intentar(async () =>
     (await obtenerDriver()).guardar(`groups/${grupoId}/members/${uid}`, { nombre: useSesion.getState().perfil?.nombre ?? '', compartidos, fecha: hoy, actualizado: Date.now(), actualizadoPor: uid }),
   );

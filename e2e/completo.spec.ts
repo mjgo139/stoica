@@ -385,6 +385,14 @@ test.describe('v0.5–v1.0', () => {
     await page.getByRole('dialog').getByLabel('Meditar').check();
     await page.getByRole('dialog').getByRole('button', { name: 'Guardar' }).click();
     await expect(page.getByText('· vos')).toBeVisible();
+    // Mi jardín como lo ve el grupo: con la planta real (no la aproximada)
+    await page.getByRole('button', { name: 'Ver mi jardín como lo ve el grupo' }).click();
+    const miJardin = page.getByRole('dialog', { name: /^Jardín de .*\(vos\)$/ });
+    await expect(miJardin.getByText(/Su planta real/)).toBeVisible();
+    await expect(miJardin.getByText(/versión vieja/)).toHaveCount(0);
+    await miJardin.getByRole('button', { name: /^Meditar:/ }).click();
+    await expect(miJardin.getByText(/días sin marchitarse/)).toBeVisible();
+    await miJardin.getByRole('button', { name: 'Cerrar' }).click();
 
     // Marcar mi hábito compartido desde el grupo
     const mio = page.getByRole('button', { name: /^(Marcar|Desmarcar) Meditar$/ });

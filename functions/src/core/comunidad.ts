@@ -44,6 +44,17 @@ export interface Compartido {
   porcentaje: number;
   /** Últimos 7 días (del más viejo a `fecha` del resumen): solo cumplió / no cumplió. */
   semana?: boolean[];
+  /** Su planta del jardín tal como la ve esa persona (con su riego y su dificultad). */
+  planta?: PlantaCompartida;
+}
+
+/** Estado real de la planta de un hábito compartido. */
+export interface PlantaCompartida {
+  etapa: number;
+  /** Días buenos sin marchitarse. */
+  ciclo: number;
+  /** Etapa de cada retoño. */
+  retonos: number[];
 }
 
 /**
