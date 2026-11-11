@@ -211,7 +211,7 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
         return (
           <div key={p.id}>
             {!fuera && sombra(m.left + m.w / 2, m.piso - m.h * 0.06, m.w * 1.18, 2)}
-            <div className="esc-maceta" style={{ left: `${m.left}%`, top: `${m.top}%`, width: `${m.w}%`, zIndex: z, opacity: fuera ? 0.35 : 1 }}>
+            <div className="esc-maceta" style={{ left: `${m.left}%`, top: `${m.top}%`, width: `${m.w}%`, zIndex: z, opacity: fuera ? 0.35 : 1, transform: `skewX(${Math.atan(m.inclina)}rad)`, transformOrigin: '50% 100%' }}>
               <img src={MACETA.archivo} alt="" draggable={false} />
             </div>
             <div
@@ -228,12 +228,12 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
                   className="esc-medalla"
                   aria-label={`${p.nombre} está al 100 %: ver su página`}
                   onClick={() => alTocarMedalla(p.id)}
-                  style={{ left: `${m.left + m.w * 0.84}%`, top: `${m.top + m.h * 0.7}%`, zIndex: 159, animationDelay: `${-i * 0.4}s` }}
+                  style={{ left: `${m.left + m.w * 0.84 + m.corre(m.h * 0.3)}%`, top: `${m.top + m.h * 0.7}%`, zIndex: 159, animationDelay: `${-i * 0.4}s` }}
                 >
                   <Medalla tipo="Oro" dias={100} tam={Math.max(22, m.w * pxPorPct * (p.retono ? 0.3 : 0.36))} />
                 </button>
               ) : (
-                <span className="esc-medalla" style={{ left: `${m.left + m.w * 0.84}%`, top: `${m.top + m.h * 0.7}%`, zIndex: z + 1, cursor: 'default' }} aria-hidden>
+                <span className="esc-medalla" style={{ left: `${m.left + m.w * 0.84 + m.corre(m.h * 0.3)}%`, top: `${m.top + m.h * 0.7}%`, zIndex: z + 1, cursor: 'default' }} aria-hidden>
                   <Medalla tipo="Oro" dias={100} tam={Math.max(20, m.w * pxPorPct * 0.32)} />
                 </span>
               ))}

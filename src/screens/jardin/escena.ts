@@ -1,29 +1,30 @@
 /** Cálculos de dibujo compartidos entre tu jardín y el jardín de otra persona del grupo. */
 import { useEffect, useState } from 'react';
 import { ADORNOS, FONDOS, MACETA, SPRITES } from './disposicion';
-import { celdas, TERRENOS, type Forma } from './terreno';
+import { celdas, perspectiva, TERRENOS, type Forma } from './terreno';
 
 export type { Forma };
 
 /** Ancho máximo de cada planta (su etapa más grande), para que la adulta ocupe el ancho de la tierra. */
 export const ANCHO_MAX: Record<string, number> = Object.fromEntries(Object.entries(SPRITES).map(([k, v]) => [k, Math.max(...v.map((s) => s.w))]));
 
-/** Perspectiva: lo del fondo se ve un poco más chico que lo de adelante. */
-function escala(forma: Forma, y: number) {
-  const d = TERRENOS[forma];
-  const t = Math.min(1, Math.max(0, (y - d.y0) / (d.y1 - d.y0)));
-  return 0.86 + 0.22 * t;
-}
-
-/** Ancho de una maceta (en % del ancho del fondo) a la profundidad y. */
+/** Ancho de una maceta (en % del ancho del fondo) a la profundidad y: se achica hacia el fondo como el piso. */
 export function anchoMaceta(forma: Forma, y: number): number {
   const f = FONDOS[forma];
-  // Tamaño de un lugar para macetas (no de un pasillo)
+  // Tamaño de un lugar para macetas en la fila de adelante
+  const d = TERRENOS[forma];
   const c = celdas(forma).find((x) => x.tipo === 'libre')!;
-  const cw = (c.w / 100) * f.ancho;
+  const cw = ((c.w / perspectiva(forma, c.y)) / 100) * f.ancho;
   const ch = (c.h / 100) * f.alto;
-  const px = Math.min(cw * 0.9, ch * 1.0 * (MACETA.w / MACETA.h)) * escala(forma, y);
+  const px = Math.min(cw * 0.92, ch * 1.15 * (MACETA.w / MACETA.h)) * perspectiva(forma, Math.min(y, d.y1));
   return (px / f.ancho) * 100;
+}
+
+/** Inclinación (tangente) de las líneas del piso en un punto: para que la maceta quede alineada con las baldosas. */
+export function inclinacion(forma: Forma, x: number, y: number): number {
+  const f = FONDOS[forma];
+  const [vx, vy] = TERRENOS[forma].fuga;
+  return ((x - vx) * f.ancho) / ((y - vy) * f.alto);
 }
 
 /** Rectángulos (en %) de la maceta de una celda y el punto donde se apoya la planta. */
@@ -35,14 +36,20 @@ export function lugarMaceta(forma: Forma, celda: number) {
   const piso = c.y + c.h * 0.42;
   const top = piso - h;
   const left = c.x - w / 2;
+  const [vx, vy] = TERRENOS[forma].fuga;
+  // Al inclinar la maceta como el piso, lo de arriba se corre hacia el punto de fuga
+  const corre = (alturaSobrePiso: number) => -alturaSobrePiso * ((c.x - vx) / (piso - vy));
+  const alturaTierra = h * (1 - (MACETA.tierra.y + 8) / 100);
   return {
     left,
     top,
     w,
     h,
     piso,
+    inclina: inclinacion(forma, c.x, piso),
+    corre,
     // Donde va la base de la planta: en la tierra, un poco detrás del centro
-    plantaX: left + (w * MACETA.tierra.x) / 100,
+    plantaX: left + (w * MACETA.tierra.x) / 100 + corre(alturaTierra),
     plantaY: top + (h * (MACETA.tierra.y + 8)) / 100,
     anchoTierra: (w * MACETA.tierra.w) / 100,
   };

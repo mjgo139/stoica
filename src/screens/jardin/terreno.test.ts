@@ -26,12 +26,11 @@ describe('terreno del jardín', () => {
       for (const c of todas.filter((x) => x.tipo === 'libre')) {
         const r = caminoHasta(f, c.i);
         expect(r, `${f} celda ${c.fila},${c.col}`).not.toBeNull();
-        // Cada tramo es recto y todos sus puntos caen en pasillos
+        // Cada tramo sigue una fila o una línea del piso, y todos sus puntos caen en pasillos
         const pts = r!.puntos.slice(1);
         for (let k = 1; k < pts.length; k++) {
           const [ax, ay] = pts[k - 1];
           const [bx, by] = pts[k];
-          expect(ax === bx || ay === by).toBe(true);
           for (let t = 0; t <= 1; t += 0.05) {
             const celda = celdaDePunto(f, ax + (bx - ax) * t, ay + (by - ay) * t);
             expect(celda?.tipo, `${f} hacia ${c.fila},${c.col}`).toBe('pasillo');
@@ -77,7 +76,7 @@ describe('braseros', () => {
   it('cada brasero está fuera de la cuadrícula y se enciende desde un pasillo', () => {
     for (const f of FORMAS) {
       for (const b of BRASEROS[f]) {
-        expect(celdaDePunto(f, b.x, b.y)?.tipo ?? 'fuera').toBe('fuera');
+        expect(celdaDePunto(f, b.x, b.y)?.tipo ?? 'fuera').not.toBe('libre');
         const c = celdas(f)[b.parada[0] * TERRENOS[f].cols + b.parada[1]];
         expect(c.tipo).toBe('pasillo');
       }

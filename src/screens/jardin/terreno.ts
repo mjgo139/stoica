@@ -22,6 +22,11 @@ interface Definicion {
   entrada: [number, number];
   /** Celda inicial del brasero. */
   brasero: [number, number];
+  /**
+   * Punto de fuga del piso (en %): las líneas de las baldosas y de la guarda se juntan ahí.
+   * La cuadrícula sigue esas líneas: x0/x1 son los bordes en la fila de adelante (y1) y hacia el fondo se angosta.
+   */
+  fuga: [number, number];
 }
 
 /**
@@ -43,6 +48,7 @@ export const TERRENOS: Record<Forma, Definicion> = {
     bloqueadas: [],
     entrada: [50, 106],
     brasero: [1, 0],
+    fuga: [47, -31],
   },
   // Terraza horizontal (1671 × 941)
   horizontal: {
@@ -57,6 +63,7 @@ export const TERRENOS: Record<Forma, Definicion> = {
     bloqueadas: [],
     entrada: [52, 108],
     brasero: [1, 0],
+    fuga: [49.5, -120],
   },
 };
 
@@ -95,6 +102,16 @@ function grilla(forma: Forma) {
   };
 }
 
+/** Cuánto se achica el piso a la profundidad y (1 en la fila de adelante). */
+export function perspectiva(forma: Forma, y: number): number {
+  const d = TERRENOS[forma];
+  return (y - d.fuga[1]) / (d.y1 - d.fuga[1]);
+}
+
+/** Del plano "derecho" (x medida en la fila de adelante) al dibujo, siguiendo las líneas del piso. */
+export const aDibujo = (forma: Forma, x: number, y: number) => TERRENOS[forma].fuga[0] + (x - TERRENOS[forma].fuga[0]) * perspectiva(forma, y);
+const aPlano = (forma: Forma, x: number, y: number) => TERRENOS[forma].fuga[0] + (x - TERRENOS[forma].fuga[0]) / perspectiva(forma, y);
+
 export function celdas(forma: Forma): Celda[] {
   const hecho = cache.get(forma);
   if (hecho) return hecho;
@@ -105,7 +122,9 @@ export function celdas(forma: Forma): Celda[] {
     for (let col = 0; col < d.cols; col++) {
       const bloq = d.bloqueadas.some(([f, c]) => f === fila && c === col);
       const pasillo = d.pasilloFilas.includes(fila) || col === d.pasilloCol;
-      lista.push({ i: fila * d.cols + col, fila, col, x: (xs[col] + xs[col + 1]) / 2, y: (ys[fila] + ys[fila + 1]) / 2, w: xs[col + 1] - xs[col], h: ys[fila + 1] - ys[fila], tipo: bloq ? 'bloqueada' : pasillo ? 'pasillo' : 'libre' });
+      const y = (ys[fila] + ys[fila + 1]) / 2;
+      const p = perspectiva(forma, y);
+      lista.push({ i: fila * d.cols + col, fila, col, x: aDibujo(forma, (xs[col] + xs[col + 1]) / 2, y), y, w: (xs[col + 1] - xs[col]) * p, h: ys[fila + 1] - ys[fila], tipo: bloq ? 'bloqueada' : pasillo ? 'pasillo' : 'libre' });
     }
   cache.set(forma, lista);
   return lista;
@@ -123,7 +142,9 @@ export function libresEnOrden(forma: Forma): Celda[] {
 /** Celda de un punto (en %), o null si cae fuera de la cuadrícula. */
 export function celdaDePunto(forma: Forma, x: number, y: number): Celda | null {
   const d = TERRENOS[forma];
-  if (x < d.x0 || x >= d.x1 || y < d.y0 || y >= d.y1) return null;
+  if (y < d.y0 || y >= d.y1) return null;
+  x = aPlano(forma, x, y);
+  if (x < d.x0 || x >= d.x1) return null;
   const { xs, ys } = grilla(forma);
   const col = Math.max(0, xs.findIndex((v) => v > x) - 1);
   const fila = Math.max(0, ys.findIndex((v) => v > y) - 1);
@@ -145,20 +166,22 @@ export interface Brasero {
  * Los 4 braseros fijos, en las esquinas: al final de los pasillos y por fuera de la cuadrícula,
  * así el filósofo los enciende parado en el pasillo sin pisar ninguna maceta.
  */
+/** Brasero puesto sobre la línea del piso que pasa a `u` (medido en la fila de adelante), a la altura y. */
+const brasero = (forma: Forma, u: number, y: number, parada: [number, number], mirar: 'izquierda' | 'derecha'): Brasero => ({ x: aDibujo(forma, u, y), y, parada, mirar });
+
 export const BRASEROS: Record<Forma, Brasero[]> = {
+  // Dos arriba y dos abajo, cada par a la misma altura y los de cada lado sobre la misma línea del piso
   vertical: [
-    // Dos arriba y dos abajo, cada par en la misma línea
-    { x: 10.5, y: 42, parada: [0, 0], mirar: 'izquierda' }, // atrás a la izquierda
-    { x: 89.5, y: 42, parada: [0, 4], mirar: 'derecha' }, // atrás a la derecha (delante de la fuente)
-    { x: 10.5, y: 81.2, parada: [6, 0], mirar: 'izquierda' }, // adelante a la izquierda
-    { x: 89.5, y: 81.2, parada: [6, 4], mirar: 'derecha' }, // adelante a la derecha
+    brasero('vertical', 11.5, 42, [0, 0], 'izquierda'),
+    brasero('vertical', 88.5, 42, [0, 4], 'derecha'),
+    brasero('vertical', 11.5, 81.2, [6, 0], 'izquierda'),
+    brasero('vertical', 88.5, 81.2, [6, 4], 'derecha'),
   ],
   horizontal: [
-    // Arriba: en las esquinas de atrás de la guarda griega
-    { x: 27.4, y: 36.5, parada: [0, 0], mirar: 'izquierda' },
-    { x: 77.3, y: 36.5, parada: [0, 4], mirar: 'derecha' },
-    { x: 16.5, y: 97.4, parada: [6, 0], mirar: 'izquierda' },
-    { x: 87.5, y: 97.4, parada: [6, 4], mirar: 'derecha' },
+    brasero('horizontal', 17.5, 36.5, [0, 0], 'izquierda'),
+    brasero('horizontal', 86.5, 36.5, [0, 4], 'derecha'),
+    brasero('horizontal', 17.5, 97.4, [6, 0], 'izquierda'),
+    brasero('horizontal', 86.5, 97.4, [6, 4], 'derecha'),
   ],
 };
 
@@ -267,7 +290,7 @@ export function caminoHasta(forma: Forma, destino: number, desde?: number): { pu
   for (let i = fin; i !== -1; i = previo.get(i)!) ruta.unshift(i);
   // Solo las esquinas (camina derecho entre ellas)
   // Desde la entrada (fuera del dibujo) o desde donde está parado
-  const puntos: Array<[number, number]> = desde === undefined ? [[todas[inicio].x, d.entrada[1]]] : [[todas[inicio].x, todas[inicio].y]];
+  const puntos: Array<[number, number]> = desde === undefined ? [[aDibujo(forma, aPlano(forma, todas[inicio].x, todas[inicio].y), d.entrada[1]), d.entrada[1]]] : [[todas[inicio].x, todas[inicio].y]];
   ruta.forEach((i, k) => {
     const a = ruta[k - 1];
     const b = ruta[k + 1];
@@ -304,5 +327,5 @@ export function caminoDeSalida(forma: Forma, desde: number): Array<[number, numb
   const inicio = (d.filas - 1) * d.cols + d.pasilloCol;
   const c = caminoHasta(forma, inicio, desde);
   const pts = c ? c.puntos : [[todas[desde].x, todas[desde].y] as [number, number]];
-  return [...pts, [todas[inicio].x, d.entrada[1]]];
+  return [...pts, [aDibujo(forma, aPlano(forma, todas[inicio].x, todas[inicio].y), d.entrada[1]), d.entrada[1]]];
 }
