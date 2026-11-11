@@ -10,6 +10,9 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 export default defineConfig(({ mode }) => ({
   define: {
     __VERSION__: JSON.stringify(pkg.version),
+    // Qué compilación es (para confirmar que llegó la última): commit de GitHub y fecha de armado
+    __COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? 'local').slice(0, 7)),
+    __ARMADO__: JSON.stringify(new Date().toISOString()),
     __MODO_PRUEBA__: JSON.stringify(mode === 'prueba'),
   },
   resolve: {

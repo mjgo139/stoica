@@ -76,7 +76,7 @@ describe('jardín: medallas, retoños y modo difícil', () => {
   });
   it('medalla solo al 100 % (florecida); retoños cada 30 días del ciclo', () => {
     expect([3, 4, MARCHITA].map(alCien)).toEqual([false, true, false]);
-    expect([29, 30, 61, 200].map(retonos)).toEqual([0, 1, 2, 3]);
+    expect([29, 30, 61, 200, 9999].map(retonos)).toEqual([0, 1, 2, 6, 15]);
     expect(rachaRetono(45, 0)).toBe(15);
     expect(rachaRetono(45, 1)).toBe(0);
   });

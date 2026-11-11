@@ -1,5 +1,6 @@
 /** Página de la repisa de logros: los adornos que se desbloquean con medallas y las medallas de cada hábito. */
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ADORNOS, ORDEN_NICHOS } from './disposicion';
 import { Medalla } from './Graficos';
 
@@ -20,7 +21,7 @@ export function PaginaRepisa({ titulo, logros, porHabito, alCerrar }: Props) {
   }, [alCerrar]);
   const extra = Math.max(0, Math.min(logros, ORDEN_NICHOS.length) - ADORNOS.length);
   const proximo = ADORNOS.find((a) => a.medallas > logros);
-  return (
+  return createPortal(
     <div className="hoja-planta" role="dialog" aria-label={titulo} onClick={(e) => e.target === e.currentTarget && alCerrar()} style={{ zIndex: 205 }}>
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -75,6 +76,7 @@ export function PaginaRepisa({ titulo, logros, porHabito, alCerrar }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as PE } from 'react';
+import { createPortal } from 'react-dom';
 import { useSesion } from '@/app/sesion';
 import { alCien, consejo, DIAS_PARA_MARCHITAR, DIAS_POR_RETONO, ETAPAS_PLANTA, faltanParaCrecer, hashTexto, MARCHITA, MAX_RETONOS, PLANTA_DE_VIRTUD, UMBRALES, visitaDelDia, type Consejo } from '@core/jardin';
 import { NOMBRE_VIRTUD, VIRTUDES, type Habito, type Virtud } from '@core/habitos';
@@ -733,7 +734,7 @@ export function Jardin() {
                   <b>Repisa de logros:</b> cada medalla que ganás (cada {UMBRALES[4]} días seguidos de una planta) pone un adorno en la repisa del fondo; tu grupo también la ve. Podés guardarla bajo el piso y volver a sacarla.
                 </li>
                 <li>
-                  <b>Retoños:</b> cada {DIAS_POR_RETONO} días cumplidos sin marchitarse, la planta da un retoño (hasta {MAX_RETONOS}) que ocupa un lugar libre y también crece.
+                  <b>Retoños:</b> cada {DIAS_POR_RETONO} días cumplidos sin marchitarse, la planta da un retoño que ocupa un lugar libre y también crece, hasta llenar el jardín. Si ya no hay lugar, espera en el vivero.
                 </li>
                 <li>
                   <b>Los filósofos:</b> si pasás 1 o 2 días sin cumplir un hábito, Marco Aurelio o Epicteto se paran junto a su planta y te dan un consejo. A los {DIAS_PARA_MARCHITAR} días se marchita y perdés sus retoños (en difícil, todos los del jardín). De noche, la primera vez que entrás, Marco enciende los 4 braseros.
@@ -759,7 +760,7 @@ export function Jardin() {
         (() => {
           const pp = jardin.plantas.find((x) => x.id === pagina);
           if (!pp) return null;
-          return (
+          return createPortal(
             <div className="hoja-planta" role="dialog" aria-label={`Página de ${pp.nombre}`} onClick={(e) => e.target === e.currentTarget && setPagina(null)}>
               <div>
                 <button type="button" className="link" style={{ paddingLeft: 0 }} onClick={() => setPagina(null)}>
@@ -767,7 +768,8 @@ export function Jardin() {
                 </button>
                 <VistaPlanta p={pp} retonos={jardin.retonos.filter((r) => r.madre.id === pp.id)} dificil={g.dificil} prueba={!!prueba} alMarcar={marcarHoy} alRegar={() => regar([pp.id])} />
               </div>
-            </div>
+            </div>,
+            document.body,
           );
         })()}
 

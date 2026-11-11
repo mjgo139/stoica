@@ -238,12 +238,15 @@ export function calcularJardin({ habitos, registros, hoy, g, prueba }: Entrada):
     const ciclo = g.dificil ? buenosDesde(b.dias, Math.max(a.marchitaEn, marchitaGlobal - desplaz), b.pendiente) : a.ciclo;
     return { id: b.id, nombre: b.nombre, virtud: b.virtud, habito: b.habito, a, mejor, ciclo, retonos: retonos(ciclo), riesgo: nivelRiesgo(a), hechoHoy: b.hechoHoy, pideAgua: b.pideAgua, historia: b.dias.slice(-30) };
   });
-  const todos: RetonoCalc[] = plantas.flatMap((p) =>
-    Array.from({ length: p.retonos }, (_, k) => {
-      const racha = rachaRetono(p.ciclo, k);
-      return { id: `${p.id}-r${k}`, madre: p, k, racha, etapa: etapaPlanta(racha, p.a.sinCumplir) };
-    }),
-  );
+  // De a turnos (el primer retoño de cada planta, después el segundo…): si el jardín se llena, el lugar se reparte parejo.
+  const todos: RetonoCalc[] = plantas
+    .flatMap((p) =>
+      Array.from({ length: p.retonos }, (_, k) => {
+        const racha = rachaRetono(p.ciclo, k);
+        return { id: `${p.id}-r${k}`, madre: p, k, racha, etapa: etapaPlanta(racha, p.a.sinCumplir) };
+      }),
+    )
+    .sort((a, b) => a.k - b.k);
   // Cuántos entran en el jardín lo decide el terreno (ver terreno.ts → ubicar).
   return { plantas, retonos: todos, enVivero: 0 };
 }

@@ -179,9 +179,9 @@ export function buenosDesde(dias: Dia[], desde: number, hoyPendiente = true): nu
 export const AL_CIEN = 4;
 export const alCien = (etapa: number) => etapa === AL_CIEN;
 
-/** Cada 30 días buenos en el ciclo la planta da un retoño (hasta 3 por hábito). */
+/** Cada 30 días buenos en el ciclo la planta da un retoño, mientras haya lugar en el jardín (16 lugares: la planta y hasta 15 retoños). */
 export const DIAS_POR_RETONO = 30;
-export const MAX_RETONOS = 3;
+export const MAX_RETONOS = 15;
 export function retonos(ciclo: number): number {
   return Math.min(MAX_RETONOS, Math.floor(ciclo / DIAS_POR_RETONO));
 }

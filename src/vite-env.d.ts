@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 declare const __VERSION__: string;
+declare const __COMMIT__: string;
+declare const __ARMADO__: string;
 declare const __MODO_PRUEBA__: boolean;
 
 interface ImportMetaEnv {

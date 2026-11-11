@@ -88,7 +88,7 @@ export function VistaPlanta({ p, retonos, dificil, prueba, alMarcar, alRegar }: 
             [p.a.racha, 'días de racha'],
             [p.ciclo, 'días sin marchitarse'],
             [p.mejor, 'récord sin marchitarse'],
-            [`${p.retonos}/${MAX_RETONOS}`, 'retoños'],
+            [`${p.retonos}`, 'retoños'],
           ].map(([n, t]) => (
             <div key={t as string}>
               <div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1 }}>{n}</div>

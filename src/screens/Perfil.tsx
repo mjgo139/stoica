@@ -8,6 +8,7 @@ import { esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
 import { Laurel } from '@/ui/Laurel';
 import { Icono } from '@/ui/Iconos';
+import { NOVEDADES } from '@/app/novedades';
 import { Hoja } from '@/ui/Hoja';
 import { Interruptor } from '@/ui/Interruptor';
 import { useAvisos } from '@/ui/avisos';
@@ -126,6 +127,7 @@ export function Perfil() {
           <AppAndroid />
           <Accesos />
           <MisDatos />
+          {perfil.rol === 'admin' && <VersionYNovedades />}
           <div className="grp cap">
             <span>Sesión</span>
           </div>
@@ -238,5 +240,47 @@ function HojaContrasena({ abierta, alCerrar, correo }: { abierta: boolean; alCer
         </button>
       </form>
     </Hoja>
+  );
+}
+
+/** Solo para el admin: qué versión está corriendo en este equipo y qué trae de nuevo. */
+function VersionYNovedades() {
+  const [abierta, setAbierta] = useState(false);
+  const [actual, ...anteriores] = NOVEDADES;
+  const armado = new Date(__ARMADO__);
+  const cuando = isNaN(armado.getTime()) ? '' : armado.toLocaleString('es-PY', { dateStyle: 'short', timeStyle: 'short' });
+  return (
+    <div className="fila" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }} data-testid="version-admin">
+      <button type="button" onClick={() => setAbierta((v) => !v)} aria-expanded={abierta} style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', width: '100%' }}>
+        <Icono nombre="info" />
+        <span style={{ flex: 1 }}>
+          <span style={{ display: 'block' }}>Versión {__VERSION__}</span>
+          <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+            Armada {cuando} · {__COMMIT__} · solo la ves vos (admin)
+          </span>
+        </span>
+        <span className="mu" aria-hidden="true">{abierta ? '▲' : '▼'}</span>
+      </button>
+      {abierta && (
+        <div style={{ marginTop: 10, fontSize: 13.5 }}>
+          <b>Novedades de la {actual.version}</b>
+          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            {actual.cambios.map((c) => (
+              <li key={c} style={{ marginBottom: 4 }}>{c}</li>
+            ))}
+          </ul>
+          {anteriores.map((n) => (
+            <details key={n.version} style={{ marginTop: 8 }}>
+              <summary className="mu">Versión {n.version} · {n.fecha}</summary>
+              <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                {n.cambios.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </details>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

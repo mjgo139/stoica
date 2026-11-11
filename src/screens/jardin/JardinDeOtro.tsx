@@ -4,6 +4,7 @@
  * Si el resumen es de una versión vieja de la app, la planta se aproxima con la racha y se acomoda sola.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { alCien, DIAS_PARA_MARCHITAR, ETAPAS_PLANTA, MARCHITA, PLANTA_DE_VIRTUD, plantaCompartida, rachaRetono, etapaPlanta } from '@core/jardin';
 import { diferenciaDias } from '@core/fechas';
 import { NOMBRE_VIRTUD, type Virtud } from '@core/habitos';
@@ -86,7 +87,7 @@ export default function JardinDeOtro({ nombre, compartidos, jardin, fecha, hoy, 
   const sel = visibles.find((i) => i.id === elegido);
   const flor = visibles.filter((i) => alCien(i.etapa)).length;
 
-  return (
+  return createPortal(
     <div className="hoja-planta" role="dialog" aria-label={`Jardín de ${nombre}`} onClick={(e) => e.target === e.currentTarget && alCerrar()}>
       <style>{`
         ${ESTILOS_GRAFICOS}
@@ -177,6 +178,7 @@ export default function JardinDeOtro({ nombre, compartidos, jardin, fecha, hoy, 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -329,6 +329,10 @@ test.describe('v0.5–v1.0', () => {
     const archivo = await descarga;
     expect(archivo.suggestedFilename()).toMatch(/^stoica-\d{4}-\d{2}-\d{2}\.json$/);
     await captura(page, '18-perfil');
+    // Versión y novedades: solo para el admin (la cuenta de ejemplo es admin)
+    await page.getByTestId('version-admin').getByRole('button').click();
+    await expect(page.getByTestId('version-admin')).toContainText(/Versión \d+\.\d+\.\d+/);
+    await expect(page.getByText(/^Novedades de la /)).toBeVisible();
   });
 
   test('perfil: cambiar la contraseña', async ({ page }) => {
@@ -764,6 +768,11 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('button', { name: /está al 100 %/ }).first()).toBeVisible();
     await page.waitForTimeout(1000);
     await captura(page, '28-jardin-medallas');
+    // Las plantas siguen dando retoños hasta llenar el jardín (lo que no entra espera en el vivero)
+    for (let k = 0; k < 4; k++) await page.getByRole('button', { name: '+30 días cumpliendo todo' }).click();
+    await expect(page.getByText(/en el vivero: no entran/)).toBeVisible();
+    await page.waitForTimeout(800);
+    await captura(page, '28-jardin-lleno');
     // La página de la planta se abre desde la medalla (también en modo prueba)
     await page.getByRole('button', { name: /está al 100 %/ }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -812,6 +821,13 @@ test.describe('v0.5–v1.0', () => {
     // La repisa de logros: su página y guardarla bajo el piso
     await page.getByRole('button', { name: 'Repisa de logros: ver su página' }).click();
     await expect(page.getByRole('dialog', { name: 'Tu repisa' })).toBeVisible();
+    // Centrada en el espacio de la app (en la PC, sin contar la barra lateral)
+    {
+      const caja = (await page.getByRole('dialog', { name: 'Tu repisa' }).locator('> div').boundingBox())!;
+      const ancho = page.viewportSize()!.width;
+      const lateral = ancho >= 960 ? 248 : 0;
+      expect(Math.abs(caja.x + caja.width / 2 - (lateral + (ancho - lateral) / 2))).toBeLessThan(12);
+    }
     await captura(page, '28-jardin-repisa');
     await page.getByRole('dialog', { name: 'Tu repisa' }).getByRole('button', { name: 'Cerrar' }).click();
     await page.getByRole('button', { name: 'Guardar la repisa' }).click();
