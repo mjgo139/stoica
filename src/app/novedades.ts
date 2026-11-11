@@ -11,6 +11,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '1.1.1',
+    fecha: '2026-11-10',
+    cambios: [
+      'Jardín: maceta nueva de frente (mármol crema con guarda griega), sin recortes, suavizada para que combine con la terraza.',
+      'Widget de Android: la misma maceta nueva.',
+    ],
+  },
+  {
     version: '1.1.0',
     fecha: '2026-11-10',
     cambios: [

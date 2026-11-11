@@ -18,7 +18,7 @@ export const FONDOS = {
 } as const;
 
 /** La maceta enderezada (herramientas/jardin/enderezar_maceta.py) y dónde está su tierra (en % de la imagen). */
-export const MACETA = { archivo: '/jardin/maceta-recta.webp', w: 372, h: 320, tierra: { x: 50, y: 36.5, w: 76, h: 54 } } as const;
+export const MACETA = { archivo: '/jardin/maceta-frente.webp', w: 480, h: 369, tierra: { x: 50, y: 34, w: 74, h: 40 } } as const;
 
 /** Fuego animado (public/jardin/fuego.webp) que va sobre el brasero apagado. */
 export const FUEGO = { archivo: '/jardin/fuego.webp', w: 184, h: 276, sobre: { x: 50, y: 37.3, w: 43.9 } } as const;

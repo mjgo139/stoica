@@ -100,7 +100,7 @@ public class JardinWidget extends AppWidgetProvider {
                     ph = maxAlto;
                     pw = ph * planta.getWidth() / planta.getHeight();
                 }
-                int base = (int) (my + mh * 0.42f);
+                int base = (int) (my + mh * 0.40f);
                 int px = mx + (mw - pw) / 2;
                 cv.drawBitmap(planta, null, new Rect(px, base - ph, px + pw, base), suave);
             }

@@ -24,7 +24,7 @@ Al terminar, poner los PNG en la carpeta "habitos jardin" y avisar.
 > Una regadera griega de bronce con detalles de meandro dorado, inclinada vertiendo un chorro de agua clara con
 > gotas brillantes, vista de costado. PNG con fondo transparente, pintura digital de juego, luz dorada cálida, sin texto.
 
-## Maceta de frente (para reemplazar maceta-recta.webp, que hoy está recortada a mano)
+## Maceta de frente (hoy: maceta-frente.webp, preparada con preparar_maceta.py)
 
 ```
 Create a single rectangular terracotta-and-marble garden planter for a 2D game, in the same painterly
