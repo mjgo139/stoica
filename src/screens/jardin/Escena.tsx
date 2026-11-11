@@ -22,7 +22,7 @@ export interface PlantaEnEscena {
 }
 
 export const ESTILOS_ESCENA = `
-  @keyframes mecer { 0%,100% { transform: rotate(-1.2deg) } 50% { transform: rotate(1.2deg) } }
+  @keyframes mecer { 0%,100% { transform: rotate(0deg) } 25% { transform: rotate(-.5deg) } 75% { transform: rotate(.5deg) } }
   @keyframes revivir { from { transform: scale(.6); opacity: 0 } to { transform: scale(1); opacity: 1 } }
   @keyframes saltito { 0%,100% { transform: scale(1) } 40% { transform: scale(1.06, .95) } 70% { transform: scale(.98, 1.03) } }
   @keyframes prender { 0% { transform: translate(-50%, -100%) scale(.15); opacity: 0 } 60% { transform: translate(-50%, -100%) scale(1.15); opacity: 1 } 100% { transform: translate(-50%, -100%) scale(1); opacity: 1 } }
