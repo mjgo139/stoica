@@ -440,6 +440,27 @@ export function Jardin() {
       setMoviendo(null);
     } else if (!a.movio) setElegido(elegido === a.id ? null : a.id);
   };
+  // Si se suelta fuera de una maceta (o el navegador no retuvo el puntero), igual se termina de mover
+  const soltarRef = useRef(alSoltar);
+  soltarRef.current = alSoltar;
+  useEffect(() => {
+    if (!moviendo) return;
+    const fin = (e: PointerEvent) => {
+      if (arrastre.current?.activo) soltarRef.current(e as unknown as PE<HTMLElement>);
+    };
+    const seguirDedo = (e: PointerEvent) => {
+      const a = arrastre.current;
+      if (a?.activo && refJardin.current) setMoviendo({ id: a.id, ...puntoEnJardin(e) });
+    };
+    window.addEventListener('pointermove', seguirDedo);
+    window.addEventListener('pointerup', fin);
+    window.addEventListener('pointercancel', fin);
+    return () => {
+      window.removeEventListener('pointermove', seguirDedo);
+      window.removeEventListener('pointerup', fin);
+      window.removeEventListener('pointercancel', fin);
+    };
+  }, [moviendo !== null]); // eslint-disable-line react-hooks/exhaustive-deps
   const cancelar = () => {
     if (arrastre.current) clearTimeout(arrastre.current.timer);
     arrastre.current = null;

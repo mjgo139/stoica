@@ -48,7 +48,7 @@ export const TERRENOS: Record<Forma, Definicion> = {
   horizontal: {
     x0: 20,
     x1: 84,
-    y0: 34,
+    y0: 37.5,
     y1: 98,
     cols: 5,
     filas: 7,
@@ -154,8 +154,9 @@ export const BRASEROS: Record<Forma, Brasero[]> = {
     { x: 89.5, y: 81.2, parada: [6, 4], mirar: 'derecha' }, // adelante a la derecha
   ],
   horizontal: [
-    { x: 17, y: 39.5, parada: [0, 0], mirar: 'izquierda' },
-    { x: 87, y: 39.5, parada: [0, 4], mirar: 'derecha' },
+    // Arriba: en las esquinas de atrás de la guarda griega
+    { x: 27.4, y: 36.5, parada: [0, 0], mirar: 'izquierda' },
+    { x: 77.3, y: 36.5, parada: [0, 4], mirar: 'derecha' },
     { x: 16.5, y: 97.4, parada: [6, 0], mirar: 'izquierda' },
     { x: 87.5, y: 97.4, parada: [6, 4], mirar: 'derecha' },
   ],

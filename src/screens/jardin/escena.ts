@@ -54,7 +54,7 @@ export function ubicarPlanta(forma: Forma, planta: string, etapa: number, celda:
   const relacion = f.ancho / f.alto;
   const m = lugarMaceta(forma, celda);
   const s = SPRITES[planta][etapa];
-  const ancho = (s.w / ANCHO_MAX[planta]) * m.anchoTierra * (retono ? 1.3 : 1.6);
+  const ancho = (s.w / ANCHO_MAX[planta]) * m.anchoTierra * (retono ? 1.2 : 1.5);
   const alto = ancho * relacion * (s.h / s.w);
   return { left: m.plantaX - (s.ax / s.w) * ancho, top: m.plantaY - alto, ancho, alto, maceta: m };
 }
