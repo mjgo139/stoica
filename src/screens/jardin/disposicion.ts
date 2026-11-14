@@ -21,7 +21,7 @@ export const FONDOS = {
 export const MACETA = { archivo: '/jardin/maceta-frente.webp', w: 480, h: 369, tierra: { x: 50, y: 34, w: 74, h: 40 } } as const;
 
 /** Fuego animado (public/jardin/fuego.webp) que va sobre el brasero apagado. */
-export const FUEGO = { archivo: '/jardin/fuego.webp', w: 184, h: 276, sobre: { x: 50, y: 37.3, w: 43.9 } } as const;
+export const FUEGO = { archivo: '/jardin/fuego.webp', w: 202, h: 276, sobre: { x: 50, y: 37.3, w: 43.9 } } as const;
 
 export interface Adorno {
   id: string;
@@ -63,17 +63,17 @@ export const ORDEN_NICHOS: Array<[number, number]> = [0, 1].flatMap((f) => [4, 3
 
 /** Adornos (public/jardin/adorno-<id>.webp), en el orden en que se desbloquean con las medallas (van en la repisa). */
 export const ADORNOS: Adorno[] = [
-  { id: 'farol', nombre: 'Farol', w: 183, h: 260, medallas: 1, luz: true },
-  { id: 'flores', nombre: 'Cántaro con flores', w: 260, h: 248, medallas: 2 },
-  { id: 'reloj-sol', nombre: 'Reloj de sol', w: 259, h: 260, medallas: 3 },
-  { id: 'lira', nombre: 'Lira', w: 246, h: 260, medallas: 4 },
-  { id: 'reloj-arena', nombre: 'Reloj de arena', w: 228, h: 260, medallas: 5 },
-  { id: 'pergamino', nombre: 'Pergamino sellado', w: 260, h: 188, medallas: 6 },
-  { id: 'libros', nombre: 'Libros de los estoicos', w: 260, h: 216, medallas: 7 },
-  { id: 'pergaminos', nombre: 'Pergaminos y pluma', w: 259, h: 260, medallas: 8 },
-  { id: 'esfera', nombre: 'Esfera armilar', w: 225, h: 260, medallas: 9 },
-  { id: 'cojin-laurel', nombre: 'Corona sobre cojín', w: 260, h: 230, medallas: 10 },
-  { id: 'corona', nombre: 'Corona de laurel', w: 231, h: 260, medallas: 11 },
+  { id: 'farol', nombre: 'Farol', w: 182, h: 260, medallas: 1, luz: true },
+  { id: 'flores', nombre: 'Cántaro con flores', w: 260, h: 247, medallas: 2 },
+  { id: 'reloj-sol', nombre: 'Reloj de sol', w: 260, h: 260, medallas: 3 },
+  { id: 'lira', nombre: 'Lira', w: 248, h: 260, medallas: 4 },
+  { id: 'reloj-arena', nombre: 'Reloj de arena', w: 229, h: 260, medallas: 5 },
+  { id: 'pergamino', nombre: 'Pergamino sellado', w: 260, h: 192, medallas: 6 },
+  { id: 'libros', nombre: 'Libros de los estoicos', w: 260, h: 217, medallas: 7 },
+  { id: 'pergaminos', nombre: 'Pergaminos y pluma', w: 257, h: 260, medallas: 8 },
+  { id: 'esfera', nombre: 'Esfera armilar', w: 224, h: 260, medallas: 9 },
+  { id: 'cojin-laurel', nombre: 'Corona sobre cojín', w: 260, h: 231, medallas: 10 },
+  { id: 'corona', nombre: 'Corona de laurel', w: 230, h: 260, medallas: 11 },
 ];
 
 /** 15 maceteros, de atrás hacia adelante y de izquierda a derecha. */
@@ -126,43 +126,43 @@ export interface Sprite {
 /** Medidas de las 6 etapas de cada planta (public/jardin/<planta>-<etapa>.webp). */
 export const SPRITES: Record<string, Sprite[]> = {
   olivo: [
-    { w: 95, h: 39, ax: 46.5, base: 93.0 },
-    { w: 105, h: 108, ax: 51.0, base: 96.0 },
-    { w: 137, h: 163, ax: 72.5, base: 113.0 },
-    { w: 219, h: 240, ax: 103.0, base: 120.0 },
-    { w: 231, h: 245, ax: 98.0, base: 124.0 },
-    { w: 196, h: 222, ax: 87.5, base: 137.0 },
+    { w: 98, h: 42, ax: 46.5, base: 67.0 },
+    { w: 104, h: 110, ax: 51.5, base: 95.0 },
+    { w: 151, h: 170, ax: 83.5, base: 123.0 },
+    { w: 236, h: 246, ax: 113.5, base: 135.0 },
+    { w: 248, h: 253, ax: 107.0, base: 146.0 },
+    { w: 194, h: 226, ax: 88.5, base: 145.0 },
   ],
   laurel: [
-    { w: 93, h: 47, ax: 46.0, base: 92.0 },
-    { w: 105, h: 120, ax: 53.0, base: 100.0 },
-    { w: 146, h: 176, ax: 75.0, base: 112.0 },
-    { w: 232, h: 242, ax: 121.5, base: 129.0 },
-    { w: 249, h: 264, ax: 123.5, base: 127.0 },
-    { w: 175, h: 204, ax: 86.5, base: 123.0 },
+    { w: 94, h: 48, ax: 47.0, base: 62.0 },
+    { w: 105, h: 120, ax: 52.5, base: 97.0 },
+    { w: 148, h: 178, ax: 75.0, base: 116.0 },
+    { w: 228, h: 246, ax: 119.0, base: 146.0 },
+    { w: 250, h: 270, ax: 122.0, base: 142.0 },
+    { w: 172, h: 204, ax: 84.5, base: 139.0 },
   ],
   lavanda: [
-    { w: 88, h: 44, ax: 43.5, base: 79.0 },
-    { w: 97, h: 110, ax: 48.0, base: 86.0 },
-    { w: 142, h: 162, ax: 71.5, base: 107.0 },
-    { w: 222, h: 228, ax: 110.5, base: 131.0 },
-    { w: 256, h: 267, ax: 121.0, base: 134.0 },
-    { w: 191, h: 210, ax: 90.5, base: 125.0 },
+    { w: 92, h: 47, ax: 42.0, base: 52.0 },
+    { w: 100, h: 114, ax: 49.0, base: 88.0 },
+    { w: 139, h: 162, ax: 72.0, base: 122.0 },
+    { w: 228, h: 232, ax: 115.0, base: 148.0 },
+    { w: 265, h: 272, ax: 125.5, base: 153.0 },
+    { w: 190, h: 211, ax: 89.5, base: 143.0 },
   ],
   granado: [
-    { w: 95, h: 49, ax: 48.0, base: 58.0 },
-    { w: 102, h: 117, ax: 50.5, base: 93.0 },
-    { w: 148, h: 169, ax: 77.5, base: 121.0 },
-    { w: 235, h: 245, ax: 122.5, base: 139.0 },
-    { w: 256, h: 262, ax: 117.0, base: 148.0 },
-    { w: 194, h: 213, ax: 97.5, base: 141.0 },
+    { w: 92, h: 52, ax: 44.0, base: 60.0 },
+    { w: 99, h: 120, ax: 49.0, base: 90.0 },
+    { w: 144, h: 172, ax: 74.0, base: 114.0 },
+    { w: 232, h: 252, ax: 119.0, base: 136.0 },
+    { w: 254, h: 268, ax: 115.0, base: 142.0 },
+    { w: 195, h: 217, ax: 98.5, base: 135.0 },
   ],
   lirio: [
-    { w: 60, h: 40, ax: 29.5, base: 59.0 },
-    { w: 119, h: 103, ax: 63.0, base: 78.0 },
-    { w: 176, h: 150, ax: 94.0, base: 96.0 },
-    { w: 216, h: 213, ax: 109.0, base: 118.0 },
-    { w: 226, h: 236, ax: 112.0, base: 130.0 },
-    { w: 148, h: 174, ax: 79.0, base: 112.0 },
+    { w: 68, h: 40, ax: 32.5, base: 55.0 },
+    { w: 122, h: 106, ax: 63.5, base: 79.0 },
+    { w: 177, h: 154, ax: 93.0, base: 106.0 },
+    { w: 214, h: 216, ax: 110.0, base: 128.0 },
+    { w: 230, h: 240, ax: 116.5, base: 135.0 },
+    { w: 151, h: 174, ax: 84.5, base: 121.0 },
   ],
 };

@@ -11,6 +11,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '1.2.0',
+    fecha: '2026-11-14',
+    cambios: [
+      'Jardín: plantas nuevas (olivo, laurel, lavanda, granado y lirio) con recorte limpio, sin bordes blancos en la noche.',
+      'Jardín: los 11 adornos de la repisa con recorte limpio.',
+      'Jardín: fuego nuevo de los braseros.',
+      'Marco Aurelio camina con 4 pasos por dirección (más suave).',
+      'Widget de Android: las mismas plantas nuevas.',
+    ],
+  },
+  {
     version: '1.1.1',
     fecha: '2026-11-10',
     cambios: [

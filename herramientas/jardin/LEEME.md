@@ -26,3 +26,12 @@
   Las medidas de las hojas están en `src/screens/jardin/filosofos.ts`.
 - Una sola terraza (la vertical) para celular y computadora. Repisa de logros contra la baranda (`REPISA` en
   `disposicion.ts`); 4 braseros fijos en las esquinas, al final de los pasillos (`BRASEROS` en `terreno.ts`).
+
+## Jardín v4: recortes limpios (carpeta "asset Estoico" del usuario, en OneDrive)
+
+- `actualizar_assets_v4.py "<asset Estoico>" public/jardin` reemplaza las plantas (`<planta>-0..5.webp`), los adornos,
+  el fuego y arma `marco-v3.webp` (caminata nueva de `soldado/`, hablar y antorcha de `marco-v2.webp`).
+  Imprime las medidas para `SPRITES`, `ADORNOS`, `FUEGO` (disposicion.ts) y `MARCO` (filosofos.ts).
+- No se usan los fondos nuevos (`jardin.png`, `terraza.png`): sus baldosas y perspectiva no coinciden con la cuadrícula de `terreno.ts`.
+- El brasero sigue siendo el de v2 (el nuevo es igual, y su versión apagada salía con restos de llama).
+- Las plantas del widget de Android (`planta_*`) son copias de las de la web.
