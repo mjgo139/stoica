@@ -19,22 +19,22 @@ export interface Atlas {
 }
 
 export const MARCO: Atlas = {
-  archivo: '/jardin/marco-v3.webp',
-  celda: [235, 234],
-  ancho: 940,
-  alto: 2106,
+  archivo: '/jardin/marco-v2.webp',
+  celda: [235, 237],
+  ancho: 705,
+  alto: 2133,
   filas: {
-    caminar_abajo: { fila: 0, cuadros: 4 },
-    caminar_izquierda: { fila: 1, cuadros: 4 },
-    caminar_derecha: { fila: 2, cuadros: 4 },
-    caminar_arriba: { fila: 3, cuadros: 4 },
+    caminar_abajo: { fila: 0, cuadros: 3 },
+    caminar_izquierda: { fila: 1, cuadros: 3 },
+    caminar_derecha: { fila: 2, cuadros: 3 },
+    caminar_arriba: { fila: 3, cuadros: 3 },
     hablar_abajo: { fila: 4, cuadros: 2 },
     hablar_izquierda: { fila: 5, cuadros: 2 },
     hablar_derecha: { fila: 6, cuadros: 2 },
     hablar_arriba: { fila: 7, cuadros: 2 },
     antorcha: { fila: 8, cuadros: 3 },
   },
-  pasos: [0, 1, 2, 3],
+  pasos: [0, 1, 2, 1],
   ritmo: 7,
 };
 

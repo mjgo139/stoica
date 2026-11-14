@@ -32,6 +32,7 @@
 - `actualizar_assets_v4.py "<asset Estoico>" public/jardin` reemplaza las plantas (`<planta>-0..5.webp`), los adornos,
   el fuego y arma `marco-v3.webp` (caminata nueva de `soldado/`, hablar y antorcha de `marco-v2.webp`).
   Imprime las medidas para `SPRITES`, `ADORNOS`, `FUEGO` (disposicion.ts) y `MARCO` (filosofos.ts).
+- `marco-v3.webp` (caminata del soldado) se probó y se descartó: se veía peor. La app usa `marco-v2.webp`.
 - No se usan los fondos nuevos (`jardin.png`, `terraza.png`): sus baldosas y perspectiva no coinciden con la cuadrícula de `terreno.ts`.
 - El brasero sigue siendo el de v2 (el nuevo es igual, y su versión apagada salía con restos de llama).
 - Las plantas del widget de Android (`planta_*`) son copias de las de la web.
