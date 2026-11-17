@@ -39,12 +39,14 @@ jobs:
           npm run e2e
       - name: Guardar capturas
         if: always()
+        # Si se llena el espacio de GitHub para archivos, no frena la publicación
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: capturas
           path: e2e/capturas
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3
 
   reglas:
     name: Tests de reglas (emulador)
@@ -128,7 +130,7 @@ jobs:
         with:
           name: apk
           path: salida-apk
-          retention-days: 30
+          retention-days: 2
 
   publicar:
     name: Publicar en Firebase
