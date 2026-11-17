@@ -747,6 +747,8 @@ test.describe('v0.5–v1.0', () => {
       await page.evaluate(() => window.scrollTo(0, 0));
     }
     const primera = page.getByRole('button', { name: /racha/ }).first();
+    // De día el filósofo puede estar paseando justo delante de esa planta: que no tape el toque
+    await page.locator('.filosofo, .globo').evaluateAll((els) => els.forEach((e) => ((e as HTMLElement).style.pointerEvents = 'none')));
     await primera.click();
     await expect(page.getByText(/Te falta|Te faltan|Florecida|sin cumplir/).first()).toBeVisible();
     await page.getByRole('button', { name: /Modo prueba/ }).click();
