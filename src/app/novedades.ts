@@ -11,6 +11,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '1.3.0',
+    fecha: '2026-11-16',
+    cambios: [
+      'Familia estoica con TITANUS: la marca STOICA y los títulos de página en letra Cinzel, con brillo de bronce.',
+      'Botón principal con degradé de bronce, como en TITANUS.',
+      'Fondo con vetas finas de mármol y un leve brillo dorado.',
+      'Modo oscuro "noche romana": más negro y con oro más vivo; barra lateral negra en la PC.',
+      'Panel del día: rango y nivel (Aprendiz, Discípulo, Practicante, Filósofo, Sabio, Maestro, Estoico), que suben con las medallas del jardín.',
+    ],
+  },
+  {
     version: '1.2.1',
     fecha: '2026-11-14',
     cambios: ['Marco Aurelio vuelve a caminar como antes (la caminata nueva de 4 pasos se veía peor).'],

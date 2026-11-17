@@ -45,7 +45,7 @@ export function Shell() {
       <nav className="nav-tab" aria-label="Principal">
         <div className="marca">
           <Laurel ancho={34} alto={31} completo={false} grosor={3} />
-          <span className="serif" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '.18em' }}>
+          <span className="marca-familia" style={{ fontSize: 21 }}>
             STOICA
           </span>
         </div>

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { citaDelDia } from '@core/citas';
 import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLarga, fechaLargaDeClave, momentoDelDia, MOMENTOS, partesDeClave, partesEnZona, saludo, sumarDias } from '@core/fechas';
 import { cumplido, esDiaActivo, racha, type Habito } from '@core/habitos';
-import { inicial, primerNombre } from '@core/perfil';
+import { inicial, primerNombre, rangoDe } from '@core/perfil';
+import { calcularJardin, leerGuardado, medallasGanadas } from './jardin/estado';
 import { aRomano } from '@core/romanos';
 import { examenCompleto, tareaDelDia, tareaHecha } from '@core/rutina';
 import { useSesion } from '@/app/sesion';
@@ -44,6 +45,15 @@ export function Hoy() {
   const tareasDia = tareas
     .filter((t) => tareaDelDia(t, dia) && !(t.repetir === 'no' && !t.fecha && (t.proyectoId || (t.completada && t.completada < dia))))
     .sort((a, b) => (a.hora ?? '').localeCompare(b.hora ?? '') || a.momento - b.momento);
+  // Rango y nivel por medallas del jardín (como en TITANUS)
+  const uid = useSesion((s) => s.usuario?.uid ?? '');
+  const rango = useMemo(() => {
+    try {
+      return rangoDe(medallasGanadas(calcularJardin({ habitos, registros, hoy, g: leerGuardado(uid), prueba: null }).plantas));
+    } catch {
+      return rangoDe(0);
+    }
+  }, [habitos, registros, hoy, uid]);
   const titulo = sel === 0 ? `${saludo(hora)}${primerNombre(perfil.nombre) ? `, ${primerNombre(perfil.nombre)}` : ''}` : sel === -1 ? 'Ayer' : sel === 1 ? 'Mañana' : fechaLargaDeClave(dia).split(' ')[0];
 
   return (
@@ -61,6 +71,11 @@ export function Hoy() {
         <div style={{ position: 'relative', minWidth: 0, paddingRight: 100 }}>
           <div className="cap gold">{sel === 0 ? 'Panel del día' : 'Viendo otro día'}</div>
           <h1 className="titulo">{titulo}</h1>
+          {sel === 0 && (
+            <Link to="/jardin" className="rango" data-testid="rango" style={{ display: 'inline-block' }}>
+              {rango.nombre} · Nivel {rango.nivel}
+            </Link>
+          )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
             <span className="chip-fecha">
               <Icono nombre="sol" tam={15} />

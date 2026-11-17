@@ -67,7 +67,7 @@ export function Acceso() {
     <main className="entra" style={{ maxWidth: 420, margin: '0 auto', paddingTop: 24 }}>
       <div style={{ textAlign: 'center' }}>
         <Laurel ancho={96} alto={88} />
-        <h1 className="serif" style={{ fontSize: 40, fontWeight: 700, letterSpacing: '.2em', paddingLeft: '.2em', margin: '14px 0 0' }}>
+        <h1 className="marca-familia" style={{ fontSize: 44, letterSpacing: '.16em', paddingLeft: '.16em', margin: '14px 0 0' }}>
           STOICA
         </h1>
         <p className="lead" style={{ fontFamily: 'var(--f-display)', fontSize: 17, fontWeight: 600 }}>

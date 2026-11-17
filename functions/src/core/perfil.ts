@@ -94,3 +94,25 @@ export function completarPerfil(p: Partial<Perfil>): Perfil {
     ...(p.rol ? { rol: p.rol } : {}),
   };
 }
+
+/**
+ * Rango y nivel (familia estoica, como TITANUS): se ganan con medallas del jardín
+ * (cada 30 días seguidos de un hábito es una medalla). Nivel = medallas + 1.
+ */
+export const RANGOS: ReadonlyArray<{ nombre: string; desde: number }> = [
+  { nombre: 'Aprendiz', desde: 0 },
+  { nombre: 'Discípulo', desde: 1 },
+  { nombre: 'Practicante', desde: 3 },
+  { nombre: 'Filósofo', desde: 6 },
+  { nombre: 'Sabio', desde: 12 },
+  { nombre: 'Maestro', desde: 24 },
+  { nombre: 'Estoico', desde: 48 },
+];
+
+export function rangoDe(medallas: number): { nombre: string; nivel: number; siguiente: { nombre: string; faltan: number } | null } {
+  const m = Math.max(0, Math.floor(medallas));
+  let i = 0;
+  while (i + 1 < RANGOS.length && m >= RANGOS[i + 1].desde) i++;
+  const sig = RANGOS[i + 1];
+  return { nombre: RANGOS[i].nombre, nivel: m + 1, siguiente: sig ? { nombre: sig.nombre, faltan: sig.desde - m } : null };
+}
