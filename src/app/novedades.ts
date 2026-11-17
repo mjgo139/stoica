@@ -11,6 +11,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '1.3.1',
+    fecha: '2026-11-17',
+    cambios: [
+      'Familia estoica: tarjetas con los mismos colores, bordes dorados, sombra y tamaño que TITANUS.',
+      'Panel del día con el mismo borde dorado y brillo que en TITANUS; fichas de fecha iguales.',
+      'Fondo y vetas de mármol con el mismo dibujo que TITANUS.',
+      'Barra lateral de la PC igual a la de TITANUS en los dos temas (negro, oro y línea dorada bajo la marca).',
+    ],
+  },
+  {
     version: '1.3.0',
     fecha: '2026-11-16',
     cambios: [
