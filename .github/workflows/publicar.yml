@@ -68,6 +68,9 @@ jobs:
     name: APK de Android (testers)
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # Para guardar la APK en la Release "apk-ultima" (no usa el espacio de archivos de Actions)
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -126,11 +129,13 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk salida-apk/stoica.apk
           echo '{"codigo": ${{ github.run_number }}, "nombre": "1.0.${{ github.run_number }}", "url": "/descargas/stoica.apk"}' > salida-apk/android-version.json
           ls -la salida-apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: salida-apk
-          retention-days: 2
+      - name: Guardar la APK en la Release "apk-ultima"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view apk-ultima >/dev/null 2>&1 || \
+            gh release create apk-ultima --prerelease --title "APK de prueba (última)" --notes "La arma GitHub Actions en cada publicación. La web la sirve en /descargas/stoica.apk."
+          gh release upload apk-ultima salida-apk/stoica.apk salida-apk/android-version.json --clobber
 
   publicar:
     name: Publicar en Firebase
@@ -166,18 +171,18 @@ jobs:
           } > .env.production
       - name: Build
         run: npm run build
-      - name: Traer la APK (si se compiló)
-        if: needs.apk.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: apk
-          path: salida-apk
+      - name: Traer la última APK de la Release "apk-ultima"
+        # Si la APK de esta vez falló, se usa la última que salió bien: la descarga nunca queda vacía.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download apk-ultima -D salida-apk --clobber || echo "::warning title=Sin APK::Todavía no hay APK en la Release apk-ultima"
       - name: Poner la APK en la web (/descargas/stoica.apk)
-        if: needs.apk.result == 'success'
         run: |
-          mkdir -p dist/descargas
-          cp salida-apk/stoica.apk dist/descargas/stoica.apk
-          cp salida-apk/android-version.json dist/android-version.json
+          if [ -f salida-apk/stoica.apk ]; then
+            mkdir -p dist/descargas
+            cp salida-apk/stoica.apk dist/descargas/stoica.apk
+            cp salida-apk/android-version.json dist/android-version.json
+          fi
       - name: Parámetros de las funciones
         run: |
           echo "ADMIN_EMAIL=${{ vars.ADMIN_EMAIL }}" > functions/.env
