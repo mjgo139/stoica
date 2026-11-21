@@ -77,11 +77,6 @@ export function Hoy() {
             {rango.nombre} · Nivel {rango.nivel}
           </Link>
         }
-        esquina={
-          <Link to="/habitos/nuevo" className="btn-redondo" aria-label="Nuevo hábito">
-            <IconoFamilia n="mas" size={20} />
-          </Link>
-        }
         fichas={
           <>
             {perfil.mementoMori && (
@@ -92,6 +87,10 @@ export function Hoy() {
             <Ficha href="/jardin" ir={ir}>
               <IconoFamilia n="laurel" size={16} />
               Tu jardín
+            </Ficha>
+            <Ficha href="/habitos/nuevo" ir={ir} testId="nuevo-habito">
+              <IconoFamilia n="mas" size={16} />
+              Nuevo hábito
             </Ficha>
           </>
         }

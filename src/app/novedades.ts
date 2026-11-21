@@ -11,6 +11,11 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.0.1',
+    fecha: '2026-11-21',
+    cambios: ['Panel del día: "Nuevo hábito" pasa a ser una ficha (el botón redondo tapaba la fecha en el celular).'],
+  },
+  {
     version: '2.0.0',
     fecha: '2026-11-21',
     cambios: [
