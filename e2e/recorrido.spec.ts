@@ -11,6 +11,8 @@ test.describe('v0.1 · base', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Continuar con Google' })).toBeVisible();
+    // El contenido va encima de las vetas del fondo de la familia (contenedor #root)
+    await expect(page.locator('#root')).toHaveCSS('z-index', '1');
     await page.emulateMedia({ colorScheme: 'light' });
     await captura(page, '01-acceso-claro');
     await page.emulateMedia({ colorScheme: 'dark' });
@@ -100,5 +102,29 @@ test.describe('v0.1 · base', () => {
     await expect(page.getByRole('heading', { name: 'Sin conexión' })).toBeVisible();
     await captura(page, '09-sin-conexion');
     await context.setOffline(false);
+  });
+
+  test('entrar como invitado y guardar la cuenta con correo', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Continuar como invitado' }).click();
+    await expect(page.getByTestId('panel-dia')).toContainText(/(Buen día|Buenas tardes|Buenas noches), Invitado/);
+    if (test.info().project.name === 'celular') await page.getByRole('link', { name: 'Perfil' }).first().click();
+    else await page.getByTestId('persona-lateral').click();
+    await expect(page.getByText('Cuenta de invitado')).toBeVisible();
+    await page.getByTestId('guardar-invitado').click();
+    const hoja = page.getByRole('dialog', { name: 'Guardar mi cuenta' });
+    await hoja.getByLabel('Correo').fill('invitado@ejemplo.com');
+    await hoja.getByLabel('Contraseña').fill('secreto123');
+    await hoja.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText('Cuenta guardada: ya podés entrar con tu correo.')).toBeVisible();
+    await expect(page.getByText('Entra con correo')).toBeVisible();
+    await expect(page.getByText('invitado@ejemplo.com')).toBeVisible();
+  });
+
+  test('entrar con la cuenta de ejemplo desde el aviso de modo prueba', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Entrar con la cuenta de ejemplo' }).click();
+    await expect(page.getByTestId('panel-dia')).toContainText('Marco');
+    await expect(page.getByText('Modo prueba · datos inventados')).toBeVisible();
   });
 });

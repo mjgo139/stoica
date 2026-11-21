@@ -170,7 +170,7 @@ export function AdminPlan() {
                 </div>
                 <div style={{ fontSize: 13.5, overflowWrap: 'anywhere' }}>{r.texto || (r.tipo === 'foto' ? 'Foto sin comentario' : '')}</div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button type="button" className="link" style={{ paddingLeft: 0, color: 'var(--serie-2)' }} onClick={() => llamar('adminResolverReporte', { reporteId: r.id, borrar: true }).then((x) => x && mostrar('Publicación borrada.'))}>
+                  <button type="button" className="link" style={{ paddingLeft: 0, color: 'var(--miss)' }} onClick={() => llamar('adminResolverReporte', { reporteId: r.id, borrar: true }).then((x) => x && mostrar('Publicación borrada.'))}>
                     Borrar publicación
                   </button>
                   <button type="button" className="link" onClick={() => llamar('adminResolverReporte', { reporteId: r.id, borrar: false }).then((x) => x && mostrar('Reporte descartado.'))}>

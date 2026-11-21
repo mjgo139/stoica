@@ -327,6 +327,28 @@ export function crearDriverMemoria(): Driver {
       cuentas.set(k, c);
       iniciar(c, 'password');
     },
+    async entrarComoInvitado() {
+      await espera(200);
+      const c = { uid: `u-${++contador}`, correo: '', nombre: 'Invitado', contrasena: '' };
+      cuentas.set(`invitado-${c.uid}`, c);
+      iniciar(c, 'invitado');
+    },
+    async guardarCuentaInvitado(correo, contrasena) {
+      await espera();
+      const v = validarCorreo(correo);
+      if (!v.ok) throw new ErrorStoica(v.error, 'auth/invalid-email');
+      const vp = validarContrasena(contrasena);
+      if (!vp.ok) throw new ErrorStoica(vp.error, 'auth/weak-password');
+      const k = correo.trim().toLowerCase();
+      if (cuentas.has(k)) throw new ErrorStoica('Ya hay una cuenta con ese correo.', 'auth/email-already-in-use');
+      const uid = yo();
+      const vieja = [...cuentas.entries()].find(([, x]) => x.uid === uid);
+      if (!vieja) throw new ErrorStoica('Tenés que entrar primero.', 'unauthenticated');
+      cuentas.delete(vieja[0]);
+      const c = { ...vieja[1], correo: k, contrasena };
+      cuentas.set(k, c);
+      iniciar(c, 'password');
+    },
     async entrarConGoogle() {
       await espera(200);
       const k = 'google@stoica.app';

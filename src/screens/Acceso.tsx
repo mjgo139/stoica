@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { validarContrasena, validarCorreo, validarNombre, limpiarNombre } from '@core/validaciones';
-import { obtenerDriver, esModoPrueba } from '@/data';
+import { obtenerDriver, esModoPrueba, esPruebaPorEnlace, salirDelModoPrueba } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
 import { Marca } from '@/ui/Marca';
 import { LogoGoogle } from '@/ui/Iconos';
@@ -44,6 +44,29 @@ export function Acceso() {
         await d.recuperarContrasena(correo);
         setOk('Si hay una cuenta con ese correo, te llegó un enlace para crear una contraseña nueva. Revisá también la carpeta de spam.');
       }
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const comoInvitado = async () => {
+    setError('');
+    setOcupado(true);
+    try {
+      await (await obtenerDriver()).entrarComoInvitado();
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setOcupado(false);
+    }
+  };
+  const conEjemplo = async () => {
+    setError('');
+    setOcupado(true);
+    try {
+      await (await obtenerDriver()).entrar('prueba@stoica.app', 'stoica');
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -155,15 +178,29 @@ export function Acceso() {
           <button type="button" className="btn-google" onClick={conGoogle} disabled={ocupado}>
             <LogoGoogle /> Continuar con Google
           </button>
+          <button type="button" className="btn-sec invitado" onClick={comoInvitado} disabled={ocupado}>
+            Continuar como invitado
+          </button>
+          <p className="mu2 nota-invitado">Sin correo: después podés guardar tu cuenta desde Perfil sin perder nada.</p>
         </>
       )}
 
       {!esNativo() && <BotonInstalar estilo="discreto" />}
 
       {esModoPrueba() && (
-        <p className="franja info" style={{ marginTop: 22 }}>
-          Modo prueba: nada se guarda en Firebase. Entrá con prueba@stoica.app y la contraseña stoica, o creá una cuenta inventada.
-        </p>
+        <div className="franja info modo-prueba" style={{ marginTop: 22 }}>
+          <span>Modo prueba: nada se guarda en Firebase. Entrá con la cuenta de ejemplo (prueba@stoica.app · stoica) o creá una cuenta inventada.</span>
+          <span className="acciones-prueba">
+            <button type="button" className="btn" onClick={conEjemplo} disabled={ocupado}>
+              Entrar con la cuenta de ejemplo
+            </button>
+            {esPruebaPorEnlace() && (
+              <button type="button" className="link" onClick={salirDelModoPrueba}>
+                Salir del modo prueba
+              </button>
+            )}
+          </span>
+        </div>
       )}
     </main>
   );

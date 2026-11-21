@@ -5,7 +5,7 @@ import type { CambiosPerfil } from '@core/perfil';
 import { inicial } from '@core/perfil';
 import { limpiarNombre, validarContrasena, validarNombre } from '@core/validaciones';
 import { useSesion } from '@/app/sesion';
-import { esModoPrueba, obtenerDriver } from '@/data';
+import { esPruebaPorEnlace, salirDelModoPrueba, esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
 import { Laurel } from '@/ui/Laurel';
 import { Icono } from '@/ui/Iconos';
@@ -74,7 +74,7 @@ export function Perfil() {
             {usuario.correo}
           </div>
           <div className="cap mu2" style={{ marginTop: 10, fontSize: 11 }}>
-            {usuario.proveedor === 'google' ? 'Entra con Google' : usuario.proveedor === 'prueba' ? 'Cuenta de prueba' : 'Entra con correo'}
+            {usuario.proveedor === 'google' ? 'Entra con Google' : usuario.proveedor === 'prueba' ? 'Cuenta de prueba' : usuario.proveedor === 'invitado' ? 'Cuenta de invitado' : 'Entra con correo'}
             {perfil.rol === 'admin' ? ' · Admin' : ''}
           </div>
           <button
@@ -117,13 +117,20 @@ export function Perfil() {
           {perfil.rol === 'admin' && <VersionYNovedades />}
           <Grupo n={6} className="sep-grupo">Sesión</Grupo>
           <BotonInstalar estilo="fila" />
-          {usuario.proveedor !== 'google' && (
+          {usuario.proveedor === 'invitado' && <GuardarInvitado />}
+          {esPruebaPorEnlace() && (
+            <button type="button" className="fila" onClick={salirDelModoPrueba}>
+              <Icono nombre="salir" />
+              <span style={{ flex: 1 }}>Salir del modo prueba</span>
+            </button>
+          )}
+          {(usuario.proveedor === 'password' || usuario.proveedor === 'prueba') && (
             <button type="button" className="fila" onClick={() => setCambiandoClave(true)}>
               <Icono nombre="llave" />
               <span style={{ flex: 1 }}>Cambiar contraseña</span>
             </button>
           )}
-          <button type="button" className="fila" onClick={salir} style={{ color: 'var(--serie-2)' }}>
+          <button type="button" className="fila" onClick={salir} style={{ color: 'var(--miss)' }}>
             <Icono nombre="salir" />
             <span style={{ flex: 1 }}>Cerrar sesión</span>
           </button>
@@ -267,5 +274,54 @@ function VersionYNovedades() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Cuenta de invitado: se guarda con correo y contraseña sin perder hábitos, registros ni grupos */
+function GuardarInvitado() {
+  const mostrar = useAvisos((x) => x.mostrar);
+  const [abierta, setAbierta] = useState(false);
+  const [correo, setCorreo] = useState('');
+  const [clave, setClave] = useState('');
+  const [error, setError] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  const guardar = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setOcupado(true);
+    try {
+      await (await obtenerDriver()).guardarCuentaInvitado(correo, clave);
+      setAbierta(false);
+      mostrar('Cuenta guardada: ya podés entrar con tu correo.');
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setOcupado(false);
+    }
+  };
+  return (
+    <>
+      <button type="button" className="fila" onClick={() => setAbierta(true)} data-testid="guardar-invitado">
+        <Icono nombre="check" />
+        <span style={{ flex: 1 }}>
+          Guardar mi cuenta
+          <span className="mu2" style={{ display: 'block', fontSize: 12.5, fontWeight: 500 }}>
+            Sos invitado: agregá correo y contraseña para no perder nada si cambiás de celular.
+          </span>
+        </span>
+      </button>
+      <Hoja titulo="Guardar mi cuenta" abierta={abierta} alCerrar={() => setAbierta(false)}>
+        <form onSubmit={guardar} noValidate>
+          <label className="lbl cap" htmlFor="inv-correo">Correo</label>
+          <input id="inv-correo" className="inp" type="email" inputMode="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} />
+          <label className="lbl cap" htmlFor="inv-clave">Contraseña</label>
+          <input id="inv-clave" className="inp" type="password" autoComplete="new-password" placeholder="Mínimo 6 caracteres" value={clave} onChange={(e) => setClave(e.target.value)} />
+          <div className="err" role="alert">{error}</div>
+          <button type="submit" className="btn" disabled={ocupado} style={{ width: '100%', marginTop: 8 }}>
+            Guardar
+          </button>
+        </form>
+      </Hoja>
+    </>
   );
 }

@@ -13,7 +13,7 @@ const consultas = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false }, mutations: { retry: 0 } },
 });
 
-createRoot(document.getElementById('raiz')!).render(
+createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={consultas}>
       <BrowserRouter>

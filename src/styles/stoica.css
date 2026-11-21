@@ -53,7 +53,7 @@ svg.laurel { display: inline-block; vertical-align: middle; }
 .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--goldbg); color: var(--gold); font-family: var(--f-display); font-size: 18px; font-weight: 700; border: 1px solid var(--ln); flex: none; display: inline-flex; align-items: center; justify-content: center; }
 .ghost { min-height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid var(--ln); color: var(--gold); font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
 .ghost:hover:not(:disabled) { background: var(--sf2); }
-.ghost.peligro { border-color: var(--miss); color: var(--serie-2); }
+.ghost.peligro { border-color: var(--miss); color: var(--miss); }
 .btn-google { height: 52px; border-radius: 26px; border: 1px solid var(--ln); background: var(--sf); color: var(--tx); font-weight: 700; font-size: 15px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 12px; }
 .btn-google:hover:not(:disabled) { background: var(--sf2); }
 .link { min-height: 44px; padding: 0 10px; color: var(--gold); font-weight: 600; }
@@ -62,7 +62,7 @@ svg.laurel { display: inline-block; vertical-align: middle; }
 .fi { width: 100%; height: 46px; border: 1px solid var(--ln3); border-radius: 10px; background: transparent; padding: 0 12px; font-size: 16px; font-weight: 500; }
 .fi:focus { outline: none; border-color: var(--gold); }
 .lbl { display: block; margin: 22px 0 8px; color: var(--mu); font-size: 11px; }
-.err { color: var(--serie-2); font-size: 13.5px; font-weight: 700; margin-top: 12px; min-height: 18px; }
+.err { color: var(--miss); font-size: 13.5px; font-weight: 700; margin-top: 12px; min-height: 18px; }
 .okmsg { color: var(--verde); font-size: 13.5px; font-weight: 700; margin-top: 12px; }
 .sw { width: 48px; height: 28px; border-radius: 14px; position: relative; flex: none; border: 1px solid var(--ln); }
 .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--mu2); transition: left .15s; }
@@ -367,7 +367,7 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .comentario { display: flex; gap: 10px; align-items: flex-start; }
 .cuenta-coment { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--mu2); }
 .cuenta-coment svg { vertical-align: -1px; }
-.peligro-txt { color: var(--serie-2) !important; }
+.peligro-txt { color: var(--miss) !important; }
 
 /* APK: cartel de versión nueva */
 .aviso-apk { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--goldbg); color: var(--gold); font-size: 13.5px; font-weight: 600; border-bottom: 1px solid var(--ln3); }
@@ -400,3 +400,10 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .cita-dia .grupo { margin-top: 8px; }
 @media (min-width: 1024px) { .cita-dia { max-width: 420px; border-top: 0; border-left: 1px solid var(--ln2); padding: 4px 0 4px 28px; } }
 .grupo-fila .ahora { font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+/* Acceso: invitado y modo prueba */
+.btn-sec.invitado { width: 100%; margin-top: 10px; }
+.nota-invitado { margin: 8px 0 0; text-align: center; font-size: 12.5px; }
+.franja.modo-prueba { flex-direction: column; align-items: stretch; gap: 10px; }
+.franja.modo-prueba .acciones-prueba { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.franja.modo-prueba .btn { width: auto; padding: 0 20px; height: 44px; }

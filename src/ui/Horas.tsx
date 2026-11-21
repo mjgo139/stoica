@@ -12,7 +12,7 @@ export function Horas({ valores, alCambiar, max = 3, etiqueta, idBase }: { valor
       {valores.map((v, i) => (
         <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: i ? 8 : 0 }}>
           <input id={`${idBase}-${i}`} type="time" className="fi" style={{ flex: 1, maxWidth: 200 }} value={v} aria-label={`${etiqueta} ${i + 1}`} onChange={(e) => poner(i, e.target.value)} />
-          <button type="button" className="link" style={{ color: 'var(--serie-2)' }} aria-label={`Quitar ${etiqueta.toLowerCase()} ${i + 1}`} onClick={() => alCambiar(valores.filter((_, j) => j !== i))}>
+          <button type="button" className="link" style={{ color: 'var(--miss)' }} aria-label={`Quitar ${etiqueta.toLowerCase()} ${i + 1}`} onClick={() => alCambiar(valores.filter((_, j) => j !== i))}>
             Quitar
           </button>
         </div>

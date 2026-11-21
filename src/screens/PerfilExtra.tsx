@@ -283,7 +283,7 @@ export function MisDatos({ n = 3 }: { n?: number }) {
           </span>
         </span>
       </button>
-      <button type="button" className="fila" onClick={() => (setTexto(''), setBorrando(true))} style={{ color: 'var(--serie-2)' }}>
+      <button type="button" className="fila" onClick={() => (setTexto(''), setBorrando(true))} style={{ color: 'var(--miss)' }}>
         <span style={{ flex: 1 }}>Borrar mi cuenta</span>
       </button>
       <Hoja titulo="Borrar mi cuenta" abierta={borrando} alCerrar={() => setBorrando(false)}>

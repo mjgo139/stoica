@@ -13,6 +13,8 @@ import {
   browserLocalPersistence,
   initializeAuth,
   onAuthStateChanged,
+  signInAnonymously,
+  linkWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithCredential,
@@ -102,12 +104,13 @@ export function crearDriverFirebase(): Driver {
     return query(collection(db, c.ruta), ...partes);
   };
   let tokenPush: string | null = null;
+  let avisarSesion: ((u: UsuarioSesion | null) => void) | null = null;
 
   const aSesion = (u: NonNullable<Auth['currentUser']>): UsuarioSesion => ({
     uid: u.uid,
     correo: u.email ?? '',
-    nombre: u.displayName || nombrePendiente,
-    proveedor: u.providerData.some((p) => p.providerId === 'google.com') ? 'google' : 'password',
+    nombre: u.displayName || nombrePendiente || (u.isAnonymous ? 'Invitado' : ''),
+    proveedor: u.isAnonymous ? 'invitado' : u.providerData.some((p) => p.providerId === 'google.com') ? 'google' : 'password',
   });
 
   const envolver = async <T>(fn: () => Promise<T>): Promise<T> => {
@@ -121,6 +124,7 @@ export function crearDriverFirebase(): Driver {
   return {
     nombre: 'firebase',
     observarSesion(cb) {
+      avisarSesion = cb;
       return onAuthStateChanged(auth, (u) => cb(u ? aSesion(u) : null));
     },
     entrar: (correo, contrasena) => envolver(async () => {
@@ -130,6 +134,18 @@ export function crearDriverFirebase(): Driver {
       nombrePendiente = nombre;
       const cred = await createUserWithEmailAndPassword(auth, correo.trim(), contrasena);
       await updateProfile(cred.user, { displayName: nombre });
+    }),
+    entrarComoInvitado: () => envolver(async () => {
+      nombrePendiente = 'Invitado';
+      await signInAnonymously(auth);
+    }),
+    guardarCuentaInvitado: (correo, contrasena) => envolver(async () => {
+      const u = auth.currentUser;
+      if (!u?.isAnonymous) throw new ErrorStoica('Esta cuenta ya tiene correo.', 'failed-precondition');
+      await linkWithCredential(u, EmailAuthProvider.credential(correo.trim(), contrasena));
+      // Firebase no avisa el cambio por onAuthStateChanged: se avisa a mano (mismo uid, ahora con correo)
+      await u.reload();
+      if (auth.currentUser) avisarSesion?.(aSesion(auth.currentUser));
     }),
     entrarConGoogle: () => envolver(async () => {
       const nativo = await import('@/nativo/nativo');

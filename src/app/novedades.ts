@@ -11,6 +11,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.1.0',
+    fecha: '2026-11-21',
+    cambios: [
+      'Modo prueba en la web publicada: stoahabit.web.app/?prueba=1 entra con la cuenta de ejemplo y datos inventados (sin Firebase); ?prueba=0 o "Salir del modo prueba" vuelve a la app real.',
+      '"Continuar como invitado": entrar sin correo; desde Perfil → "Guardar mi cuenta" se agrega correo y contraseña sin perder nada.',
+      'Las tarjetas vuelven a verse sólidas: las vetas del fondo quedaban encima del contenido (el contenedor de la app ahora es #root, como pide la familia).',
+      'Borrar y quitar usan el rojo ladrillo de la familia.',
+    ],
+  },
+  {
     version: '2.0.1',
     fecha: '2026-11-21',
     cambios: ['Panel del día: "Nuevo hábito" pasa a ser una ficha (el botón redondo tapaba la fecha en el celular).'],

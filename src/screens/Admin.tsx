@@ -224,7 +224,7 @@ export function Admin() {
                             Desbloquear
                           </button>
                         )}
-                        <button type="button" className="link" style={{ minHeight: 36, color: 'var(--serie-2)' }} onClick={() => setAccion({ tipo: 'borrar', c })}>
+                        <button type="button" className="link" style={{ minHeight: 36, color: 'var(--miss)' }} onClick={() => setAccion({ tipo: 'borrar', c })}>
                           Borrar
                         </button>
                       </>

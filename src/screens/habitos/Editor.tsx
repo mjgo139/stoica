@@ -245,7 +245,7 @@ export function Editor() {
                   placeholder={['Almuerzo', 'Merienda', 'Cena', 'Desayuno', 'Colación', 'Postre'][i] ?? 'Otro'}
                 />
                 {f.items.length > LIMITES_HABITO.itemsMin && (
-                  <button type="button" className="link" style={{ color: 'var(--serie-2)', flex: 'none' }} aria-label={`Quitar ítem ${i + 1}`} onClick={() => poner({ items: f.items.filter((y) => y.id !== x.id) })}>
+                  <button type="button" className="link" style={{ color: 'var(--miss)', flex: 'none' }} aria-label={`Quitar ítem ${i + 1}`} onClick={() => poner({ items: f.items.filter((y) => y.id !== x.id) })}>
                     Quitar
                   </button>
                 )}
@@ -312,7 +312,7 @@ export function Editor() {
                   ))}
                 </div>
                 {f.variables.length > 1 && (
-                  <button type="button" className="link" style={{ color: 'var(--serie-2)', paddingLeft: 0, marginTop: 6 }} onClick={() => poner({ variables: f.variables.filter((x) => x.id !== v.id) })}>
+                  <button type="button" className="link" style={{ color: 'var(--miss)', paddingLeft: 0, marginTop: 6 }} onClick={() => poner({ variables: f.variables.filter((x) => x.id !== v.id) })}>
                     Quitar variable
                   </button>
                 )}

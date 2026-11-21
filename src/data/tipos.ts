@@ -4,7 +4,7 @@ export interface UsuarioSesion {
   uid: string;
   correo: string;
   nombre: string;
-  proveedor: 'password' | 'google' | 'prueba';
+  proveedor: 'password' | 'google' | 'prueba' | 'invitado';
 }
 
 export type Cancelar = () => void;
@@ -53,6 +53,10 @@ export interface Driver {
   entrar(correo: string, contrasena: string): Promise<void>;
   registrar(nombre: string, correo: string, contrasena: string): Promise<void>;
   entrarConGoogle(): Promise<void>;
+  /** Entra sin correo (cuenta anónima). Después se puede guardar con correo sin perder nada. */
+  entrarComoInvitado(): Promise<void>;
+  /** Convierte la cuenta de invitado en una cuenta con correo y contraseña (mismos datos). */
+  guardarCuentaInvitado(correo: string, contrasena: string): Promise<void>;
   recuperarContrasena(correo: string): Promise<void>;
   /** Cambia la contraseña de quien entra con correo. Pide la actual para confirmar que es la persona. */
   cambiarContrasena(actual: string, nueva: string): Promise<void>;
