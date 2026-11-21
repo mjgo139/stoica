@@ -23,14 +23,14 @@ const SECCIONES = [
   { href: '/habitos', icono: 'check', texto: 'Hábitos' },
   { href: '/tareas', icono: 'nota', texto: 'Tareas' },
   { href: '/examen', icono: 'luna', texto: 'Examen' },
-  { href: '/memento', icono: 'reloj', texto: 'Memento' },
+  { href: '/memento', icono: 'calavera', texto: 'Memento' },
   { href: '/comunidad', icono: 'clientes', texto: 'Comunidad' },
 ];
 const ADMIN = [
   { href: '/admin', icono: 'barras', texto: 'Admin' },
   { href: '/espejo', icono: 'cuerpo', texto: 'El Espejo' },
 ];
-const JARDIN = { href: '/jardin', icono: 'laurel', texto: 'Jardín' };
+const JARDIN = { href: '/jardin', icono: 'brote', texto: 'Jardín' };
 
 const activa = (href: string, ruta: string) => (href === '/' ? ruta === '/' : ruta === href || ruta.startsWith(href + '/') || (href === '/comunidad' && ruta.startsWith('/unirse')));
 

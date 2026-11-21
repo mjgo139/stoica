@@ -11,6 +11,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.2.0',
+    fecha: '2026-11-21',
+    cambios: [
+      'Panel del día igual en las 3 apps de la familia: debajo del saludo va la frase estoica del día (sin rango ni nivel). A la derecha, tus prácticas de hoy.',
+      'Íconos nuevos de la familia: brote para el Jardín, calavera para Memento, y llave, sin conexión, lira del sonido y mover.',
+      'Familia estoica 1.5.0.',
+    ],
+  },
+  {
     version: '2.1.0',
     fecha: '2026-11-21',
     cambios: [

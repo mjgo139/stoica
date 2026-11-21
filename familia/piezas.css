@@ -152,8 +152,8 @@ a.lateral-persona:hover { background: var(--lat-activo); }
 @media (min-width: 1024px) { .panel-dia-avatar { width: 88px; height: 88px; } }
 .panel-dia-saludo { margin: 4px 0 0; font-family: var(--f-display); font-weight: 700; font-size: 26px; line-height: 1.2; color: var(--tx); }
 @media (min-width: 1024px) { .panel-dia-saludo { margin-top: 8px; font-size: 40px; line-height: 44px; } }
-.panel-dia-linea { margin-top: 4px; font-size: 15px; font-weight: 600; color: var(--gold); }
-.panel-dia-esquina { align-self: flex-start; color: var(--gold); }
+.panel-dia-frase { margin: 6px 0 0; max-width: 640px; font-family: var(--f-display); font-style: italic; font-size: 15px; line-height: 1.4; color: var(--gold); }
+.panel-dia-autor { font-family: var(--f-body); font-style: normal; font-size: 13.5px; font-weight: 500; color: var(--mu); white-space: nowrap; }
 .panel-dia-fichas { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
 @media (min-width: 1024px) { .panel-dia-fichas { margin-top: 20px; } .panel-dia-lado { flex-shrink: 0; } }
 .ficha .ir { color: var(--mu); }

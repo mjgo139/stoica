@@ -90,6 +90,11 @@ test.describe('v0.1 · base', () => {
     await page.getByLabel('Contraseña').fill('stoica');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Marco');
+    // Panel del día de la familia 1.5.0: frase estoica, sin rango ni nivel
+    const panel = page.getByTestId('panel-dia');
+    await expect(panel.getByTestId('frase-del-dia')).toBeVisible();
+    await expect(panel).not.toContainText('Nivel');
+    await expect(panel.getByTestId('practicas-de-hoy')).toBeVisible();
     await page.goto('/');
     await page.getByRole('button', { name: 'Continuar con Google' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucio');

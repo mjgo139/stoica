@@ -394,11 +394,11 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 
 /* Panel del día de StoaHabit: iniciales en el avatar, rango y la frase del día a la derecha (en PC) */
 .panel-dia-iniciales { text-decoration: none; width: 100%; height: 100%; display: inline-flex; align-items: center; justify-content: center; background: var(--goldbg); color: var(--gold); font-family: var(--f-display); font-weight: 600; font-size: 26px; }
-.panel-dia .rango { color: var(--gold); text-decoration: none; }
-.cita-dia { margin: 0; border-top: 1px solid var(--ln2); padding-top: 14px; }
-.cita-dia .quote { margin: 0; font-size: 18px; }
-.cita-dia .grupo { margin-top: 8px; }
-@media (min-width: 1024px) { .cita-dia { max-width: 420px; border-top: 0; border-left: 1px solid var(--ln2); padding: 4px 0 4px 28px; } }
+/* Panel del día: a la derecha, las prácticas de hoy (lo propio de StoaHabit) */
+.lado-hoy { display: flex; align-items: baseline; gap: 10px; border-top: 1px solid var(--ln2); padding-top: 12px; }
+.lado-hoy .num { font-size: 36px; color: var(--tx); }
+.lado-hoy .num .mu2 { font-size: 20px; }
+@media (min-width: 1024px) { .lado-hoy { flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 0; border-top: 0; border-left: 1px solid var(--ln2); padding: 4px 0 4px 28px; } .lado-hoy .num { font-size: 48px; } }
 .grupo-fila .ahora { font-size: 11px; font-weight: 600; white-space: nowrap; }
 
 /* Acceso: invitado y modo prueba */

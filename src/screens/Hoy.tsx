@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { citaDelDia } from '@core/citas';
 import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLargaDeClave, momentoDelDia, MOMENTOS, partesDeClave, partesEnZona, sumarDias } from '@core/fechas';
 import { cumplido, esDiaActivo, racha, type Habito } from '@core/habitos';
 import { primerNombre } from '@core/perfil';
 import { Ficha, Grupo, iniciales, PanelDia, TuSemana, type DiaSemana } from '../../familia/react';
 import { Icono as IconoFamilia } from '../../familia/iconos';
-import { useRango } from '@/app/rango';
+import { fraseDelDia } from '@/lib/frases';
 import { aRomano } from '@core/romanos';
 import { examenCompleto, tareaDelDia, tareaHecha } from '@core/rutina';
 import { useSesion } from '@/app/sesion';
@@ -27,7 +26,7 @@ export function Hoy() {
   const ahora = new Date();
   const zona = perfil.zonaHoraria;
   const { hora } = partesEnZona(ahora, zona);
-  const cita = citaDelDia(dia);
+  const frase = fraseDelDia('constancia', ahora.getTime());
   const quedan = diasRestantesDelAnio(ahora, zona);
 
   const delDia = useMemo(() => habitos.filter((h) => esDiaActivo(h, dia)), [habitos, dia]);
@@ -37,6 +36,7 @@ export function Hoy() {
     return { total: hs.length, ok };
   };
   const resumen = hechosDe(dia);
+  const hoyHechos = hechosDe(hoy);
   const rachas = useMemo(
     () => new Map(habitos.map((h) => [h.id, racha(h, registrosDe(registros, h.id), hoy, VENTANA_DIAS)])),
     [habitos, registros, hoy],
@@ -45,7 +45,6 @@ export function Hoy() {
   const tareasDia = tareas
     .filter((t) => tareaDelDia(t, dia) && !(t.repetir === 'no' && !t.fecha && (t.proyectoId || (t.completada && t.completada < dia))))
     .sort((a, b) => (a.hora ?? '').localeCompare(b.hora ?? '') || a.momento - b.momento);
-  const rango = useRango();
   const comunidad = useComunidad((st) => st.grupos.size > 0);
   const navegar = useNavigate();
   const ir = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -72,11 +71,7 @@ export function Hoy() {
             {iniciales(perfil.nombre)}
           </Link>
         }
-        linea={
-          <Link to="/jardin" className="rango" data-testid="rango">
-            {rango.nombre} · Nivel {rango.nivel}
-          </Link>
-        }
+        frase={frase}
         fichas={
           <>
             {perfil.mementoMori && (
@@ -85,7 +80,7 @@ export function Hoy() {
               </Ficha>
             )}
             <Ficha href="/jardin" ir={ir}>
-              <IconoFamilia n="laurel" size={16} />
+              <IconoFamilia n="brote" size={16} />
               Tu jardín
             </Ficha>
             <Ficha href="/habitos/nuevo" ir={ir} testId="nuevo-habito">
@@ -95,10 +90,13 @@ export function Hoy() {
           </>
         }
         lado={
-          <figure className="cita-dia">
-            <blockquote className="quote">“{cita.texto}”</blockquote>
-            <figcaption className="grupo">{cita.autor}</figcaption>
-          </figure>
+          <div className="lado-hoy" data-testid="practicas-de-hoy">
+            <span className="num">
+              {hoyHechos.ok}
+              <span className="mu2">/{hoyHechos.total}</span>
+            </span>
+            <span className="grupo">{hoyHechos.total === 0 ? 'Sin prácticas hoy' : hoyHechos.ok === hoyHechos.total ? 'Día cumplido' : 'Prácticas de hoy'}</span>
+          </div>
         }
       />
 
