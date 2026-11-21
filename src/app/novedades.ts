@@ -11,6 +11,11 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.3.1',
+    fecha: '2026-11-21',
+    cambios: ['Panel del día más limpio: se quitó "Prácticas de hoy" de la derecha (el avance del día sigue más abajo).'],
+  },
+  {
     version: '2.3.0',
     fecha: '2026-11-21',
     cambios: [

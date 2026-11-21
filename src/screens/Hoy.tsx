@@ -36,7 +36,6 @@ export function Hoy() {
     return { total: hs.length, ok };
   };
   const resumen = hechosDe(dia);
-  const hoyHechos = hechosDe(hoy);
   const rachas = useMemo(
     () => new Map(habitos.map((h) => [h.id, racha(h, registrosDe(registros, h.id), hoy, VENTANA_DIAS)])),
     [habitos, registros, hoy],
@@ -88,15 +87,6 @@ export function Hoy() {
               Nuevo hábito
             </Ficha>
           </>
-        }
-        lado={
-          <div className="lado-hoy" data-testid="practicas-de-hoy">
-            <span className="num">
-              {hoyHechos.ok}
-              <span className="mu2">/{hoyHechos.total}</span>
-            </span>
-            <span className="grupo">{hoyHechos.total === 0 ? 'Sin prácticas hoy' : hoyHechos.ok === hoyHechos.total ? 'Día cumplido' : 'Prácticas de hoy'}</span>
-          </div>
         }
       />
 

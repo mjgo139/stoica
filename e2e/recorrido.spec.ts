@@ -94,7 +94,7 @@ test.describe('v0.1 · base', () => {
     const panel = page.getByTestId('panel-dia');
     await expect(panel.getByTestId('frase-del-dia')).toBeVisible();
     await expect(panel).not.toContainText('Nivel');
-    await expect(panel.getByTestId('practicas-de-hoy')).toBeVisible();
+    await expect(panel.getByTestId('practicas-de-hoy')).toHaveCount(0);
     await page.goto('/');
     await page.getByRole('button', { name: 'Continuar con Google' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucio');
