@@ -134,6 +134,18 @@ describe('users/{uid} · perfil', () => {
     await assertFails(updateDoc(doc(db, 'users/ana'), { creado: 1, actualizado: ahora(), actualizadoPor: 'ana' }));
     await assertFails(deleteDoc(doc(db, 'users/ana')));
   });
+  it('foto de perfil: data URL WebP o JPEG de hasta 100.000 caracteres, o null', async () => {
+    await sembrar('users/ana', perfil('ana', { rol: 'usuario' }));
+    const db = usuario('ana');
+    const firma = { actualizado: ahora(), actualizadoPor: 'ana' };
+    await assertSucceeds(updateDoc(doc(db, 'users/ana'), { foto: 'data:image/webp;base64,UklGRg==', ...firma }));
+    await assertSucceeds(updateDoc(doc(db, 'users/ana'), { foto: 'data:image/jpeg;base64,/9j/4AAQ', ...firma }));
+    await assertSucceeds(updateDoc(doc(db, 'users/ana'), { foto: null, ...firma }));
+    await assertFails(updateDoc(doc(db, 'users/ana'), { foto: 'data:image/png;base64,iVBOR', ...firma }));
+    await assertFails(updateDoc(doc(db, 'users/ana'), { foto: 'https://ejemplo.com/foto.jpg', ...firma }));
+    await assertFails(updateDoc(doc(db, 'users/ana'), { foto: 'data:image/webp;base64,' + 'A'.repeat(100000), ...firma }));
+    await assertFails(updateDoc(doc(db, 'users/ana'), { foto: 123, ...firma }));
+  });
 });
 
 // =====================================================================

@@ -11,6 +11,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.3.0',
+    fecha: '2026-11-21',
+    cambios: [
+      'Foto de perfil: en Perfil → "Cambiar foto" (se elige de la galería y se achica a 256×256) y "Quitar foto". Se ve en Perfil, en el Panel del día y en la barra lateral de la PC.',
+      'Tarjeta de Perfil de la familia estoica, con botones de borde.',
+      'Barra lateral: debajo de tu nombre, tu correo (o "Modo invitado"), como en StoaGym y StoaFit.',
+      'Familia estoica 1.6.0.',
+    ],
+  },
+  {
     version: '2.2.0',
     fecha: '2026-11-21',
     cambios: [

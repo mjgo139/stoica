@@ -115,15 +115,43 @@ test.describe('v0.1 · base', () => {
     await expect(page.getByTestId('panel-dia')).toContainText(/(Buen día|Buenas tardes|Buenas noches), Invitado/);
     if (test.info().project.name === 'celular') await page.getByRole('link', { name: 'Perfil' }).first().click();
     else await page.getByTestId('persona-lateral').click();
-    await expect(page.getByText('Cuenta de invitado')).toBeVisible();
+    await expect(page.getByTestId('tarjeta-perfil')).toContainText('Modo invitado');
     await page.getByTestId('guardar-invitado').click();
     const hoja = page.getByRole('dialog', { name: 'Guardar mi cuenta' });
     await hoja.getByLabel('Correo').fill('invitado@ejemplo.com');
     await hoja.getByLabel('Contraseña').fill('secreto123');
     await hoja.getByRole('button', { name: 'Guardar' }).click();
     await expect(page.getByText('Cuenta guardada: ya podés entrar con tu correo.')).toBeVisible();
-    await expect(page.getByText('Entra con correo')).toBeVisible();
-    await expect(page.getByText('invitado@ejemplo.com')).toBeVisible();
+    await expect(page.getByTestId('tarjeta-perfil')).toContainText('Entra con correo');
+    await expect(page.getByTestId('tarjeta-perfil')).toContainText('invitado@ejemplo.com');
+  });
+
+  test('foto de perfil: se sube, se ve en Perfil, en el Panel del día y en la barra lateral, y se quita', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Entrar con la cuenta de ejemplo' }).click();
+    const panel = page.getByTestId('panel-dia');
+    await expect(panel).toContainText('Marco');
+    await expect(panel.getByTestId('foto-perfil')).toHaveCount(0);
+    await panel.getByRole('link', { name: 'Perfil' }).click();
+    const tarjeta = page.getByTestId('tarjeta-perfil');
+    await expect(tarjeta).toContainText('Entra con correo · Admin');
+    await tarjeta.getByLabel('Elegir foto de perfil').setInputFiles('public/icons/icon-512.png');
+    await expect(page.getByText('Foto guardada.')).toBeVisible();
+    const foto = tarjeta.getByTestId('foto-perfil');
+    await expect(foto).toBeVisible();
+    expect(await foto.getAttribute('src')).toMatch(/^data:image\/(webp|jpeg);base64,/);
+    // 256×256 y liviana (la regla de Firestore acepta hasta 100.000 caracteres)
+    expect(await foto.evaluate((i: HTMLImageElement) => [i.naturalWidth, i.naturalHeight])).toEqual([256, 256]);
+    expect((await foto.getAttribute('src'))!.length).toBeLessThan(100000);
+    await captura(page, '10-perfil-con-foto');
+    await menu(page).getByRole('link', { name: 'Hoy' }).click();
+    await expect(page.getByTestId('panel-dia').getByTestId('foto-perfil')).toBeVisible();
+    if (test.info().project.name === 'escritorio') await expect(page.getByTestId('persona-lateral').getByTestId('foto-perfil')).toBeVisible();
+    await captura(page, '11-inicio-con-foto');
+    await page.getByTestId('panel-dia').getByRole('link', { name: 'Perfil' }).click();
+    await page.getByTestId('tarjeta-perfil').getByRole('button', { name: 'Quitar foto' }).click();
+    await expect(page.getByTestId('tarjeta-perfil').getByTestId('foto-perfil')).toHaveCount(0);
+    await expect(page.getByTestId('tarjeta-perfil').getByRole('button', { name: 'Quitar foto' })).toHaveCount(0);
   });
 
   test('entrar con la cuenta de ejemplo desde el aviso de modo prueba', async ({ page }) => {

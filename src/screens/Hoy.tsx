@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLargaDeClave, momentoDelDia, MOMENTOS, partesDeClave, partesEnZona, sumarDias } from '@core/fechas';
 import { cumplido, esDiaActivo, racha, type Habito } from '@core/habitos';
 import { primerNombre } from '@core/perfil';
-import { Ficha, Grupo, iniciales, PanelDia, TuSemana, type DiaSemana } from '../../familia/react';
+import { Avatar, Ficha, Grupo, PanelDia, TuSemana, type DiaSemana } from '../../familia/react';
 import { Icono as IconoFamilia } from '../../familia/iconos';
 import { fraseDelDia } from '@/lib/frases';
 import { aRomano } from '@core/romanos';
@@ -67,8 +67,8 @@ export function Hoy() {
       <PanelDia
         nombre={primerNombre(perfil.nombre) || 'estoico'}
         avatar={
-          <Link to="/perfil" className="panel-dia-iniciales" aria-label="Perfil">
-            {iniciales(perfil.nombre)}
+          <Link to="/perfil" className="panel-dia-enlace" aria-label="Perfil">
+            <Avatar foto={perfil.foto} nombre={perfil.nombre} />
           </Link>
         }
         frase={frase}

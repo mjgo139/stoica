@@ -1,13 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { CabeceraPagina, Grupo, ElegirTema } from '../../familia/react';
+import { Avatar, BotonFoto, CabeceraPagina, ElegirTema, Grupo, TarjetaPerfil } from '../../familia/react';
 import { useMutation } from '@tanstack/react-query';
 import type { CambiosPerfil } from '@core/perfil';
-import { inicial } from '@core/perfil';
 import { limpiarNombre, validarContrasena, validarNombre } from '@core/validaciones';
 import { useSesion } from '@/app/sesion';
 import { esPruebaPorEnlace, salirDelModoPrueba, esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
-import { Laurel } from '@/ui/Laurel';
 import { Icono } from '@/ui/Iconos';
 import { NOVEDADES } from '@/app/novedades';
 import { Hoja } from '@/ui/Hoja';
@@ -58,38 +56,40 @@ export function Perfil() {
       <CabeceraPagina etiqueta="Tu cuenta" titulo="Perfil" />
 
       <div className="cols" style={{ marginTop: 24 }}>
-        <div className="panel" style={{ textAlign: 'center', paddingBlock: 28 }}>
-          <div style={{ position: 'relative', width: 112, height: 104, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ position: 'absolute', inset: 0 }}>
-              <Laurel ancho={112} alto={104} />
-            </span>
-            <span className="serif" style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', background: 'var(--goldbg)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, marginTop: -6 }}>
-              {inicial(perfil.nombre)}
-            </span>
-          </div>
-          <div className="serif" style={{ fontSize: 26, fontWeight: 700, marginTop: 10 }}>
-            {perfil.nombre}
-          </div>
-          <div className="mu" style={{ fontWeight: 500, marginTop: 4, overflowWrap: 'anywhere' }}>
-            {usuario.correo}
-          </div>
-          <div className="cap mu2" style={{ marginTop: 10, fontSize: 11 }}>
-            {usuario.proveedor === 'google' ? 'Entra con Google' : usuario.proveedor === 'prueba' ? 'Cuenta de prueba' : usuario.proveedor === 'invitado' ? 'Cuenta de invitado' : 'Entra con correo'}
-            {perfil.rol === 'admin' ? ' · Admin' : ''}
-          </div>
-          <button
-            type="button"
-            className="ghost"
-            style={{ marginTop: 18 }}
-            onClick={() => {
-              setNombre(perfil.nombre);
-              setError('');
-              setEditando(true);
-            }}
-          >
-            Cambiar nombre
-          </button>
-        </div>
+        <TarjetaPerfil
+          avatar={<Avatar foto={perfil.foto} nombre={perfil.nombre} />}
+          nombre={perfil.nombre}
+          correo={usuario.proveedor === 'invitado' ? undefined : usuario.correo || perfil.correo}
+          detalle={
+            <>
+              {usuario.proveedor === 'google' ? 'Entra con Google' : usuario.proveedor === 'prueba' ? 'Cuenta de prueba' : usuario.proveedor === 'invitado' ? 'Modo invitado' : 'Entra con correo'}
+              {perfil.rol === 'admin' ? ' · Admin' : ''}
+            </>
+          }
+          acciones={
+            <>
+              <BotonFoto alElegir={(foto) => actualizar.mutate({ foto }, { onSuccess: () => mostrar('Foto guardada.') })} alFallar={() => mostrar('No se pudo abrir esa imagen.')}>
+                Cambiar foto
+              </BotonFoto>
+              {perfil.foto && (
+                <button type="button" className="btn-borde" onClick={() => actualizar.mutate({ foto: null }, { onSuccess: () => mostrar('Foto quitada.') })}>
+                  Quitar foto
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-borde"
+                onClick={() => {
+                  setNombre(perfil.nombre);
+                  setError('');
+                  setEditando(true);
+                }}
+              >
+                Cambiar nombre
+              </button>
+            </>
+          }
+        />
 
         <div className="panel">
           <Grupo n={1} className="sep-grupo sin-arriba">Apariencia</Grupo>

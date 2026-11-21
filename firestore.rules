@@ -77,7 +77,7 @@ service cloud.firestore {
     match /users/{uid} {
       function perfilValido() {
         let d = nuevo();
-        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'notifCumplidos', 'notifFotos', 'notifMensajes', 'nacimiento', 'esperanzaVida', 'contadores', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
+        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'notifCumplidos', 'notifFotos', 'notifMensajes', 'nacimiento', 'esperanzaVida', 'contadores', 'foto', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
           && d.keys().hasAll(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor'])
           && texto(d.nombre, 1, 40)
           && texto(d.correo, 0, 254)
@@ -95,6 +95,8 @@ service cloud.firestore {
           && (!('notifCumplidos' in d) || d.notifCumplidos is bool)
           && (!('notifFotos' in d) || d.notifFotos is bool)
           && (!('notifMensajes' in d) || d.notifMensajes is bool)
+          // Foto de perfil (familia 1.6.0): data URL WebP/JPEG de hasta 100.000 caracteres, o null para quitarla
+          && (!('foto' in d) || d.foto == null || (d.foto is string && d.foto.size() <= 100000 && d.foto.matches('data:image/(webp|jpeg);base64,.*')))
           && d.creado is int
           && firmado(uid);
       }

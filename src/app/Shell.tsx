@@ -1,9 +1,8 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, type MouseEvent } from 'react';
-import { AvisoPrueba, BarraLateral, iniciales, Pestanas, type Seccion } from '../../familia/react';
+import { AvisoPrueba, Avatar, BarraLateral, Pestanas, type Seccion } from '../../familia/react';
 import { primerNombre } from '@core/perfil';
 import { useSesion } from './sesion';
-import { useRango } from './rango';
 import { Icono } from '@/ui/Iconos';
 import { EmblemaStoaHabit } from '@/ui/Marca';
 import { AvisoMudanza } from '@/ui/AvisoMudanza';
@@ -37,9 +36,9 @@ const activa = (href: string, ruta: string) => (href === '/' ? ruta === '/' : ru
 /** Estructura de la app (familia estoica): pestañas abajo en el celular y barra lateral en la PC. */
 export function Shell() {
   const perfil = useSesion((s) => s.perfil)!;
+  const usuario = useSesion((s) => s.usuario);
   const enLinea = useEnLinea();
   const { pathname } = useLocation();
-  const rango = useRango();
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -68,7 +67,7 @@ export function Shell() {
         nombreApp="StoaHabit"
         secciones={lateral}
         ir={ir}
-        persona={{ avatar: iniciales(perfil.nombre), nombre: primerNombre(perfil.nombre) || perfil.nombre, detalle: `${rango.nombre} · Nivel ${rango.nivel}`, href: '/perfil' }}
+        persona={{ avatar: <Avatar foto={perfil.foto} nombre={perfil.nombre} />, nombre: primerNombre(perfil.nombre) || perfil.nombre, detalle: usuario?.proveedor === 'invitado' ? 'Modo invitado' : usuario?.correo || perfil.correo, href: '/perfil' }}
         nota={prueba ? 'Modo prueba' : 'Hábitos · Disciplina · Serenidad'}
       />
       <Sincronizar />
