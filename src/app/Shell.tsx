@@ -1,10 +1,14 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { inicial } from '@core/perfil';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, type MouseEvent } from 'react';
+import { AvisoPrueba, BarraLateral, iniciales, Pestanas, type Seccion } from '../../familia/react';
+import { primerNombre } from '@core/perfil';
 import { useSesion } from './sesion';
-import { Laurel } from '@/ui/Laurel';
-import { Icono, type NombreIcono } from '@/ui/Iconos';
+import { useRango } from './rango';
+import { Icono } from '@/ui/Iconos';
+import { EmblemaStoaHabit } from '@/ui/Marca';
+import { AvisoMudanza } from '@/ui/AvisoMudanza';
 import { useEnLinea } from '@/pwa/conexion';
+import { esModoPrueba } from '@/data';
 import { Sincronizar } from './datos';
 import { SincronizarComunidad } from './comunidad';
 import { Celebracion } from '@/screens/habitos/Celebracion';
@@ -13,20 +17,29 @@ import { prepararNativo } from '@/nativo/nativo';
 import { useWidgetHoy } from '@/nativo/widget';
 import { useAvisos } from '@/ui/avisos';
 
-const SECCIONES: Array<{ ruta: string; nombre: string; icono: NombreIcono }> = [
-  { ruta: '/', nombre: 'Hoy', icono: 'hoy' },
-  { ruta: '/habitos', nombre: 'Hábitos', icono: 'habitos' },
-  { ruta: '/tareas', nombre: 'Tareas', icono: 'tareas' },
-
-  { ruta: '/examen', nombre: 'Examen', icono: 'examen' },
-  { ruta: '/memento', nombre: 'Memento', icono: 'craneo' },
+/** Secciones de StoaHabit (íconos de la familia). En el celular van las 6 primeras como pestañas. */
+const SECCIONES = [
+  { href: '/', icono: 'hoy', texto: 'Hoy' },
+  { href: '/habitos', icono: 'check', texto: 'Hábitos' },
+  { href: '/tareas', icono: 'nota', texto: 'Tareas' },
+  { href: '/examen', icono: 'luna', texto: 'Examen' },
+  { href: '/memento', icono: 'reloj', texto: 'Memento' },
+  { href: '/comunidad', icono: 'clientes', texto: 'Comunidad' },
 ];
+const ADMIN = [
+  { href: '/admin', icono: 'barras', texto: 'Admin' },
+  { href: '/espejo', icono: 'cuerpo', texto: 'El Espejo' },
+];
+const JARDIN = { href: '/jardin', icono: 'laurel', texto: 'Jardín' };
 
-/** Estructura de la app: barra inferior en el celular, barra lateral oscura en escritorio. */
+const activa = (href: string, ruta: string) => (href === '/' ? ruta === '/' : ruta === href || ruta.startsWith(href + '/') || (href === '/comunidad' && ruta.startsWith('/unirse')));
+
+/** Estructura de la app (familia estoica): pestañas abajo en el celular y barra lateral en la PC. */
 export function Shell() {
   const perfil = useSesion((s) => s.perfil)!;
   const enLinea = useEnLinea();
   const { pathname } = useLocation();
+  const rango = useRango();
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -40,71 +53,41 @@ export function Shell() {
   }, [navegar, mostrar]);
   useWidgetHoy();
 
+  const ir = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    navegar(href);
+  };
+  const marcar = (s: { href: string; icono: string; texto: string }): Seccion => ({ ...s, activa: activa(s.href, pathname) });
+  const lateral = [...SECCIONES, ...(perfil.rol === 'admin' ? ADMIN : []), JARDIN].map(marcar);
+  const prueba = esModoPrueba();
+
   return (
-    <>
-      <nav className="nav-tab" aria-label="Principal">
-        <div className="marca">
-          <Laurel ancho={34} alto={31} completo={false} grosor={3} />
-          <span className="marca-familia" style={{ fontSize: 21 }}>
-            STOICA
-          </span>
-        </div>
-        <div className="items" style={{ ['--tabs' as string]: SECCIONES.length + 1 }}>
-          {SECCIONES.map((s) => (
-            <NavLink key={s.ruta} to={s.ruta} end={s.ruta === '/'} className={({ isActive }) => (isActive ? 'on' : '')}>
-              <Icono nombre={s.icono} tam={22} className="" />
-              <span className="et">{s.nombre}</span>
-            </NavLink>
-          ))}
-          {/* En el celular, Comunidad va en la barra inferior; en escritorio, en su propia sección. */}
-          <NavLink to="/comunidad" className={({ isActive }) => `solo-cel ${isActive || pathname.startsWith('/unirse') ? 'on' : ''}`}>
-            <Icono nombre="grupo" tam={22} className="" />
-            <span className="et">Comunidad</span>
-          </NavLink>
-        </div>
-        <div className="items solo-esc" style={{ marginTop: 18, borderTop: '1px solid var(--ln)', paddingTop: 14 }}>
-          <NavLink to="/comunidad" className={({ isActive }) => (isActive ? 'on' : '')}>
-            <Icono nombre="grupo" tam={22} className="" />
-            Comunidad
-          </NavLink>
-          {perfil.rol === 'admin' && (
-            <NavLink to="/admin" className={({ isActive }) => (isActive ? 'on' : '')}>
-              <Icono nombre="panel" tam={22} className="" />
-              Admin
-            </NavLink>
-          )}
-          {perfil.rol === 'admin' && (
-            <NavLink to="/espejo" className={({ isActive }) => (isActive ? 'on' : '')}>
-              <Icono nombre="panel" tam={22} className="" />
-              El Espejo
-            </NavLink>
-          )}
-          <NavLink to="/jardin" className={({ isActive }) => (isActive ? 'on' : '')}>
-            <Icono nombre="planta" tam={22} className="" />
-            Jardín
-          </NavLink>
-        </div>
-        <div className="yo">
-          <NavLink to="/perfil" className={({ isActive }) => (isActive ? 'on' : '')}>
-            <span className="avatar" style={{ width: 30, height: 30, fontSize: 14 }}>
-              {inicial(perfil.nombre)}
-            </span>
-            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{perfil.nombre}</span>
-          </NavLink>
-        </div>
-      </nav>
+    <div className="con-lateral">
+      <BarraLateral
+        emblema={<EmblemaStoaHabit size={40} />}
+        nombreApp="StoaHabit"
+        secciones={lateral}
+        ir={ir}
+        persona={{ avatar: iniciales(perfil.nombre), nombre: primerNombre(perfil.nombre) || perfil.nombre, detalle: `${rango.nombre} · Nivel ${rango.nivel}`, href: '/perfil' }}
+        nota={prueba ? 'Modo prueba' : 'Hábitos · Disciplina · Serenidad'}
+      />
       <Sincronizar />
       <SincronizarComunidad />
       <Celebracion />
       <main className="app-contenido" key={pathname}>
+        <AvisoMudanza />
+        {prueba && <AvisoPrueba />}
         <AvisoApkNueva />
         {!enLinea && (
           <div className="franja info" role="status" style={{ marginBottom: 18 }}>
-            <Icono nombre="nube" tam={18} /> Sin conexión. Podés seguir usando Stoica: los cambios se envían cuando vuelva internet.
+            <Icono nombre="nube" tam={16} /> Sin conexión. Podés seguir usando StoaHabit: los cambios se envían cuando vuelva internet.
           </div>
         )}
-        <Outlet />
+        <div className="pagina">
+          <Outlet />
+        </div>
       </main>
-    </>
+      <Pestanas secciones={SECCIONES.map(marcar)} ir={ir} />
+    </div>
   );
 }

@@ -29,9 +29,9 @@ export const ESTILOS_ESCENA = `
   @keyframes crecer { 0% { transform: scale(1) } 30% { transform: scale(1.18) } 60% { transform: scale(.96) } 100% { transform: scale(1) } }
   @keyframes rayos { from { transform: translate(-50%, -50%) rotate(0deg) } to { transform: translate(-50%, -50%) rotate(360deg) } }
   @keyframes regar { 0% { opacity: 0; transform: translate(-10%, -100%) rotate(0deg) } 15% { opacity: 1 } 35%,75% { transform: translate(-10%, -100%) rotate(-28deg) } 100% { opacity: 0; transform: translate(-10%, -100%) rotate(0deg) } }
-  .esc-sombra { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(ellipse at center, rgba(45,28,10,.55) 0%, rgba(45,28,10,.3) 42%, rgba(45,28,10,0) 72%); }
+  .esc-sombra { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(ellipse at center, rgba(45,28,10,.55) 0%, rgba(45,28,10,.3) 42%, rgba(45,28,10,0) 72%); } /* familia-ok: ilustración del jardín */
   @keyframes polvo { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.35) } 18% { opacity: .85 } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% - var(--dy))) scale(1.9) } }
-  .esc-polvo { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(168,136,94,1), rgba(192,162,118,.72) 42%, rgba(214,190,150,0) 72%); filter: blur(1.5px); animation: polvo var(--t) ease-out var(--d) both; }
+  .esc-polvo { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(168,136,94,1), rgba(192,162,118,.72) 42%, rgba(214,190,150,0) 72%); filter: blur(1.5px); animation: polvo var(--t) ease-out var(--d) both; } /* familia-ok: ilustración del jardín */
   @keyframes temblar { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-.25%) } 75% { transform: translateX(.25%) } }
   .esc-repisa.tiembla { animation: temblar .18s linear 8; }
   .esc-maceta { position: absolute; pointer-events: none; }
@@ -39,13 +39,13 @@ export const ESTILOS_ESCENA = `
   .esc-planta { position: absolute; transform-origin: 50% 100%; pointer-events: none; }
   .esc-planta img { width: 100%; display: block; transform-origin: 50% 100%; animation: revivir .5s ease-out, mecer 4.5s ease-in-out .5s infinite; transition: filter .4s; }
   .esc-planta.seca img { animation: revivir .5s ease-out; }
-  .esc-planta.elegida img { filter: drop-shadow(0 0 6px rgba(255,214,120,.95)) drop-shadow(0 0 14px rgba(255,190,80,.6)); }
+  .esc-planta.elegida img { filter: drop-shadow(0 0 6px rgba(255,214,120,.95)) drop-shadow(0 0 14px rgba(255,190,80,.6)); } /* familia-ok: ilustración del jardín */
   .esc-planta.regando { animation: saltito .9s ease-out .5s; }
-  .esc-planta.regando img { filter: drop-shadow(0 0 8px rgba(150,215,255,.95)) brightness(1.08); }
+  .esc-planta.regando img { filter: drop-shadow(0 0 8px rgba(150,215,255,.95)) brightness(1.08); } /* familia-ok: ilustración del jardín */
   .esc-planta.crece { animation: crecer 1.4s ease-out; }
   .esc-planta.levantada { opacity: .35; }
-  .esc-regadera { position: absolute; transform-origin: 20% 80%; pointer-events: none; animation: regar 1.6s ease-in-out forwards; filter: drop-shadow(0 4px 4px rgba(0,0,0,.3)); }
-  .esc-brasero { position: absolute; pointer-events: none; filter: drop-shadow(1px 4px 3px rgba(60,40,10,.35)); }
+  .esc-regadera { position: absolute; transform-origin: 20% 80%; pointer-events: none; animation: regar 1.6s ease-in-out forwards; filter: drop-shadow(0 4px 4px rgba(0,0,0,.3)); } /* familia-ok: ilustración del jardín */
+  .esc-brasero { position: absolute; pointer-events: none; filter: drop-shadow(1px 4px 3px rgba(60,40,10,.35)); } /* familia-ok: ilustración del jardín */
   .esc-brasero img { width: 100%; display: block; }
   .esc-fuego { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
   .esc-fuego.prende { animation: prender 1.2s ease-out; }
@@ -56,7 +56,7 @@ export const ESTILOS_ESCENA = `
   .esc-repisa-dentro.oculta { transform: translateY(102%); }
   .esc-repisa img.fondo { width: 100%; height: 100%; display: block; }
   .esc-nicho { position: absolute; transform: translate(-50%, -100%); display: flex; align-items: flex-end; justify-content: center; }
-  .esc-nicho img { width: 100%; display: block; filter: drop-shadow(0 2px 2px rgba(60,40,10,.35)); }
+  .esc-nicho img { width: 100%; display: block; filter: drop-shadow(0 2px 2px rgba(60,40,10,.35)); } /* familia-ok: ilustración del jardín */
   @media (prefers-reduced-motion: reduce) { .esc-planta img, .esc-medalla, .esc-fuego, .esc-planta.crece, .esc-regadera, .esc-repisa-dentro, .esc-repisa.tiembla { animation: none; transition: none } .esc-polvo { display: none } }
 `;
 
@@ -131,7 +131,7 @@ export function Escena({ forma, plantas, hora, fuegos, prendiendo, logros, repis
   return (
     <div
       ref={refContenedor}
-      style={{ position: 'relative', isolation: 'isolate', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` }}
+      style={{ position: 'relative', isolation: 'isolate', width: '100%', aspectRatio: `${fondo.ancho} / ${fondo.alto}`, background: `#d9c7a5 url(${fondo.archivo}) center / cover no-repeat` /* familia-ok: ilustración del jardín */ }}
       aria-label={etiqueta}
       role="img"
     >

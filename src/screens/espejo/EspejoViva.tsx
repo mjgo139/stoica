@@ -75,17 +75,17 @@ export function EspejoViva() {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-        <div className="card" style={{ flex: '1 1 340px', minWidth: 0, overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 30%, #3a352f 0%, #1d1a17 80%)', border: 'none' }}>
+        <div className="card" style={{ flex: '1 1 340px', minWidth: 0, overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 30%, #3a352f 0%, #1d1a17 80%)' /* familia-ok: ilustración de El Espejo */, border: 'none' }}>
           {error ? (
-            <p style={{ padding: 24, color: '#e9e2d6' }}>{error}</p>
+            <p style={{ padding: 24, color: '#e9e2d6' /* familia-ok: ilustración de El Espejo */ }}>{error}</p>
           ) : (
             <div style={{ position: 'relative' }}>
               <canvas ref={lienzo} style={{ width: '100%', height: 'min(66vh, 580px)', display: 'block', touchAction: 'none' }} aria-label={`Estatua viva: ${nombre}`} />
-              {cargando && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 14, color: '#d8cfc2' }}>Trayendo tu estatua…</div>}
-              <div className="cap" style={{ position: 'absolute', left: 16, top: 14, color: '#c9a24a' }}>
+              {cargando && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 13.5, color: '#d8cfc2' /* familia-ok: ilustración de El Espejo */ }}>Trayendo tu estatua…</div>}
+              <div className="cap" style={{ position: 'absolute', left: 16, top: 14, color: '#c9a24a' /* familia-ok: ilustración de El Espejo */ }}>
                 {nombre}
               </div>
-              <div style={{ position: 'absolute', right: 14, top: 14, fontSize: 11.5, color: '#bdb3a5' }}>Arrastrá para girar · pellizcá para acercar</div>
+              <div style={{ position: 'absolute', right: 14, top: 14, fontSize: 11.5, color: '#bdb3a5' /* familia-ok: ilustración de El Espejo */ }}>Arrastrá para girar · pellizcá para acercar</div>
               <div className="seg3" role="radiogroup" aria-label="Vista" style={{ position: 'absolute', left: 12, right: 12, bottom: 12, maxWidth: 260, marginInline: 'auto', background: 'var(--sf)' }}>
                 {(
                   [
@@ -126,7 +126,7 @@ function Deslizante({ titulo, valor, texto, extremos, alCambiar }: { titulo: str
     <label style={{ display: 'block', marginTop: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span className="cap gold">{titulo}</span>
-        <span className="mu2" style={{ fontSize: 12, fontWeight: 700 }}>
+        <span className="mu2" style={{ fontSize: 12.5, fontWeight: 700 }}>
           {texto}
         </span>
       </div>
@@ -151,7 +151,7 @@ function PanelExplorar({ f, setF }: { f: Forma; setF: (f: Forma) => void }) {
   );
 }
 
-const COLOR_DIA: Record<ResultadoDia, string> = { cumplido: 'var(--gold)', fallado: '#b5473a', libre: 'var(--ln3)', pendiente: 'transparent' };
+const COLOR_DIA: Record<ResultadoDia, string> = { cumplido: 'var(--gold)', fallado: '#b5473a' /* familia-ok: ilustración de El Espejo */, libre: 'var(--ln3)', pendiente: 'transparent' };
 const TEXTO_DIA: Record<ResultadoDia, string> = { cumplido: 'cumplido', fallado: 'sin cumplir', libre: 'libre', pendiente: 'hoy, pendiente' };
 
 function PanelProgreso({ uid, alMover }: { uid: string; alMover: (f: Forma | null) => void }) {
@@ -222,7 +222,7 @@ function PanelProgreso({ uid, alMover }: { uid: string; alMover: (f: Forma | nul
   return (
     <div style={{ marginTop: 14 }}>
       {prueba && (
-        <div style={{ background: '#5a3d0c', color: '#ffe7b0', borderRadius: 10, padding: '6px 10px', fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
+        <div style={{ background: '#5a3d0c' /* familia-ok: ilustración de El Espejo */, color: '#ffe7b0', borderRadius: 10, padding: '6px 10px', fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>
           MODO PRUEBA · días inventados, no tus hábitos reales
         </div>
       )}
@@ -232,7 +232,7 @@ function PanelProgreso({ uid, alMover }: { uid: string; alMover: (f: Forma | nul
       </div>
       {avance && !avance.llegaste && (
         <>
-          <div style={{ height: 10, borderRadius: 6, background: 'var(--ln)', marginTop: 10, overflow: 'hidden' }} role="progressbar" aria-label="Avance a la próxima etapa" aria-valuenow={avance.enEtapa} aria-valuemax={DIAS_POR_ETAPA}>
+          <div style={{ height: 10, borderRadius: 6, background: 'var(--ln2)', marginTop: 10, overflow: 'hidden' }} role="progressbar" aria-label="Avance a la próxima etapa" aria-valuenow={avance.enEtapa} aria-valuemax={DIAS_POR_ETAPA}>
             <div style={{ width: `${(avance.enEtapa / DIAS_POR_ETAPA) * 100}%`, height: '100%', background: 'var(--gold)', transition: 'width .4s' }} />
           </div>
           <p className="mu2" style={{ fontSize: 12.5, marginTop: 6 }}>
@@ -248,7 +248,7 @@ function PanelProgreso({ uid, alMover }: { uid: string; alMover: (f: Forma | nul
       </div>
 
       {riesgo && (
-        <p style={{ fontSize: 12.5, marginTop: 10, color: avance.sinCumplir > DIAS_DE_GRACIA ? '#d0644f' : 'var(--tx2)' }}>
+        <p style={{ fontSize: 12.5, marginTop: 10, color: avance.sinCumplir > DIAS_DE_GRACIA ? '#d0644f' /* familia-ok: ilustración de El Espejo */ : 'var(--tx2)' }}>
           {avance.sinCumplir > DIAS_DE_GRACIA
             ? `Llevás ${avance.sinCumplir} días sin cumplir: tu estatua está retrocediendo. Cumplí hoy para frenarlo.`
             : `Llevás ${avance.sinCumplir} ${avance.sinCumplir === 1 ? 'día' : 'días'} sin cumplir. Si llegás a ${DIAS_DE_GRACIA + 1}, tu estatua empieza a retroceder.`}
@@ -259,7 +259,7 @@ function PanelProgreso({ uid, alMover }: { uid: string; alMover: (f: Forma | nul
         Últimos días
       </div>
       <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }} aria-label="Últimos días">
-        {ultimos.length === 0 && <span className="mu2" style={{ fontSize: 12 }}>Empezaste hoy.</span>}
+        {ultimos.length === 0 && <span className="mu2" style={{ fontSize: 12.5 }}>Empezaste hoy.</span>}
         {ultimos.map((d, i) => (
           <span key={i} title={TEXTO_DIA[d]} aria-label={TEXTO_DIA[d]} style={{ width: 16, height: 16, borderRadius: 5, background: COLOR_DIA[d], border: d === 'pendiente' ? '2px dashed var(--gold)' : 'none' }} />
         ))}
@@ -268,7 +268,7 @@ function PanelProgreso({ uid, alMover }: { uid: string; alMover: (f: Forma | nul
       <div className="cap" style={{ marginTop: 14 }}>
         Tus hábitos para esta meta
       </div>
-      <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 13 }}>
+      <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 13.5 }}>
         {elegidos.map((h) => (
           <li key={h.id}>{h.nombre}</li>
         ))}
@@ -302,7 +302,7 @@ function PanelProgreso({ uid, alMover }: { uid: string; alMover: (f: Forma | nul
 function Dato({ n, t }: { n: number; t: string }) {
   return (
     <div>
-      <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{n}</div>
+      <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1 }}>{n}</div>
       <div className="mu2" style={{ fontSize: 11 }}>
         {t}
       </div>
@@ -317,13 +317,13 @@ function Prueba({ prueba, setPrueba }: { prueba: ResultadoDia[] | null; setPrueb
   const sumar = (d: ResultadoDia[]) => setPrueba([...(prueba ?? []), ...d]);
   const veces = (d: ResultadoDia, n: number) => Array.from({ length: n }, () => d);
   return (
-    <div style={{ marginTop: 16, borderTop: '1px solid var(--ln)', paddingTop: 10 }}>
+    <div style={{ marginTop: 16, borderTop: '1px solid var(--ln2)', paddingTop: 10 }}>
       <button type="button" className="mu2" style={{ fontSize: 12.5, fontWeight: 700 }} onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
         🧪 Modo prueba {abierto ? '▲' : '▼'}
       </button>
       {abierto && (
         <div style={{ marginTop: 8 }}>
-          <p className="mu2" style={{ fontSize: 12, margin: '0 0 8px' }}>
+          <p className="mu2" style={{ fontSize: 12.5, margin: '0 0 8px' }}>
             Inventá días para ver cómo reacciona la estatua. No toca tus hábitos reales.
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -401,7 +401,7 @@ function Configurar({
           </button>
         ))}
       </div>
-      <p className="mu2" style={{ fontSize: 12, marginTop: 6 }}>
+      <p className="mu2" style={{ fontSize: 12.5, marginTop: 6 }}>
         Meta: <b>{CAMINOS[camino].etapas[meta].nombre}</b>.
       </p>
 
@@ -415,7 +415,7 @@ function Configurar({
           </button>
         ))}
       </div>
-      <p className="mu2" style={{ fontSize: 12, marginTop: 6 }}>
+      <p className="mu2" style={{ fontSize: 12.5, marginTop: 6 }}>
         Elegí la estatua que más se parece a vos hoy (la ves a la izquierda). Es solo un punto de partida.
       </p>
 

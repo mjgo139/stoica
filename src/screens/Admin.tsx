@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { CabeceraPagina, Grupo } from '../../familia/react';
 import { Navigate } from 'react-router-dom';
 import { haceCuanto, type Cuenta, type Metricas } from '@core/admin';
 import { fechaCorta } from '@core/fechas';
@@ -81,14 +82,14 @@ export function Admin() {
 
   const Tarjeta = ({ titulo, valor, detalle }: { titulo: string; valor: string | number; detalle?: string }) => (
     <div className="panel" style={{ padding: '16px 18px' }}>
-      <div className="cap mu2" style={{ fontSize: 10.5 }}>
+      <div className="cap mu2" style={{ fontSize: 11 }}>
         {titulo}
       </div>
-      <div className="num" style={{ fontSize: 30, marginTop: 4 }}>
+      <div className="num" style={{ fontSize: 28, marginTop: 4 }}>
         {valor}
       </div>
       {detalle && (
-        <div className="mu2" style={{ fontSize: 12, fontWeight: 600 }}>
+        <div className="mu2" style={{ fontSize: 12.5, fontWeight: 600 }}>
           {detalle}
         </div>
       )}
@@ -101,16 +102,14 @@ export function Admin() {
     <div className="entra">
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div className="cap gold">Administración</div>
-          <h1 className="titulo">Panel</h1>
-          <p className="lead">Solo datos de cuentas y totales. Los hábitos, registros y exámenes de cada persona son privados.</p>
+          <CabeceraPagina etiqueta="Administración" titulo="Admin" linea="Solo datos de cuentas y totales. Los hábitos, registros y exámenes de cada persona son privados." />
         </div>
         <button type="button" className="ghost" disabled={calculando} onClick={calcular}>
           {calculando ? 'Calculando…' : 'Recalcular métricas'}
         </button>
       </div>
 
-      <div className="cap mu2" style={{ marginTop: 18, fontSize: 10.5 }}>
+      <div className="cap mu2" style={{ marginTop: 18, fontSize: 11 }}>
         {m ? `Métricas del ${fechaCorta(m.fecha)} · se calculan solas cada noche` : 'Todavía no hay métricas: tocá Recalcular.'}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginTop: 10 }}>
@@ -124,9 +123,7 @@ export function Admin() {
 
       <div className="cols" style={{ marginTop: 18 }}>
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Uso por tipo de hábito</span>
-          </div>
+          <Grupo n={1} className="sep-grupo sin-arriba">Uso por tipo de hábito</Grupo>
           {m &&
             (
               [
@@ -148,9 +145,7 @@ export function Admin() {
             ))}
         </div>
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Plataformas</span>
-          </div>
+          <Grupo n={2} className="sep-grupo sin-arriba">Plataformas</Grupo>
           {m &&
             Object.entries(m.porPlataforma)
               .sort((a, b) => b[1] - a[1])
@@ -165,9 +160,7 @@ export function Admin() {
 
       <div className="panel" style={{ marginTop: 18 }}>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="grp cap" style={{ marginTop: 0, flex: 1, minWidth: 140 }}>
-            <span>Cuentas · {lista.length}</span>
-          </div>
+          <Grupo n={3} className="sep-grupo sin-arriba flex-1">Cuentas · {lista.length}</Grupo>
           <input className="fi" style={{ maxWidth: 280 }} placeholder="Buscar por nombre o correo" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar cuentas" />
         </div>
         <div className="chips" style={{ marginTop: 10 }}>
@@ -188,9 +181,9 @@ export function Admin() {
         {error && <p className="err">{error}</p>}
         <div style={{ overflowX: 'auto', marginTop: 10 }}>
           <div className="tabla-desliza">
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
             <thead>
-              <tr className="cap mu2" style={{ fontSize: 10.5, textAlign: 'left' }}>
+              <tr className="cap mu2" style={{ fontSize: 11, textAlign: 'left' }}>
                 <th style={{ padding: '8px 6px' }}>Nombre</th>
                 <th style={{ padding: '8px 6px' }}>Correo</th>
                 <th style={{ padding: '8px 6px' }}>Alta</th>
@@ -204,10 +197,10 @@ export function Admin() {
                 <tr key={c.id} style={{ borderTop: '1px solid var(--ln2)', opacity: c.suspendida ? 0.6 : 1 }}>
                   <td style={{ padding: '10px 6px', fontWeight: 700 }}>
                     {c.nombre || '—'}
-                    {c.rol === 'admin' && <span className="cap gold" style={{ fontSize: 9.5 }}> · admin</span>}
-                    {c.suspendida && <span className="cap" style={{ fontSize: 9.5, color: 'var(--miss)' }}> · suspendida</span>}
+                    {c.rol === 'admin' && <span className="cap gold" style={{ fontSize: 11 }}> · admin</span>}
+                    {c.suspendida && <span className="cap" style={{ fontSize: 11, color: 'var(--miss)' }}> · suspendida</span>}
                     {c.bloqueada && (
-                      <span className="cap" style={{ fontSize: 9.5, color: 'var(--miss)' }} title={c.motivoBloqueo}>
+                      <span className="cap" style={{ fontSize: 11, color: 'var(--miss)' }} title={c.motivoBloqueo}>
                         {' '}
                         · bloqueada
                       </span>
@@ -231,7 +224,7 @@ export function Admin() {
                             Desbloquear
                           </button>
                         )}
-                        <button type="button" className="link" style={{ minHeight: 36, color: 'var(--cor)' }} onClick={() => setAccion({ tipo: 'borrar', c })}>
+                        <button type="button" className="link" style={{ minHeight: 36, color: 'var(--serie-2)' }} onClick={() => setAccion({ tipo: 'borrar', c })}>
                           Borrar
                         </button>
                       </>

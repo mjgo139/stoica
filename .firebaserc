@@ -1,1 +1,17 @@
-{ "projects": { "default": "stoica-app" } }
+{
+  "projects": {
+    "default": "stoica-app"
+  },
+  "targets": {
+    "stoica-app": {
+      "hosting": {
+        "principal": [
+          "stoahabit"
+        ],
+        "anterior": [
+          "stoica-app"
+        ]
+      }
+    }
+  }
+}

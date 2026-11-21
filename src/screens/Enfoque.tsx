@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Grupo } from '../../familia/react';
 import { fechaCorta } from '@core/fechas';
 import { mmss, NOMBRE_ENFOQUE, restante, TIPOS_ENFOQUE, type TipoEnfoque } from '@core/rutina';
 import { guardarSesionEnfoque, hoyActual, useDatos, useHoy } from '@/app/datos';
@@ -130,7 +131,7 @@ export function Enfoque() {
               </g>
             </svg>
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="num" style={{ fontSize: 52 }} role="timer" aria-live="off">
+              <div className="num" style={{ fontSize: 48 }} role="timer" aria-live="off">
                 {mmss(quedan)}
               </div>
               <div className="cap gold" style={{ marginTop: 4 }}>
@@ -160,15 +161,13 @@ export function Enfoque() {
               </button>
             </div>
           )}
-          <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 14 }}>
+          <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 14 }}>
             El temporizador sigue aunque cierres la app o cambies de pantalla.
           </p>
         </div>
 
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Hoy</span>
-          </div>
+          <Grupo n={1} className="sep-grupo sin-arriba">Hoy</Grupo>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span className="num" style={{ fontSize: 40 }}>
               {minutosHoy}
@@ -177,17 +176,15 @@ export function Enfoque() {
               minutos de atención en {deHoy.length} {deHoy.length === 1 ? 'sesión' : 'sesiones'}
             </span>
           </div>
-          <div className="grp cap">
-            <span>Últimas sesiones</span>
-          </div>
+          <Grupo n={2} className="sep-grupo">Últimas sesiones</Grupo>
           {sesiones.length === 0 && <p className="vacio-mini">Tus sesiones terminadas aparecen acá.</p>}
           {sesiones.slice(0, 10).map((s) => (
             <div key={s.id} className="srow">
-              <span className="cap gold" style={{ fontSize: 10.5, width: 92 }}>
+              <span className="cap gold" style={{ fontSize: 11, width: 92 }}>
                 {NOMBRE_ENFOQUE[s.tipo]}
               </span>
               <span className="dos-lineas" style={{ flex: 1, fontWeight: 600, minWidth: 0 }}>{s.etiqueta || '—'}</span>
-              <span className="mu" style={{ fontWeight: 600, fontSize: 13 }}>
+              <span className="mu" style={{ fontWeight: 600, fontSize: 13.5 }}>
                 {s.minutos} min · {fechaCorta(s.fecha)}
               </span>
             </div>

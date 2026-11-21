@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Grupo } from '../../../familia/react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, semanaAlDia, type Compartido, type Desafio as TipoDesafio, type Progreso } from '@core/comunidad';
 import { fechaCorta } from '@core/fechas';
@@ -28,7 +29,7 @@ export function Desafio() {
   if (!estado || !d) {
     return listo ? (
       <div className="card vacio">
-        <div className="serif" style={{ fontSize: 22 }}>
+        <div className="serif" style={{ fontSize: 20 }}>
           Este desafío ya no está
         </div>
         <p>Puede que lo hayan borrado o que ya no estés en el grupo.</p>
@@ -120,9 +121,7 @@ function MiHabito({ d, gid, hoy, terminado }: { d: ConId<TipoDesafio>; gid: stri
         </>
       ) : (
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Tu participación</span>
-          </div>
+          <Grupo n={1} className="sep-grupo sin-arriba">Tu participación</Grupo>
           <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
             {terminado ? 'Este desafío ya terminó.' : mio ? 'El hábito con el que participabas ya no está activo. Elegí otro.' : 'Sumate eligiendo uno de tus hábitos: cada día que lo cumplas cuenta para el desafío.'}
           </p>
@@ -148,9 +147,7 @@ function Participantes({ d, gid, hoy }: { d: ConId<TipoDesafio>; gid: string; ho
   const ranking = [...progresos].sort((a, b) => b.cumplidos - a.cumplidos || a.nombre.localeCompare(b.nombre));
   return (
     <div className="panel" data-participantes>
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Participantes · {ranking.length}</span>
-      </div>
+      <Grupo n={2} className="sep-grupo sin-arriba">Participantes · {ranking.length}</Grupo>
       {ranking.length === 0 && <p className="vacio-mini">Nadie se sumó todavía.</p>}
       {ranking.map((p, i) => {
         const esYo = p.id === uid;
@@ -159,19 +156,19 @@ function Participantes({ d, gid, hoy }: { d: ConId<TipoDesafio>; gid: string; ho
         return (
           <div key={p.id} className="participante" data-participante={esYo ? 'vos' : p.nombre}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="num mu2" style={{ width: 16, fontSize: 13 }}>
+              <span className="num mu2" style={{ width: 16, fontSize: 13.5 }}>
                 {i + 1}
               </span>
-              <span className="avatar" style={{ width: 30, height: 30, fontSize: 13, flex: 'none' }}>
+              <span className="avatar" style={{ width: 30, height: 30, fontSize: 13.5, flex: 'none' }}>
                 {inicial(p.nombre)}
               </span>
-              <b style={{ flex: 1, minWidth: 0, fontSize: 14.5, overflowWrap: 'anywhere' }}>{esYo ? 'Vos' : p.nombre}</b>
-              <span className="num" style={{ fontSize: 14 }}>
+              <b style={{ flex: 1, minWidth: 0, fontSize: 15, overflowWrap: 'anywhere' }}>{esYo ? 'Vos' : p.nombre}</b>
+              <span className="num" style={{ fontSize: 13.5 }}>
                 {p.cumplidos}/{d.meta}
               </span>
             </div>
             <span className="barra-prog" style={{ display: 'block', margin: '8px 0 0 26px' }}>
-              <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
+              <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--verde)' : 'var(--gold)' }} />
             </span>
             {c ? (
               <FilaParticipante c={c} esYo={esYo} alDia={alDia} hoy={hoy} fecha={p.fecha ?? hoy} nombre={p.nombre} />

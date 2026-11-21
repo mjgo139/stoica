@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Grupo } from '../../familia/react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fechaCorta } from '@core/fechas';
 import { avanceProyecto, tareaHecha, type Tarea } from '@core/rutina';
@@ -24,7 +25,7 @@ export function Proyecto() {
   if (!p) {
     return listo ? (
       <div className="card vacio">
-        <div className="serif" style={{ fontSize: 22 }}>
+        <div className="serif" style={{ fontSize: 20 }}>
           Este proyecto no existe
         </div>
         <p>Puede que lo hayas borrado.</p>
@@ -68,7 +69,7 @@ export function Proyecto() {
 
       <div className="panel" style={{ marginTop: 20 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <span className="num" style={{ fontSize: 30 }}>
+          <span className="num" style={{ fontSize: 28 }}>
             {pct}%
           </span>
           <span className="mu" style={{ flex: 1, fontWeight: 600 }}>
@@ -82,7 +83,7 @@ export function Proyecto() {
           )}
         </div>
         <span className="barra-prog" style={{ display: 'block', marginTop: 10 }}>
-          <i style={{ width: `${pct}%`, background: completo ? 'var(--ok)' : 'var(--gold)' }} />
+          <i style={{ width: `${pct}%`, background: completo ? 'var(--verde)' : 'var(--gold)' }} />
         </span>
         {completo && !p.archivado && (
           <div className="franja info" style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap' }}>
@@ -95,18 +96,14 @@ export function Proyecto() {
       </div>
 
       <div className="panel" style={{ marginTop: 18 }}>
-        <div className="grp cap" style={{ marginTop: 0 }}>
-          <span>Pendientes</span>
-        </div>
+        <Grupo n={1} className="sep-grupo sin-arriba">Pendientes</Grupo>
         {pendientes.length === 0 && <p className="vacio-mini">{tareas.length ? 'No queda nada pendiente.' : 'Todavía no hay tareas. Tocá “+ Tarea” para agregar la primera.'}</p>}
         {pendientes.map((t) => (
           <FilaTarea key={t.id} t={t} dia={diaDe(t)} hoy={hoy} conProyecto={false} alEditar={() => setEditando(t)} />
         ))}
         {listas.length > 0 && (
           <>
-            <div className="grp cap">
-              <span>Hechas</span>
-            </div>
+            <Grupo n={2} className="sep-grupo">Hechas</Grupo>
             {listas.map((t) => (
               <FilaTarea key={t.id} t={t} dia={diaDe(t)} hoy={hoy} conProyecto={false} alEditar={() => setEditando(t)} />
             ))}

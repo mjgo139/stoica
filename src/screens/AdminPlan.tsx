@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Grupo } from '../../familia/react';
 import { MESES_PLAN, textoMeses, type CodigoPlan } from '@core/plan';
 import { useDiasGracia } from '@/app/plan';
 import { obtenerDriver } from '@/data';
@@ -89,9 +90,7 @@ export function AdminPlan() {
   return (
     <div className="cols" style={{ marginTop: 18 }} data-admin="plan">
       <div className="panel">
-        <div className="grp cap" style={{ marginTop: 0 }}>
-          <span>Códigos de fotos y comentarios</span>
-        </div>
+        <Grupo n={1} className="sep-grupo sin-arriba">Códigos de fotos y comentarios</Grupo>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label style={{ flex: '1 1 120px' }}>
             <span className="fl">Duración</span>
@@ -130,9 +129,7 @@ export function AdminPlan() {
             ))}
           </div>
         )}
-        <div className="grp cap">
-          <span>Sin usar ({sinUsar.length})</span>
-        </div>
+        <Grupo n={2} className="sep-grupo">Sin usar ({sinUsar.length})</Grupo>
         {sinUsar.length === 0 ? <p className="vacio-mini">No hay códigos disponibles.</p> : <div className="tabla-desliza"><table className="tabla"><tbody>{sinUsar.map(fila)}</tbody></table></div>}
         {usados.length > 0 && (
           <>
@@ -146,9 +143,7 @@ export function AdminPlan() {
 
       <div className="pila">
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Al vencer el plan</span>
-          </div>
+          <Grupo n={3} className="sep-grupo sin-arriba">Al vencer el plan</Grupo>
           <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
             Días en que las fotos y los comentarios se pueden ver (sin agregar nada) antes de borrarse definitivamente. A los integrantes se les avisa al vencer y el día anterior al borrado.
           </p>
@@ -164,9 +159,7 @@ export function AdminPlan() {
         </div>
 
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Reportes ({reportes.length})</span>
-          </div>
+          <Grupo n={4} className="sep-grupo sin-arriba">Reportes ({reportes.length})</Grupo>
           {reportes.length === 0 && <p className="vacio-mini">Nadie reportó nada.</p>}
           {reportes.map((r) => (
             <div key={r.id} style={{ display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--ln2)' }}>
@@ -175,9 +168,9 @@ export function AdminPlan() {
                 <div style={{ fontWeight: 700, fontSize: 13.5 }}>
                   {r.autor} · {r.grupoNombre}
                 </div>
-                <div style={{ fontSize: 14, overflowWrap: 'anywhere' }}>{r.texto || (r.tipo === 'foto' ? 'Foto sin comentario' : '')}</div>
+                <div style={{ fontSize: 13.5, overflowWrap: 'anywhere' }}>{r.texto || (r.tipo === 'foto' ? 'Foto sin comentario' : '')}</div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button type="button" className="link" style={{ paddingLeft: 0, color: 'var(--cor)' }} onClick={() => llamar('adminResolverReporte', { reporteId: r.id, borrar: true }).then((x) => x && mostrar('Publicación borrada.'))}>
+                  <button type="button" className="link" style={{ paddingLeft: 0, color: 'var(--serie-2)' }} onClick={() => llamar('adminResolverReporte', { reporteId: r.id, borrar: true }).then((x) => x && mostrar('Publicación borrada.'))}>
                     Borrar publicación
                   </button>
                   <button type="button" className="link" onClick={() => llamar('adminResolverReporte', { reporteId: r.id, borrar: false }).then((x) => x && mostrar('Reporte descartado.'))}>

@@ -27,7 +27,7 @@ public class HabitosWidget extends AppWidgetProvider {
         v.setOnClickPendingIntent(R.id.widget_raiz, Estado.abrir(c, "/"));
         JSONObject d = Estado.datos(c);
         if (!Estado.conDatos(d)) {
-            Lista.vacio(v, d.optBoolean("sinSesion") ? "Entrá a Stoica para ver tus hábitos." : "Abrí Stoica para ver tu día.");
+            Lista.vacio(v, d.optBoolean("sinSesion") ? "Entrá a StoaHabit para ver tus hábitos." : "Abrí StoaHabit para ver tu día.");
             manager.updateAppWidget(widgetId, v);
             return;
         }
@@ -60,7 +60,7 @@ public class HabitosWidget extends AppWidgetProvider {
                 Estado.abrir(c, "/habitos/" + id),
                 marcable ? Estado.accion(c, "habito", id, widgetId) : Estado.abrir(c, "/habitos/" + id));
         }
-        if (orden.size() > n) Lista.pie(v, "+" + (orden.size() - n) + " más en Stoica");
+        if (orden.size() > n) Lista.pie(v, "+" + (orden.size() - n) + " más en StoaHabit");
         else if (faltan.isEmpty()) Lista.pie(v, "¡Día cumplido! " + d.optString("frase", ""));
         manager.updateAppWidget(widgetId, v);
     }

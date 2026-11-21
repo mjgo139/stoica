@@ -6,15 +6,16 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'app.stoica',
-  appName: 'Stoica',
+  appName: 'StoaHabit',
   webDir: 'dist',
   server: {
-    url: 'https://stoica-app.web.app',
+    url: 'https://stoahabit.web.app',
     androidScheme: 'https',
-    allowNavigation: ['stoica-app.web.app', 'stoica-app.firebaseapp.com'],
+    // La dirección vieja sigue andando (mismo proyecto): se permite para no abrir el navegador
+    allowNavigation: ['stoahabit.web.app', 'stoica-app.web.app', 'stoica-app.firebaseapp.com'],
   },
   android: {
-    backgroundColor: '#ece6db',
+    backgroundColor: '#14120E',
   },
   plugins: {
     PushNotifications: {

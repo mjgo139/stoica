@@ -110,7 +110,7 @@ public class AccionReceiver extends BroadcastReceiver {
         } catch (Exception ignorado) {
             // nada
         }
-        if (e != null) avisar(c, "Quedó marcado en el celular; se sube al abrir Stoica (" + codigo(e) + ").");
+        if (e != null) avisar(c, "Quedó marcado en el celular; se sube al abrir StoaHabit (" + codigo(e) + ").");
     }
     private static void ponerMarca(Context c, String clave, JSONObject m) throws Exception {
         synchronized (Estado.class) {
@@ -174,7 +174,7 @@ public class AccionReceiver extends BroadcastReceiver {
         } catch (Exception ignorado) {
             // nada
         }
-        if (e != null) avisar(c, "Quedó marcada en el celular; se sube al abrir Stoica (" + codigo(e) + ").");
+        if (e != null) avisar(c, "Quedó marcada en el celular; se sube al abrir StoaHabit (" + codigo(e) + ").");
     }
     private static void ponerTarea(Context c, String tid, String hoy, boolean diaria, boolean hecha) throws Exception {
         synchronized (Estado.class) {
@@ -209,9 +209,9 @@ public class AccionReceiver extends BroadcastReceiver {
     static String mensajeDeFallo(Exception e) {
         if (e instanceof Nube.Fallo) {
             int codigo = ((Nube.Fallo) e).codigo;
-            if (codigo == 400 || codigo == 401) return "Tu sesión del widget venció: abrí Stoica una vez.";
-            if (codigo == 403) return "No se pudo guardar desde el widget. Marcalo en Stoica.";
-            if (codigo == 404) return "Eso ya no existe. Abrí Stoica para actualizar el widget.";
+            if (codigo == 400 || codigo == 401) return "Tu sesión del widget venció: abrí StoaHabit una vez.";
+            if (codigo == 403) return "No se pudo guardar desde el widget. Marcalo en StoaHabit.";
+            if (codigo == 404) return "Eso ya no existe. Abrí StoaHabit para actualizar el widget.";
         }
         return "Sin conexión: no se guardó. Probá de nuevo.";
     }

@@ -11,6 +11,17 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.0.0',
+    fecha: '2026-11-21',
+    cambios: [
+      'La app pasa a llamarse StoaHabit y se une a la familia estoica (StoaGym, StoaFit, StoaHabit).',
+      'Nueva dirección: stoahabit.web.app. La anterior (stoica-app.web.app) sigue andando con un aviso de mudanza; las sesiones no se pierden.',
+      'Ícono y pantalla de inicio nuevos: el laurel de la familia con el check de StoaHabit.',
+      'Diseño de la familia: colores, letras, barra lateral, pestañas, Panel del día, Tu semana, cabeceras y secciones numeradas.',
+      'Tema predeterminado Noche romana; también Mármol y Sistema.',
+    ],
+  },
+  {
     version: '1.3.1',
     fecha: '2026-11-17',
     cambios: [

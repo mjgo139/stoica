@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Stoica</title>
+    <title>StoaHabit</title>
     <meta name="description" content="Hábitos. Disciplina. Una vida más serena." />
     <meta name="theme-color" content="#ECE6DB" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#090909" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Stoica" />
+    <meta name="apple-mobile-web-app-title" content="StoaHabit" />
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -21,14 +21,15 @@
       // Aplica el tema guardado antes de pintar, para que no parpadee.
       try {
         var t = localStorage.getItem('stoica.tema');
-        if (t === 'claro') document.documentElement.setAttribute('data-theme', 'light');
-        if (t === 'oscuro') document.documentElement.setAttribute('data-theme', 'dark');
+        // Familia estoica: arranca en Noche romana (oscuro) si la persona no eligió otro tema
+        var claro = t === 'claro' || (t === 'sistema' && matchMedia('(prefers-color-scheme: light)').matches);
+        document.documentElement.setAttribute('data-theme', claro ? 'light' : 'dark');
       } catch (e) {}
     </script>
   </head>
   <body>
     <div id="raiz"></div>
-    <noscript>Stoica necesita JavaScript activado.</noscript>
+    <noscript>StoaHabit necesita JavaScript activado.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

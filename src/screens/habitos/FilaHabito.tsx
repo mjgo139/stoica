@@ -46,7 +46,7 @@ export function FilaHabito({ h, r, fecha, racha, perdido, editable }: Props) {
           )}
           {h.tipo === 'cantidad' && h.meta > 24 && (
             <span className="barra-prog" style={{ display: 'block', marginTop: 8, maxWidth: 170 }} aria-hidden="true">
-              <i style={{ width: `${Math.min(100, (valor / h.meta) * 100)}%`, background: ok ? 'var(--ok)' : 'var(--gold)' }} />
+              <i style={{ width: `${Math.min(100, (valor / h.meta) * 100)}%`, background: ok ? 'var(--verde)' : 'var(--gold)' }} />
             </span>
           )}
         </span>
@@ -72,7 +72,7 @@ export function FilaHabito({ h, r, fecha, racha, perdido, editable }: Props) {
       {h.tipo === 'cantidad' && esMetaGrande(h) && (
         <div className="contador">
           <span className="val">
-            <span className="num" style={{ fontSize: 17, color: ok ? 'var(--ok)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
+            <span className="num" style={{ fontSize: 18, color: ok ? 'var(--verde)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
               {formatoNumero(valor)}
               <span className="mu2" style={{ fontSize: 12.5 }}>/{formatoNumero(h.meta)}</span>
             </span>
@@ -95,9 +95,9 @@ export function FilaHabito({ h, r, fecha, racha, perdido, editable }: Props) {
             </button>
           )}
           <span className="val">
-            <span className="num" style={{ fontSize: 18, color: ok ? 'var(--ok)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
+            <span className="num" style={{ fontSize: 18, color: ok ? 'var(--verde)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
               {valor}
-              <span className="mu2" style={{ fontSize: 13 }}>/{h.meta}</span>
+              <span className="mu2" style={{ fontSize: 13.5 }}>/{h.meta}</span>
             </span>
             <span className="mu2" style={{ fontSize: 11, fontWeight: 600 }}>
               {ok ? 'cumplido' : `faltan ${h.meta - valor}`}
@@ -139,9 +139,9 @@ export function ListaDelDia({ h, r, fecha, ok, perdido, editable }: { h: Habito;
   return (
     <>
       <span className="val lista-cuenta">
-        <span className="num" style={{ fontSize: 18, color: ok ? 'var(--ok)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
+        <span className="num" style={{ fontSize: 18, color: ok ? 'var(--verde)' : perdido ? 'var(--miss)' : 'var(--tx)' }}>
           {hechos.length}
-          <span className="mu2" style={{ fontSize: 13 }}>/{h.variables.length}</span>
+          <span className="mu2" style={{ fontSize: 13.5 }}>/{h.variables.length}</span>
         </span>
         <span className="mu2" style={{ fontSize: 11, fontWeight: 600 }}>
           {ok ? 'cumplido' : `faltan ${Math.max(0, h.meta - hechos.length)}`}

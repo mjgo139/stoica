@@ -32,7 +32,7 @@ export function SinConexion() {
         Sin conexión
       </h1>
       <p className="mu" style={{ fontWeight: 500, marginTop: 8 }}>
-        Para entrar por primera vez necesitás internet. Cuando ya entraste, Stoica funciona sin conexión.
+        Para entrar por primera vez necesitás internet. Cuando ya entraste, StoaHabit funciona sin conexión.
       </p>
       <button type="button" className="ghost" style={{ marginTop: 18 }} onClick={() => location.reload()}>
         Reintentar
@@ -49,7 +49,7 @@ export function PantallaError({ mensaje }: { mensaje: string }) {
         Algo no salió bien
       </h1>
       <p className="mu" style={{ fontWeight: 500, marginTop: 8 }}>
-        {mensaje || 'No pudimos abrir Stoica.'}
+        {mensaje || 'No pudimos abrir StoaHabit.'}
       </p>
       <button type="button" className="btn" style={{ marginTop: 18 }} onClick={() => location.reload()}>
         Reintentar

@@ -6,6 +6,7 @@ import { App } from './app/App';
 import { Arranque } from './app/Arranque';
 import { AvisoActualizacion } from './pwa/Actualizacion';
 import { Aviso } from './ui/avisos';
+import '../familia/familia.css';
 import './styles/stoica.css';
 
 const consultas = new QueryClient({

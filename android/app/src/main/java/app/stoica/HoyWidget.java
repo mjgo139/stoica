@@ -42,7 +42,7 @@ public class HoyWidget extends AppWidgetProvider {
         v.setTextViewText(R.id.w_detalle, "");
         v.setProgressBar(R.id.w_barra, 100, 0, false);
         if (!Estado.conDatos(d)) {
-            v.setTextViewText(R.id.w_texto, d.optBoolean("sinSesion") ? "Entrá a Stoica para ver tus hábitos." : "Abrí Stoica para ver tu día.");
+            v.setTextViewText(R.id.w_texto, d.optBoolean("sinSesion") ? "Entrá a StoaHabit para ver tus hábitos." : "Abrí StoaHabit para ver tu día.");
             manager.updateAppWidget(id, v);
             return;
         }
@@ -93,7 +93,7 @@ public class HoyWidget extends AppWidgetProvider {
         }
         if (sobran) {
             v.setViewVisibility(LINEAS[n], View.VISIBLE);
-            v.setTextViewText(LINEAS[n], "      +" + (orden.size() - n) + " más en Stoica");
+            v.setTextViewText(LINEAS[n], "      +" + (orden.size() - n) + " más en StoaHabit");
             v.setTextColor(LINEAS[n], c.getColor(R.color.widget_suave));
             v.setOnClickPendingIntent(LINEAS[n], Estado.abrir(c, "/"));
         }

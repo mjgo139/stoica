@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Grupo } from '../../familia/react';
 import { Link } from 'react-router-dom';
 import { minutoUTC } from '@core/fechas';
 import type { CambiosPerfil } from '@core/perfil';
@@ -110,7 +111,7 @@ export function useNotificacionesDispositivo() {
   return { activa, ocupado, activar, soportado, bloqueado };
 }
 
-export function Notificaciones() {
+export function Notificaciones({ n = 1 }: { n?: number }) {
   const perfil = useSesion((s) => s.perfil)!;
   const mostrar = useAvisos((s) => s.mostrar);
   const { activa, ocupado, activar, soportado, bloqueado } = useNotificacionesDispositivo();
@@ -134,34 +135,32 @@ export function Notificaciones() {
 
   return (
     <>
-      <div className="grp cap">
-        <span>Notificaciones</span>
-      </div>
+      <Grupo n={n} className="sep-grupo">Notificaciones</Grupo>
       <Interruptor etiqueta="Recordatorios y examen" detalle="Avisos de tus hábitos (si todavía no cumpliste) y del examen nocturno" activo={activa} alCambiar={(v) => !ocupado && activar(v)} />
       {esIOS() && !esInstalada() && (
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
+        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: '8px 0' }}>
           En iPhone las notificaciones funcionan solo con la app instalada (Compartir › Agregar a pantalla de inicio).
         </p>
       )}
       {bloqueado && (
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
-          Este navegador tiene los avisos bloqueados para Stoica. Tocá el candado o los tres puntos junto a la dirección › <b>Permisos</b> › <b>Notificaciones</b> › <b>Permitir</b>, y después prendé el interruptor.
+        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: '8px 0' }}>
+          Este navegador tiene los avisos bloqueados para StoaHabit. Tocá el candado o los tres puntos junto a la dirección › <b>Permisos</b> › <b>Notificaciones</b> › <b>Permitir</b>, y después prendé el interruptor.
         </p>
       )}
       {!soportado && (
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
+        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: '8px 0' }}>
           Este navegador no permite avisos. Usá Chrome o instalá la app.
         </p>
       )}
       {activa && esAndroid() && !esNativo() && (
-        <details className="mu" style={{ fontSize: 13, fontWeight: 500, margin: '8px 0' }}>
+        <details className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: '8px 0' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Te llegan sin sonido o sin ventana?</summary>
           <ol style={{ margin: '6px 0 0', paddingLeft: 18, display: 'grid', gap: 4 }}>
             <li>
               En Samsung, primero activá las categorías: <b>Ajustes › Notificaciones › Ajustes avanzados › Administrar categorías de notificaciones por aplic.</b>
             </li>
             <li>
-              Volvé a <b>Notificaciones › Notificaciones de aplicaciones</b> y buscá <b>{esInstalada() ? 'Stoica' : 'Chrome'}</b>.
+              Volvé a <b>Notificaciones › Notificaciones de aplicaciones</b> y buscá <b>{esInstalada() ? 'StoaHabit' : 'Chrome'}</b>.
             </li>
             <li>
               Entrá a <b>Categorías de notificación › General</b> y elegí <b>Alerta</b>, con <b>Mostrar como ventana emergente</b> activado.
@@ -178,7 +177,7 @@ export function Notificaciones() {
       <label className="fila" style={{ cursor: 'default' }}>
         <span style={{ flex: 1 }}>
           <span style={{ display: 'block' }}>Aviso del examen</span>
-          <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+          <span className="mu" style={{ display: 'block', fontSize: 13.5, fontWeight: 500, marginTop: 2 }}>
             Hora en que te recordamos el examen nocturno
           </span>
         </span>
@@ -202,13 +201,11 @@ export function Notificaciones() {
   );
 }
 
-export function Accesos() {
+export function Accesos({ n = 2 }: { n?: number }) {
   const rol = useSesion((s) => s.perfil?.rol);
   return (
     <>
-      <div className="grp cap">
-        <span>Más</span>
-      </div>
+      <Grupo n={n} className="sep-grupo">Más</Grupo>
       <Link to="/comunidad" className="fila" style={{ textDecoration: 'none', color: 'inherit' }}>
         <span style={{ flex: 1 }}>Comunidad</span>
         <span className="mu2">›</span>
@@ -235,7 +232,7 @@ export function Accesos() {
 
 const COLECCIONES_PROPIAS = ['habits', 'logs', 'tasks', 'taskDone', 'focus', 'journal', 'milestones'] as const;
 
-export function MisDatos() {
+export function MisDatos({ n = 3 }: { n?: number }) {
   const uid = useSesion((s) => s.usuario!.uid);
   const perfil = useSesion((s) => s.perfil)!;
   const mostrar = useAvisos((s) => s.mostrar);
@@ -247,7 +244,7 @@ export function MisDatos() {
     setOcupado(true);
     try {
       const d = await obtenerDriver();
-      const datos: Record<string, unknown> = { app: 'Stoica', version: __VERSION__, exportado: new Date().toISOString(), perfil };
+      const datos: Record<string, unknown> = { app: 'StoaHabit', version: __VERSION__, exportado: new Date().toISOString(), perfil };
       for (const c of COLECCIONES_PROPIAS) datos[c] = await d.leerLista({ ruta: `users/${uid}/${c}` });
       const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -277,18 +274,16 @@ export function MisDatos() {
 
   return (
     <>
-      <div className="grp cap">
-        <span>Tus datos</span>
-      </div>
+      <Grupo n={n} className="sep-grupo">Tus datos</Grupo>
       <button type="button" className="fila" onClick={exportar} disabled={ocupado}>
         <span style={{ flex: 1 }}>
           <span style={{ display: 'block' }}>Exportar mis datos</span>
-          <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+          <span className="mu" style={{ display: 'block', fontSize: 13.5, fontWeight: 500, marginTop: 2 }}>
             Un archivo JSON con tus hábitos, registros, tareas, enfoque y exámenes
           </span>
         </span>
       </button>
-      <button type="button" className="fila" onClick={() => (setTexto(''), setBorrando(true))} style={{ color: 'var(--cor)' }}>
+      <button type="button" className="fila" onClick={() => (setTexto(''), setBorrando(true))} style={{ color: 'var(--serie-2)' }}>
         <span style={{ flex: 1 }}>Borrar mi cuenta</span>
       </button>
       <Hoja titulo="Borrar mi cuenta" abierta={borrando} alCerrar={() => setBorrando(false)}>

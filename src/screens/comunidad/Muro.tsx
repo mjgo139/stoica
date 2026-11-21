@@ -3,6 +3,7 @@
  * Todo depende del código de activación. Se lee del servidor solo con la pantalla del grupo abierta.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Grupo } from '../../../familia/react';
 import { COLLAGE_MAX, disenosPara, type DisenoCollage } from '@core/collage';
 import { fechaCorta, sumarDias } from '@core/fechas';
 import { cumplido } from '@core/habitos';
@@ -112,9 +113,7 @@ export function FotosDeHoy({ fotos, miembros, alVer }: { fotos: Array<ConId<Foto
   if (!deHoy.length) return null;
   return (
     <div className="panel" data-fotos-hoy>
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Fotos de hoy · {deHoy.length}</span>
-      </div>
+      <Grupo n={1} className="sep-grupo sin-arriba">Fotos de hoy · {deHoy.length}</Grupo>
       <div className="fotos-hoy" role="list">
         {deHoy.map((f) => {
           const m = miembros.find((x) => x.id === f.de);
@@ -168,9 +167,9 @@ export function HojaFotosHabito({ gid, plan, ver, alCerrar, alSubir }: { gid: st
       {fotos.length === 0 && <p className="vacio-mini">Todavía no hay fotos de este hábito.</p>}
       {actual && (
         <div data-foto-grande>
-          <img src={actual.fotoUrl} alt={actual.texto || `Foto de ${habito}`} style={{ width: '100%', maxHeight: '40vh', objectFit: 'contain', borderRadius: 12, background: 'var(--ln)' }} />
+          <img src={actual.fotoUrl} alt={actual.texto || `Foto de ${habito}`} style={{ width: '100%', maxHeight: '40vh', objectFit: 'contain', borderRadius: 12, background: 'var(--ln2)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            <b style={{ fontSize: 14 }}>{actual.dia === hoy ? 'Hoy' : fechaCorta(actual.dia)}</b>
+            <b style={{ fontSize: 13.5 }}>{actual.dia === hoy ? 'Hoy' : fechaCorta(actual.dia)}</b>
             <Sello ok={fotoCumplida(actual, miembro)} />
           </div>
           {actual.texto && <p style={{ fontWeight: 500, marginTop: 6, overflowWrap: 'anywhere' }}>{actual.texto}</p>}
@@ -277,7 +276,7 @@ export function HojaSubirFoto({ gid, subir: pedido, fotos, alCerrar }: { gid: st
         }}
       />
       {vista ? (
-        <img src={vista} alt="Vista previa" data-vista-previa style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 12, marginTop: 10, background: 'var(--ln)' }} />
+        <img src={vista} alt="Vista previa" data-vista-previa style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 12, marginTop: 10, background: 'var(--ln2)' }} />
       ) : (
         <p className="mu" style={{ fontWeight: 500, marginTop: 10 }}>
           Una foto por hábito por día{reemplaza ? ': la nueva reemplaza a la de hoy' : ''}. Con 2 a {COLLAGE_MAX} fotos se arma un collage.
@@ -342,7 +341,7 @@ function AccionesPublicacion({ gid, que, de, puedeBorrar, alTerminar, chico = fa
   return (
     <>
       {chico ? (
-        <button type="button" className={`link ${mio ? 'peligro-txt' : ''}`} style={{ padding: 0, minHeight: 0, fontSize: 12 }} onClick={() => setConfirmando(true)}>
+        <button type="button" className={`link ${mio ? 'peligro-txt' : ''}`} style={{ padding: 0, minHeight: 0, fontSize: 12.5 }} onClick={() => setConfirmando(true)}>
           {mio ? 'Borrar' : 'Reportar'}
         </button>
       ) : (
@@ -353,7 +352,7 @@ function AccionesPublicacion({ gid, que, de, puedeBorrar, alTerminar, chico = fa
       <Confirmar
         abierto={confirmando}
         titulo={mio ? '¿Borrar?' : '¿Reportar?'}
-        texto={mio ? 'Se borra para todo el grupo.' : 'Le llega al administrador de Stoica para revisarlo. Quien lo publicó no sabe que lo reportaste.'}
+        texto={mio ? 'Se borra para todo el grupo.' : 'Le llega al administrador de StoaHabit para revisarlo. Quien lo publicó no sabe que lo reportaste.'}
         accion={mio ? 'Borrar' : 'Reportar'}
         peligro={mio}
         alCerrar={() => setConfirmando(false)}
@@ -401,9 +400,9 @@ function Miniatura({ archivo, indice, alQuitar }: { archivo: File; indice: numbe
     return () => URL.revokeObjectURL(u);
   }, [archivo]);
   return (
-    <span style={{ position: 'relative', width: 64, height: 64, borderRadius: 10, overflow: 'hidden', background: 'var(--ln)', flex: 'none' }}>
+    <span style={{ position: 'relative', width: 64, height: 64, borderRadius: 10, overflow: 'hidden', background: 'var(--ln2)', flex: 'none' }}>
       {url && <img src={url} alt={`Foto ${indice}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
-      <button type="button" aria-label={`Quitar foto ${indice}`} onClick={alQuitar} style={{ position: 'absolute', top: 2, right: 2, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,.6)', color: '#fff', fontSize: 14, lineHeight: '22px', textAlign: 'center' }}>
+      <button type="button" aria-label={`Quitar foto ${indice}`} onClick={alQuitar} style={{ position: 'absolute', top: 2, right: 2, width: 22, height: 22, borderRadius: 11, background: 'color-mix(in srgb, var(--icono-fondo) 60%, transparent)', color: 'var(--icono-figura)', fontSize: 13.5, lineHeight: '22px', textAlign: 'center' }}>
         ×
       </button>
     </span>
@@ -436,19 +435,17 @@ function Comentarios({ gid, foto, plan }: { gid: string; foto: ConId<FotoHabito>
   };
   return (
     <div className="comentarios" data-comentarios>
-      <div className="grp cap" style={{ marginTop: 14 }}>
-        <span>Comentarios{datos.length ? ` · ${datos.length}` : ''}</span>
-      </div>
+      <Grupo n={2} className="sep-grupo mt-[14px]">Comentarios{datos.length ? ` · ${datos.length}` : ''}</Grupo>
       {datos.length === 0 && <p className="vacio-mini">Todavía nadie comentó. Un “¡vamos!” ayuda más de lo que parece.</p>}
       <div className="lista-coment" aria-live="polite">
         {datos.map((c) => (
           <div key={c.id} className="comentario">
-            <span className="avatar" style={{ width: 28, height: 28, fontSize: 12, flex: 'none' }}>
+            <span className="avatar" style={{ width: 28, height: 28, fontSize: 12.5, flex: 'none' }}>
               {inicial(c.nombre)}
             </span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <b style={{ fontSize: 13 }}>{c.de === uid ? 'Vos' : c.nombre}</b>
+                <b style={{ fontSize: 13.5 }}>{c.de === uid ? 'Vos' : c.nombre}</b>
                 <span className="mu2" style={{ fontSize: 11, fontWeight: 600 }}>
                   {c.dia === foto.dia ? '' : `${fechaCorta(c.dia)} · `}
                   {hora(c.creado)}
@@ -457,7 +454,7 @@ function Comentarios({ gid, foto, plan }: { gid: string; foto: ConId<FotoHabito>
                   <AccionesPublicacion gid={gid} que={{ coleccion: 'comentarios', id: c.id, fotoId: foto.id }} de={c.de} puedeBorrar={foto.de === uid} alTerminar={() => undefined} chico />
                 </span>
               </span>
-              <span style={{ display: 'block', fontSize: 14, fontWeight: 500, overflowWrap: 'anywhere' }}>{c.texto}</span>
+              <span style={{ display: 'block', fontSize: 13.5, fontWeight: 500, overflowWrap: 'anywhere' }}>{c.texto}</span>
             </span>
           </div>
         ))}

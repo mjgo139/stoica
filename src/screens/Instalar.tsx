@@ -5,7 +5,7 @@ import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
 
 const PASOS_IPHONE = [
-  <>Abrí Stoica en <strong>Safari</strong>.</>,
+  <>Abrí StoaHabit en <strong>Safari</strong>.</>,
   <>Tocá el botón <strong>Compartir</strong> (el cuadrado con la flecha hacia arriba).</>,
   <>Elegí <strong>Agregar a pantalla de inicio</strong>.</>,
   <>Tocá <strong>Agregar</strong>. El ícono del laurel aparece en tu inicio.</>,
@@ -20,7 +20,7 @@ export function BotonInstalar({ estilo = 'normal' }: { estilo?: 'normal' | 'disc
   const tocar = async () => {
     const r = await instalar();
     if (r === 'pasos') setPasos(true);
-    else if (r === 'aceptada') mostrar('Listo: Stoica quedó instalada.');
+    else if (r === 'aceptada') mostrar('Listo: StoaHabit quedó instalada.');
   };
 
   return (

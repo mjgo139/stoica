@@ -86,10 +86,10 @@ export function fuerzaNoche(h: number): number {
 }
 /** Tinte según la hora: amanecer, día, atardecer, noche. */
 export function tinte(h: number): { color: string; opacidad: number } {
-  if (h >= 20 || h < 6) return { color: '#101b45', opacidad: 0.64 };
-  if (h < 8) return { color: '#ffb27a', opacidad: 0.16 };
-  if (h >= 17) return { color: '#ff9a4a', opacidad: 0.2 };
-  return { color: '#fff', opacidad: 0 };
+  if (h >= 20 || h < 6) return { color: '#101b45' /* familia-ok: ilustración del jardín */, opacidad: 0.64 };
+  if (h < 8) return { color: '#ffb27a' /* familia-ok: ilustración del jardín */, opacidad: 0.16 };
+  if (h >= 17) return { color: '#ff9a4a' /* familia-ok: ilustración del jardín */, opacidad: 0.2 };
+  return { color: '#fff' /* familia-ok: ilustración del jardín */, opacidad: 0 };
 }
 /** Es de noche para encender el fuego (desde las 18 h hasta las 6 h). */
 export const esNocheDeFuego = (h: number) => h >= 18 || h < 6;

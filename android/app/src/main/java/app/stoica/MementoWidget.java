@@ -55,7 +55,7 @@ public class MementoWidget extends AppWidgetProvider {
             v.setTextViewText(R.id.m_unidad, (faltaAnio == 1 ? "día falta" : "días faltan") + " para " + (anioHoy + 1));
             int pasado = Math.round(1000f * (365 - faltaAnio) / 365);
             v.setProgressBar(R.id.m_barra, 1000, Math.max(0, Math.min(1000, pasado)), false);
-            v.setTextViewText(R.id.m_pct, mm == null ? "Abrí Stoica para ver tu memento mori." : "Agregá tu fecha de nacimiento en Memento mori.");
+            v.setTextViewText(R.id.m_pct, mm == null ? "Abrí StoaHabit para ver tu memento mori." : "Agregá tu fecha de nacimiento en Memento mori.");
             v.setViewVisibility(R.id.m_anios, View.GONE);
             v.setTextViewText(R.id.m_extra, "");
             manager.updateAppWidget(widgetId, v);

@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { CabeceraPagina, Grupo } from '../../familia/react';
 import { fechaCorta, partesDeClave } from '@core/fechas';
 import { calcularVida, diasHasta, ESPERANZA_DEFECTO, finDeAnio, MAX_CONTADORES, proximoCumple, SEMANAS_POR_ANIO, validarContador, validarEsperanza, validarNacimiento, type ContadorPropio } from '@core/memento';
 import type { CambiosPerfil } from '@core/perfil';
@@ -31,11 +32,7 @@ export function MementoMori() {
     <div className="entra" style={{ maxWidth: 980, marginInline: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 320px', minWidth: 0 }}>
-          <div className="cap gold">Memento mori</div>
-          <h1 className="titulo">Recordá que vas a morir</h1>
-          <p className="quote" style={{ fontSize: 17, marginTop: 6 }}>
-            “No vivas como si fueras a vivir diez mil años. La muerte pende sobre ti: mientras vivas, mientras puedas, sé bueno.” — Marco Aurelio
-          </p>
+          <CabeceraPagina etiqueta="Recordá que vas a morir" titulo="Memento" linea="“No vivas como si fueras a vivir diez mil años. La muerte pende sobre ti: mientras vivas, mientras puedas, sé bueno.” — Marco Aurelio" />
         </div>
         {nacimiento && (
           <button type="button" className="ghost" onClick={() => setConfigurando(true)}>
@@ -46,16 +43,12 @@ export function MementoMori() {
 
       {!nacimiento ? (
         <div className="panel" style={{ marginTop: 22, maxWidth: 560 }}>
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Para empezar</span>
-          </div>
+          <Grupo n={1} className="sep-grupo sin-arriba">Para empezar</Grupo>
           <p className="mu" style={{ fontWeight: 500, marginTop: 0 }}>
             Con tu fecha de nacimiento calculamos cuánto viviste y cuánto te queda probablemente. Es privada: no la ve nadie, ni el administrador, ni tus grupos.
           </p>
           <FormVida inicial={null} esperanzaInicial={esperanza} hoy={hoy} alGuardar={() => undefined} />
-          <div className="grp cap">
-            <span>Mientras tanto</span>
-          </div>
+          <Grupo n={2} className="sep-grupo">Mientras tanto</Grupo>
           <Contador titulo={`Faltan para ${fin.anio}`} valor={mil(fin.dias)} detalle={fin.dias === 1 ? 'día' : 'días'} />
         </div>
       ) : (
@@ -111,14 +104,14 @@ function FormVida({ inicial, esperanzaInicial, hoy, alGuardar }: { inicial: stri
 function Contador({ titulo, valor, detalle, clase }: { titulo: string; valor: string; detalle?: string; clase?: string }) {
   return (
     <div className={`panel ${clase ?? ''}`} data-contador={titulo}>
-      <div className="cap mu2" style={{ fontSize: 10.5 }}>
+      <div className="cap mu2" style={{ fontSize: 11 }}>
         {titulo}
       </div>
-      <div className="num" style={{ fontSize: 30, marginTop: 6, lineHeight: 1.1 }}>
+      <div className="num" style={{ fontSize: 28, marginTop: 6, lineHeight: 1.1 }}>
         {valor}
       </div>
       {detalle && (
-        <div className="mu" style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>
+        <div className="mu" style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4 }}>
           {detalle}
         </div>
       )}
@@ -158,9 +151,7 @@ function Panel({ nacimiento, esperanza, hoy, contadores }: { nacimiento: string;
 
       <div className="panel" style={{ marginTop: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
-            <span>Tus contadores</span>
-          </div>
+          <Grupo n={3} className="sep-grupo sin-arriba">Tus contadores</Grupo>
           {contadores.length < MAX_CONTADORES && (
             <button type="button" className="link" onClick={() => setEditando('nuevo')}>
               + Agregar
@@ -183,7 +174,7 @@ function Panel({ nacimiento, esperanza, hoy, contadores }: { nacimiento: string;
                   {d === 0 ? 'Hoy' : mil(Math.abs(d))}
                 </span>
                 {d !== 0 && (
-                  <span className="cap mu2" style={{ fontSize: 9.5 }}>
+                  <span className="cap mu2" style={{ fontSize: 11 }}>
                     {d > 0 ? (d === 1 ? 'día falta' : 'días faltan') : d === -1 ? 'día pasó' : 'días pasaron'}
                   </span>
                 )}
@@ -212,10 +203,8 @@ function GrillaSemanas({ vividas, anios, nacimiento }: { vividas: number; anios:
   const anioNac = partesDeClave(nacimiento).anio;
   return (
     <div className="panel" style={{ marginTop: 18 }}>
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Tu vida en semanas</span>
-      </div>
-      <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 0 }}>
+      <Grupo n={4} className="sep-grupo sin-arriba">Tu vida en semanas</Grupo>
+      <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 0 }}>
         Cada casillero es una semana; cada fila, un año. Las doradas ya las viviste; la que brilla es esta.
       </p>
       <div style={{ overflowX: 'auto' }}>
@@ -229,14 +218,14 @@ function GrillaSemanas({ vividas, anios, nacimiento }: { vividas: number; anios:
               )}
               {Array.from({ length: SEMANAS_POR_ANIO }, (_, s) => {
                 const n = a * SEMANAS_POR_ANIO + s;
-                const estilo = n < actual ? { fill: 'var(--gold)' } : n === actual ? { fill: 'var(--ok)' } : { fill: 'none', stroke: 'var(--ln3)', strokeWidth: 0.8 };
+                const estilo = n < actual ? { fill: 'var(--gold)' } : n === actual ? { fill: 'var(--verde)' } : { fill: 'none', stroke: 'var(--ln3)', strokeWidth: 0.8 };
                 return <rect key={s} x={izq + s * (celda + hueco)} y={a * (celda + hueco)} width={celda} height={celda} rx={1.5} {...estilo} />;
               })}
             </g>
           ))}
         </svg>
       </div>
-      <p className="mu2" style={{ fontSize: 12, fontWeight: 600, marginTop: 8 }}>
+      <p className="mu2" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 8 }}>
         Desde {anioNac} hasta {anioNac + anios} · los números de la izquierda son tu edad.
       </p>
     </div>

@@ -1,13 +1,12 @@
 import type { Tema } from '@core/validaciones';
+import { aplicarTema as aplicarTemaFamilia, TEMA_PREDETERMINADO } from '../../familia/react';
 
 const CLAVE = 'stoica.tema';
+export { TEMA_PREDETERMINADO };
 
-/** Aplica el tema en <html data-theme>. "sistema" deja que mande el celular o la PC. */
-export function aplicarTema(tema: Tema) {
-  const html = document.documentElement;
-  if (tema === 'claro') html.setAttribute('data-theme', 'light');
-  else if (tema === 'oscuro') html.setAttribute('data-theme', 'dark');
-  else html.removeAttribute('data-theme');
+/** Aplica el tema de la familia (Noche romana · Mármol · Sistema) y lo recuerda para la próxima apertura. */
+export function aplicarTema(tema: Tema = TEMA_PREDETERMINADO) {
+  aplicarTemaFamilia(tema);
   try {
     localStorage.setItem(CLAVE, tema);
   } catch {

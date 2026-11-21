@@ -26,7 +26,7 @@ public class TareasWidget extends AppWidgetProvider {
         v.setOnClickPendingIntent(R.id.widget_raiz, Estado.abrir(c, "/tareas"));
         JSONObject d = Estado.datos(c);
         if (!Estado.conDatos(d)) {
-            Lista.vacio(v, d.optBoolean("sinSesion") ? "Entrá a Stoica para ver tus tareas." : "Abrí Stoica para ver tus tareas.");
+            Lista.vacio(v, d.optBoolean("sinSesion") ? "Entrá a StoaHabit para ver tus tareas." : "Abrí StoaHabit para ver tus tareas.");
             manager.updateAppWidget(widgetId, v);
             return;
         }
@@ -54,7 +54,7 @@ public class TareasWidget extends AppWidgetProvider {
             Lista.fila(c, v, i, t.optString("titulo"), detalle, ok ? Lista.LLENO : Lista.VACIO, ok,
                 Estado.abrir(c, "/tareas"), Estado.accion(c, "tarea", t.optString("id"), widgetId));
         }
-        if (ts.size() > n) Lista.pie(v, "+" + (ts.size() - n) + " más en Stoica");
+        if (ts.size() > n) Lista.pie(v, "+" + (ts.size() - n) + " más en StoaHabit");
         manager.updateAppWidget(widgetId, v);
     }
 }

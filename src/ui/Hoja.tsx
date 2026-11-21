@@ -30,7 +30,7 @@ export function Hoja({ titulo, abierta, alCerrar, children }: { titulo: string; 
       <div className="hoja" role="dialog" aria-modal="true" aria-label={titulo} tabIndex={-1} ref={ref}>
         <div className="agarre" />
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <h2 className="serif" style={{ fontSize: 24, fontWeight: 700, margin: 0, flex: 1 }}>
+          <h2 className="serif" style={{ fontSize: 26, fontWeight: 700, margin: 0, flex: 1 }}>
             {titulo}
           </h2>
           <button type="button" className="ico" aria-label="Cerrar" onClick={() => cerrar.current()} style={{ marginTop: -8, marginRight: -10 }}>
@@ -61,7 +61,7 @@ export function Confirmar({ abierto, titulo, texto, accion, peligro = false, alC
     <div className="capa centro">
       <div className="fondo-capa" onClick={() => cerrar.current()} />
       <div className="dialogo" role="alertdialog" aria-modal="true" aria-label={titulo}>
-        <h2 className="serif" style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>
+        <h2 className="serif" style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>
           {titulo}
         </h2>
         <div className="mu" style={{ fontWeight: 500, marginTop: 10 }}>

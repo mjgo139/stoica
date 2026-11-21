@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { CabeceraPagina, Grupo } from '../../familia/react';
 import { fechaCorta, fechaLargaDeClave, sumarDias } from '@core/fechas';
 import { balanceVirtudes, DETALLE_VIRTUD, NOMBRE_VIRTUD, VIRTUDES } from '@core/habitos';
 import { examenCompleto, examenVacio, LIMITE_RESPUESTA, PREGUNTAS_EXAMEN, type Examen as TipoExamen } from '@core/rutina';
@@ -14,16 +15,12 @@ export function Examen() {
 
   return (
     <div className="entra">
-      <div className="cap gold">Al anochecer</div>
-      <h1 className="titulo">Examen</h1>
-      <p className="lead">“Cuando se apaga la luz, examino todo mi día.” — Séneca</p>
+      <CabeceraPagina etiqueta="Al anochecer" titulo="Examen" linea="“Cuando se apaga la luz, examino todo mi día.” — Séneca" />
 
       <div className="cols c64" style={{ marginTop: 24 }}>
         <div className="panel">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
-              <span>{dia === hoy ? 'Hoy' : 'Día anterior'} · {fechaLargaDeClave(dia)}</span>
-            </div>
+            <Grupo n={1} className="sep-grupo sin-arriba flex-1">{dia === hoy ? 'Hoy' : 'Día anterior'} · {fechaLargaDeClave(dia)}</Grupo>
             {dia !== hoy && (
               <button type="button" className="link" onClick={() => setDia(hoy)}>
                 Volver a hoy
@@ -35,16 +32,14 @@ export function Examen() {
         <div className="pila">
           <Balance hoy={hoy} />
           <div className="panel">
-            <div className="grp cap" style={{ marginTop: 0 }}>
-              <span>Exámenes anteriores</span>
-            </div>
+            <Grupo n={2} className="sep-grupo sin-arriba">Exámenes anteriores</Grupo>
             {historial.filter((e) => e.fecha !== dia).length === 0 && <p className="vacio-mini">Acá vas a poder releer tus exámenes.</p>}
             {historial
               .filter((e) => e.fecha !== dia)
               .slice(0, 12)
               .map((e) => (
                 <button key={e.fecha} type="button" className="srow" onClick={() => setDia(e.fecha)}>
-                  <span className="cap gold" style={{ fontSize: 10.5, width: 64 }}>
+                  <span className="cap gold" style={{ fontSize: 11, width: 64 }}>
                     {fechaCorta(e.fecha)}
                   </span>
                   <span className="mu dos-lineas" style={{ flex: 1, fontWeight: 500, minWidth: 0 }}>
@@ -99,7 +94,7 @@ function Formulario({ examen }: { examen: TipoExamen }) {
       <button type="button" className="btn" style={{ marginTop: 16 }} onClick={() => (clearTimeout(temporizador.current), guardar(e, true))}>
         Guardar examen
       </button>
-      <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 10 }}>
+      <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 10 }}>
         Se guarda solo mientras escribís. Es privado: nadie más lo ve, ni el admin ni tus grupos.
       </p>
     </div>
@@ -114,9 +109,7 @@ function Balance({ hoy }: { hoy: string }) {
   return (
     <div className="panel">
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
-          <span>Balance de virtudes</span>
-        </div>
+        <Grupo n={3} className="sep-grupo sin-arriba">Balance de virtudes</Grupo>
       </div>
       <div className="seg3" role="radiogroup" aria-label="Período" style={{ marginBottom: 8 }}>
         {[7, 30].map((d) => (
@@ -138,7 +131,7 @@ function Balance({ hoy }: { hoy: string }) {
           <div className="barra-prog" style={{ marginTop: 6 }}>
             <i style={{ width: `${b[v] ?? 0}%`, background: 'var(--vc)' }} />
           </div>
-          <div className="mu2" style={{ fontSize: 12, fontWeight: 500, marginTop: 4 }}>
+          <div className="mu2" style={{ fontSize: 12.5, fontWeight: 500, marginTop: 4 }}>
             {b[v] === null ? 'Ningún hábito cultiva esta virtud todavía.' : DETALLE_VIRTUD[v]}
           </div>
         </div>

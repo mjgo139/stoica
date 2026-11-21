@@ -73,8 +73,8 @@ function construir(d: Datos, c: Cuerpo, mat: THREE.Material, ojo: THREE.Material
   // Color por vértice: piel gris claro y ropa interior gris oscuro.
   const t = tinte(d);
   const col = new Float32Array(d.nV * 3);
-  const piel = new THREE.Color('#b9b9b9').convertSRGBToLinear();
-  const ropa = new THREE.Color('#62656b').convertSRGBToLinear();
+  const piel = new THREE.Color('#b9b9b9' /* familia-ok: ilustración de El Espejo */).convertSRGBToLinear();
+  const ropa = new THREE.Color('#62656b' /* familia-ok: ilustración de El Espejo */).convertSRGBToLinear();
   const c0 = new THREE.Color();
   for (let i = 0; i < d.nV; i++) {
     c0.copy(piel).lerp(ropa, t[i]);

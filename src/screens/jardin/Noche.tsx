@@ -55,20 +55,20 @@ export function Noche({ forma, fuerza, luces = [] }: { forma: keyof typeof LUCES
       {/* Estrellas y luna (solo de noche) */}
       {noche &&
         estrellas.map((e, i) => (
-          <span key={i} className="noche-anim" style={{ position: 'absolute', left: `${e.x}%`, top: `${e.y}%`, width: e.s, height: e.s, borderRadius: '50%', background: '#fff', boxShadow: '0 0 4px #fff', animation: `titilar ${e.t}s ${e.d}s ease-in-out infinite` }} />
+          <span key={i} className="noche-anim" style={{ position: 'absolute', left: `${e.x}%`, top: `${e.y}%`, width: e.s, height: e.s, borderRadius: '50%', background: '#fff' /* familia-ok: ilustración del jardín */, boxShadow: '0 0 4px #fff', animation: `titilar ${e.t}s ${e.d}s ease-in-out infinite` }} />
         ))}
-      {noche && <span style={{ position: 'absolute', left: `${L.luna.x}%`, top: `${L.luna.y}%`, width: 22, height: 22, marginLeft: -11, marginTop: -11, borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%, #fffbe8, #e8dfc0)', boxShadow: '0 0 18px 6px rgba(255,248,220,.55)' }} />}
+      {noche && <span style={{ position: 'absolute', left: `${L.luna.x}%`, top: `${L.luna.y}%`, width: 22, height: 22, marginLeft: -11, marginTop: -11, borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%, #fffbe8, #e8dfc0)' /* familia-ok: ilustración del jardín */, boxShadow: '0 0 18px 6px rgba(255,248,220,.55)' }} />}
       {/* Luz cálida del templo */}
       <span
         className="noche-anim"
-        style={{ position: 'absolute', left: `${L.templo.x - L.templo.w / 2}%`, top: `${L.templo.y - L.templo.h / 2}%`, width: `${L.templo.w}%`, height: `${L.templo.h}%`, background: 'radial-gradient(ellipse, rgba(255,190,90,.75), rgba(255,150,60,0) 70%)', mixBlendMode: 'screen', animation: 'resplandor 4s ease-in-out infinite' }}
+        style={{ position: 'absolute', left: `${L.templo.x - L.templo.w / 2}%`, top: `${L.templo.y - L.templo.h / 2}%`, width: `${L.templo.w}%`, height: `${L.templo.h}%`, background: 'radial-gradient(ellipse, rgba(255,190,90,.75), rgba(255,150,60,0) 70%)' /* familia-ok: ilustración del jardín */, mixBlendMode: 'screen', animation: 'resplandor 4s ease-in-out infinite' }}
       />
       {/* Fuente iluminada desde abajo */}
-      <span style={{ position: 'absolute', left: `${L.fuente.x - L.fuente.w / 2}%`, top: `${L.fuente.y - L.fuente.h / 2}%`, width: `${L.fuente.w}%`, height: `${L.fuente.h}%`, background: 'radial-gradient(ellipse, rgba(120,210,255,.8), rgba(80,170,255,0) 70%)', mixBlendMode: 'screen' }} />
+      <span style={{ position: 'absolute', left: `${L.fuente.x - L.fuente.w / 2}%`, top: `${L.fuente.y - L.fuente.h / 2}%`, width: `${L.fuente.w}%`, height: `${L.fuente.h}%`, background: 'radial-gradient(ellipse, rgba(120,210,255,.8), rgba(80,170,255,0) 70%)' /* familia-ok: ilustración del jardín */, mixBlendMode: 'screen' }} />
       {/* Luz cálida del fuego y de los faroles */}
       {luces.map((b, i) => (
         <div key={i} style={{ position: 'absolute', left: `${b.x}%`, top: `${b.y}%` }}>
-          <span className="noche-anim" style={{ position: 'absolute', left: -b.r, top: -b.r, width: b.r * 2, height: b.r * 2, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,175,80,.55), rgba(255,130,40,.16) 45%, rgba(255,120,30,0) 70%)', mixBlendMode: 'screen', animation: `resplandor ${1.6 + i * 0.3}s ease-in-out infinite` }} />
+          <span className="noche-anim" style={{ position: 'absolute', left: -b.r, top: -b.r, width: b.r * 2, height: b.r * 2, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,175,80,.55), rgba(255,130,40,.16) 45%, rgba(255,120,30,0) 70%)' /* familia-ok: ilustración del jardín */, mixBlendMode: 'screen', animation: `resplandor ${1.6 + i * 0.3}s ease-in-out infinite` }} />
         </div>
       ))}
       {/* Luciérnagas */}
@@ -77,7 +77,7 @@ export function Noche({ forma, fuerza, luces = [] }: { forma: keyof typeof LUCES
           <span
             key={i}
             className="noche-anim"
-            style={{ position: 'absolute', left: `${l.x}%`, top: `${l.y}%`, width: 5, height: 5, borderRadius: '50%', background: '#f6ff9a', boxShadow: '0 0 8px 3px rgba(230,255,120,.75)', ['--dx' as string]: `${l.dx}px`, ['--dy' as string]: `${l.dy}px`, animation: `volar ${l.t}s ${l.d}s ease-in-out infinite` }}
+            style={{ position: 'absolute', left: `${l.x}%`, top: `${l.y}%`, width: 5, height: 5, borderRadius: '50%', background: '#f6ff9a' /* familia-ok: ilustración del jardín */, boxShadow: '0 0 8px 3px rgba(230,255,120,.75)', ['--dx' as string]: `${l.dx}px`, ['--dy' as string]: `${l.dy}px`, animation: `volar ${l.t}s ${l.d}s ease-in-out infinite` }}
           />
         ))}
     </div>

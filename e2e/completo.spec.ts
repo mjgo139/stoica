@@ -1,5 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
+/** Menú de la familia: barra lateral en la PC, pestañas en el celular */
+const menu = (page: Page) => page.locator('aside.lateral:visible, nav.pestanas:visible');
+
 /**
  * Recorrido completo v0.2 → v1.0 en modo prueba, con la cuenta de ejemplo (que es admin y trae datos).
  */
@@ -54,7 +57,7 @@ test.describe('v0.2–v0.3 · hábitos', () => {
 
     // Ver ayer: los días pasados no cumplidos se ven en terracota y se pueden corregir
     await page.getByRole('tab').nth(2).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ayer');
+    await expect(page.getByRole('tab').nth(2)).toHaveAttribute('aria-selected', 'true');
     await page.getByRole('tab').nth(3).click();
   });
 
@@ -363,7 +366,7 @@ test.describe('v0.5–v1.0', () => {
   test('admin: métricas, cuentas, suspender', async ({ page }) => {
     await entrarConEjemplo(page);
     await ir(page, '/admin');
-    await expect(page.getByRole('heading', { level: 1, name: 'Panel' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Admin' })).toBeVisible();
     await expect(page.getByText('Epicteto').first()).toBeVisible();
     await page.getByRole('button', { name: 'Recalcular métricas' }).click();
     await expect(page.getByText('Métricas actualizadas.')).toBeVisible();
@@ -647,8 +650,8 @@ test.describe('v0.5–v1.0', () => {
 
   test('memento mori: pestaña con calavera, fecha de nacimiento, contadores y grilla de semanas', async ({ page }) => {
     await entrarConEjemplo(page);
-    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Memento' }).click();
-    await expect(page.getByRole('heading', { level: 1, name: 'Recordá que vas a morir' })).toBeVisible();
+    await menu(page).getByRole('link', { name: 'Memento' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Memento' })).toBeVisible();
     await page.getByLabel('Fecha de nacimiento').fill('1990-03-15');
     await page.getByRole('button', { name: 'Guardar' }).click();
     await expect(page.locator('[data-contador="Ya viviste"]')).toContainText('años');
@@ -661,7 +664,7 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.locator('[data-contador-propio="Viaje"]')).toContainText('faltan');
     await captura(page, '26-memento');
     // Enfoque ahora está dentro de Tareas
-    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Tareas' }).click();
+    await menu(page).getByRole('link', { name: 'Tareas' }).click();
     await page.getByRole('link', { name: /Enfoque/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Enfoque' })).toBeVisible();
   });
@@ -671,7 +674,7 @@ test.describe('v0.5–v1.0', () => {
     page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
     await entrarConEjemplo(page);
     await ir(page, '/espejo');
-    await expect(page.getByRole('heading', { level: 1, name: 'Tu reflejo' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'El Espejo' })).toBeVisible();
     // Estatua viva (una estatua de Meshy que se deforma)
     await expect(page.getByText('Trayendo tu estatua…')).toBeHidden({ timeout: 45_000 });
     // Mi progreso: elegir camino, etapa de hoy y hábitos; el modo prueba hace avanzar la estatua
@@ -732,11 +735,11 @@ test.describe('v0.5–v1.0', () => {
     test.setTimeout(240_000);
     await entrarConEjemplo(page);
     await ir(page, '/jardin');
-    await expect(page.getByRole('heading', { level: 1, name: 'Tu jardín' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Jardín' })).toBeVisible();
     await page.waitForTimeout(1200);
     await captura(page, '28-jardin');
     // El menú de abajo queda siempre encima del jardín (las plantas no se dibujan sobre él)
-    const nav = page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Hoy' });
+    const nav = menu(page).getByRole('link', { name: 'Hoy' });
     if (await nav.isVisible()) {
       await page.locator('[aria-label^="Jardín con"]').evaluate((el) => el.scrollIntoView({ block: 'end' }));
       await page.evaluate(() => window.scrollBy(0, -120));
@@ -853,7 +856,7 @@ test.describe('v0.5–v1.0', () => {
     await expect(borrar).toBeDisabled();
     await page.getByLabel('Escribí BORRAR para confirmar').fill('borrar');
     await borrar.click();
-    await expect(page.getByRole('heading', { name: 'STOICA' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
     // Ya no puede entrar
     await page.getByLabel('Correo').fill('temporal@ejemplo.com');
     await page.getByLabel('Contraseña').fill('temporal1');
@@ -864,13 +867,13 @@ test.describe('v0.5–v1.0', () => {
   test('navegación de celular y escritorio', async ({ page }) => {
     await entrarConEjemplo(page);
     if (esCelular()) {
-      await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Hoy' })).toBeVisible();
-      await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comunidad' })).toBeVisible();
-      await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comunidad' }).click();
+      await expect(menu(page).getByRole('link', { name: 'Hoy' })).toBeVisible();
+      await expect(menu(page).getByRole('link', { name: 'Comunidad' })).toBeVisible();
+      await menu(page).getByRole('link', { name: 'Comunidad' }).click();
       await expect(page.getByText('El Pórtico')).toBeVisible();
     } else {
-      await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comunidad' })).toBeVisible();
-      await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Admin' })).toBeVisible();
+      await expect(menu(page).getByRole('link', { name: 'Comunidad' })).toBeVisible();
+      await expect(menu(page).getByRole('link', { name: 'Admin' })).toBeVisible();
     }
   });
 });

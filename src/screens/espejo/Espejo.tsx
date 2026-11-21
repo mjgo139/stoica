@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
+import { CabeceraPagina } from '../../../familia/react';
 import { Navigate } from 'react-router-dom';
 import { useSesion } from '@/app/sesion';
 import { EspejoImagen } from './EspejoImagen';
@@ -30,11 +31,7 @@ export function Espejo() {
   ];
   return (
     <div className="entra" style={{ maxWidth: 980, marginInline: 'auto' }}>
-      <div className="cap gold">El Espejo · prueba</div>
-      <h1 className="titulo">Tu reflejo</h1>
-      <p className="mu" style={{ marginTop: 4 }}>
-        Solo vos lo ves por ahora.
-      </p>
+      <CabeceraPagina etiqueta="Tu reflejo · prueba" titulo="El Espejo" linea="Solo vos lo ves por ahora." />
       <div className="seg3" role="radiogroup" aria-label="Versión del espejo" style={{ marginTop: 12, maxWidth: 720 }}>
         {opciones.map(([v, t]) => (
           <button key={v} type="button" role="radio" aria-checked={version === v} className={version === v ? 'on' : ''} onClick={() => setVersion(v)}>

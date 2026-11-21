@@ -68,8 +68,8 @@ public class HabitoWidget extends AppWidgetProvider {
         JSONObject h = Estado.conDatos(d) ? Estado.habito(d, hid) : null;
         v.setTextColor(R.id.h_marca, c.getColor(R.color.widget_dorado));
         if (h == null) {
-            v.setTextViewText(R.id.h_virtud, "STOICA");
-            v.setTextViewText(R.id.h_nombre, !Estado.conDatos(d) ? "Entrá a Stoica" : hid == null ? "Elegí un hábito" : "Ese hábito ya no está");
+            v.setTextViewText(R.id.h_virtud, "STOAHABIT");
+            v.setTextViewText(R.id.h_nombre, !Estado.conDatos(d) ? "Entrá a StoaHabit" : hid == null ? "Elegí un hábito" : "Ese hábito ya no está");
             v.setTextViewText(R.id.h_detalle, hid == null ? "Mantené apretado para elegir" : "Mantené apretado para cambiarlo");
             v.setTextViewText(R.id.h_racha, "");
             v.setTextViewText(R.id.h_marca, Lista.VACIO);
@@ -99,7 +99,7 @@ public class HabitoWidget extends AppWidgetProvider {
         v.setTextViewTextSize(R.id.h_nombre, TypedValue.COMPLEX_UNIT_SP, grande ? 21 : 16);
         v.setTextViewTextSize(R.id.h_detalle, TypedValue.COMPLEX_UNIT_SP, grande ? 15 : 13);
         v.setTextViewTextSize(R.id.h_racha, TypedValue.COMPLEX_UNIT_SP, grande ? 12 : 11);
-        v.setTextViewText(R.id.h_virtud, h.optString("virtud", "Stoica"));
+        v.setTextViewText(R.id.h_virtud, h.optString("virtud", "StoaHabit"));
         v.setTextViewText(R.id.h_nombre, h.optString("nombre"));
         v.setTextViewText(R.id.h_detalle, detalle);
         String textoRacha = racha < 0 ? "" : racha == 1 ? "Racha: 1 día" : "Racha: " + racha + " días";

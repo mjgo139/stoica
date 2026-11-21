@@ -4,7 +4,7 @@ import { completarPerfil, perfilInicial, plataformaDe } from '@core/perfil';
 import { obtenerDriver } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
 import { useSesion } from './sesion';
-import { aplicarTema } from './tema';
+import { aplicarTema, TEMA_PREDETERMINADO } from './tema';
 import { esInstalada } from '@/pwa/instalar';
 import { esNativo } from '@/nativo/nativo';
 
@@ -85,7 +85,7 @@ export function Arranque({ children }: { children: ReactNode }) {
   }, [usuario, poner]);
 
   useEffect(() => {
-    aplicarTema(tema ?? 'sistema');
+    aplicarTema(tema ?? TEMA_PREDETERMINADO);
   }, [tema]);
 
   return <>{children}</>;

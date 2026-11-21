@@ -47,7 +47,7 @@ public class GrupoWidget extends AppWidgetProvider {
     /** Lee los resúmenes de los compañeros (una lectura por compañero) y redibuja. */
     static void actualizarDesdeNube(Context c, String gid, boolean manual) {
         if (!Nube.haySesion(c)) {
-            if (manual) AccionReceiver.avisar(c, "Abrí Stoica una vez para actualizar el grupo.");
+            if (manual) AccionReceiver.avisar(c, "Abrí StoaHabit una vez para actualizar el grupo.");
             return;
         }
         try {
@@ -98,12 +98,12 @@ public class GrupoWidget extends AppWidgetProvider {
         JSONObject d = Estado.datos(c);
         String gid = Estado.eleccion(c, widgetId);
         JSONObject g = Estado.conDatos(d) ? Estado.grupo(d, gid) : null;
-        RemoteViews v = Lista.nueva(c, g == null ? "GRUPO · STOICA" : g.optString("nombre").toUpperCase(Locale.getDefault()));
+        RemoteViews v = Lista.nueva(c, g == null ? "GRUPO · STOAHABIT" : g.optString("nombre").toUpperCase(Locale.getDefault()));
         String ruta = g == null ? "/comunidad" : "/comunidad/" + gid;
         v.setOnClickPendingIntent(R.id.widget_raiz, Estado.abrir(c, ruta));
         v.setOnClickPendingIntent(R.id.w_titulo, Estado.abrir(c, ruta));
         if (g == null) {
-            Lista.vacio(v, !Estado.conDatos(d) ? "Entrá a Stoica para ver tu grupo." : gid == null ? "Mantené apretado el widget para elegir el grupo." : "Ya no estás en ese grupo.");
+            Lista.vacio(v, !Estado.conDatos(d) ? "Entrá a StoaHabit para ver tu grupo." : gid == null ? "Mantené apretado el widget para elegir el grupo." : "Ya no estás en ese grupo.");
             manager.updateAppWidget(widgetId, v);
             return;
         }
@@ -115,7 +115,7 @@ public class GrupoWidget extends AppWidgetProvider {
         List<JSONObject> lista = new ArrayList<>();
         if (ms != null) for (int i = 0; i < ms.length(); i++) if (ms.optJSONObject(i) != null) lista.add(ms.optJSONObject(i));
         if (lista.isEmpty()) {
-            Lista.vacio(v, "Abrí el grupo en Stoica o tocá ↻.");
+            Lista.vacio(v, "Abrí el grupo en StoaHabit o tocá ↻.");
             manager.updateAppWidget(widgetId, v);
             return;
         }

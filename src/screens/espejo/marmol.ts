@@ -33,8 +33,8 @@ const suave = (x: number, a: number, b: number) => {
 export function vetas(g: THREE.BufferGeometry) {
   const pos = g.getAttribute('position');
   const col = new Float32Array(pos.count * 3);
-  const base = new THREE.Color('#f1ece4').convertSRGBToLinear();
-  const veta = new THREE.Color('#9a9288').convertSRGBToLinear();
+  const base = new THREE.Color('#f1ece4' /* familia-ok: ilustración de El Espejo */).convertSRGBToLinear();
+  const veta = new THREE.Color('#9a9288' /* familia-ok: ilustración de El Espejo */).convertSRGBToLinear();
   const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i) * 1.6;

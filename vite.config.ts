@@ -32,8 +32,8 @@ export default defineConfig(({ mode }) => ({
       injectManifest: { globPatterns: ['**/*.{js,css,html,png,svg,woff2,webmanifest}'], maximumFileSizeToCacheInBytes: 3_000_000 },
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
-        name: 'Stoica',
-        short_name: 'Stoica',
+        name: 'StoaHabit',
+        short_name: 'StoaHabit',
         description: 'Hábitos. Disciplina. Una vida más serena.',
         lang: 'es',
         start_url: '/',

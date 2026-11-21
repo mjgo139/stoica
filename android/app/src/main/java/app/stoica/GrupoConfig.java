@@ -15,7 +15,7 @@ public class GrupoConfig extends ElegirWidget {
 
     @Override
     protected String sinOpciones() {
-        return "Abrí la pestaña Comunidad en Stoica primero para elegir el grupo acá.";
+        return "Abrí la pestaña Comunidad en StoaHabit primero para elegir el grupo acá.";
     }
 
     @Override

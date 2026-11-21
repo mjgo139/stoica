@@ -111,7 +111,7 @@ export async function armarCollage(fotos: Blob[], diseno: DisenoCollage, lado = 
   lienzo.width = lado;
   lienzo.height = lado;
   const ctx = lienzo.getContext('2d')!;
-  ctx.fillStyle = '#f6f1e7';
+  ctx.fillStyle = '#f6f1e7' /* familia-ok: fondo del collage (imagen) */;
   ctx.fillRect(0, 0, lado, lado);
   const celdas = celdasCollage(fotos.length, diseno, lado, Math.round(lado / 135));
   for (let i = 0; i < celdas.length; i++) {

@@ -28,9 +28,9 @@ export interface Reflejo {
   pantalon: string;
 }
 
-export const PIELES = ['#f3d6c1', '#e8bf9f', '#d39b74', '#b07650', '#8a5636', '#5e3a24'];
-export const COLORES_PELO = ['#2b211b', '#4a3222', '#7a5233', '#b48a5a', '#d8c3a0', '#8f8f8f'];
-export const COLORES_ROPA = ['#f4f1ea', '#2f2f33', '#c8302c', '#2f4f7f', '#3f6b45', '#c9a24a', '#7a4a8c'];
+export const PIELES = ['#f3d6c1' /* familia-ok: ilustración de El Espejo */, '#e8bf9f', '#d39b74', '#b07650', '#8a5636', '#5e3a24'];
+export const COLORES_PELO = ['#2b211b' /* familia-ok: ilustración de El Espejo */, '#4a3222', '#7a5233', '#b48a5a', '#d8c3a0', '#8f8f8f'];
+export const COLORES_ROPA = ['#f4f1ea' /* familia-ok: ilustración de El Espejo */, '#2f2f33', '#c8302c', '#2f4f7f', '#3f6b45', '#c9a24a', '#7a4a8c'];
 
 export const REFLEJO_INICIAL: Reflejo = {
   grasa: 0.5,
@@ -276,7 +276,7 @@ function construir(d: Datos, r: Reflejo): THREE.Group {
   const n = normales(d, p);
   const grupo = new THREE.Group();
   grupo.userData.cabeza = k ? new THREE.Vector3(cx / k, cy / k, cz / k) : null;
-  const colores = [new THREE.Color(r.piel), new THREE.Color(r.remera), new THREE.Color(r.pantalon), new THREE.Color('#f2f2ef'), new THREE.Color('#2a2420'), new THREE.Color(r.colorPelo).lerp(new THREE.Color(r.piel), 0.25), new THREE.Color(r.piel).multiplyScalar(0.8)];
+  const colores = [new THREE.Color(r.piel), new THREE.Color(r.remera), new THREE.Color(r.pantalon), new THREE.Color('#f2f2ef' /* familia-ok: ilustración de El Espejo */), new THREE.Color('#2a2420'), new THREE.Color(r.colorPelo).lerp(new THREE.Color(r.piel), 0.25), new THREE.Color(r.piel).multiplyScalar(0.8)];
   colores.forEach((c) => c.convertSRGBToLinear());
 
   // Cuerpo: cada cara con su color (sin compartir vértices, así queda facetado).

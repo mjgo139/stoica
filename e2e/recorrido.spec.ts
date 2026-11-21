@@ -1,12 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 
+/** Menú de la familia: barra lateral en la PC, pestañas en el celular */
+const menu = (page: Page) => page.locator('aside.lateral:visible, nav.pestanas:visible');
+
 const captura = (page: Page, nombre: string) =>
   page.screenshot({ path: `e2e/capturas/${test.info().project.name}-${nombre}.png`, fullPage: true });
 
 test.describe('v0.1 · base', () => {
   test('pantalla de acceso', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'STOICA' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Continuar con Google' })).toBeVisible();
     await page.emulateMedia({ colorScheme: 'light' });
     await captura(page, '01-acceso-claro');
@@ -40,18 +43,21 @@ test.describe('v0.1 · base', () => {
     await expect(page.getByText(/Memento mori · \d+ días/)).toBeVisible();
     await captura(page, '03-hoy-claro');
 
-    for (const [seccion, titulo] of [['Hábitos', 'Hábitos'], ['Tareas', 'Tareas'], ['Examen', 'Examen'], ['Memento', 'Recordá que vas a morir']] as const) {
-      await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: seccion }).click();
+    for (const [seccion, titulo] of [['Hábitos', 'Hábitos'], ['Tareas', 'Tareas'], ['Examen', 'Examen'], ['Memento', 'Memento']] as const) {
+      await menu(page).getByRole('link', { name: seccion }).click();
       await expect(page.getByRole('heading', { level: 1, name: titulo })).toBeVisible();
     }
     await captura(page, '04-examen');
 
     if (test.info().project.name === 'celular') await page.getByRole('link', { name: 'Hoy' }).click(), await page.getByRole('link', { name: 'Perfil' }).first().click();
-    else await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: /Epicteto/ }).click();
+    else await menu(page).getByRole('link', { name: /Epicteto/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Perfil' })).toBeVisible();
     await captura(page, '05-perfil-claro');
 
-    await page.getByRole('radio', { name: 'Oscuro' }).click();
+    // Temas de la familia: Noche romana (predeterminado) · Mármol · Sistema
+    await page.getByRole('radio', { name: 'Mármol' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await page.getByRole('radio', { name: 'Noche romana' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.getByRole('switch', { name: /Memento mori/ }).click();
     await expect(page.getByRole('switch', { name: /Memento mori/ })).toHaveAttribute('aria-checked', 'false');
@@ -65,15 +71,15 @@ test.describe('v0.1 · base', () => {
     await expect(page.getByText('Nombre guardado.')).toBeVisible();
     await captura(page, '07-perfil-oscuro');
 
-    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Hoy' }).click();
+    await menu(page).getByRole('link', { name: 'Hoy' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Epicteto');
     await expect(page.getByText(/Memento mori · \d+ días/)).toHaveCount(0);
     await captura(page, '08-hoy-oscuro');
 
     if (test.info().project.name === 'celular') await page.getByRole('link', { name: 'Perfil' }).first().click();
-    else await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: /Epicteto/ }).click();
+    else await menu(page).getByRole('link', { name: /Epicteto/ }).click();
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-    await expect(page.getByRole('heading', { name: 'STOICA' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
   });
 
   test('entrar con la cuenta de ejemplo y con Google simulado', async ({ page }) => {
@@ -89,7 +95,7 @@ test.describe('v0.1 · base', () => {
 
   test('sin conexión antes de entrar', async ({ page, context }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'STOICA' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
     await context.setOffline(true);
     await expect(page.getByRole('heading', { name: 'Sin conexión' })).toBeVisible();
     await captura(page, '09-sin-conexion');

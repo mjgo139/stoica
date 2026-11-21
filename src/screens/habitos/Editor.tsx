@@ -206,7 +206,7 @@ export function Editor() {
             </button>
           ))}
         </div>
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>
           {f.tipo === 'sino' && 'Se marca con un rombo: lo hiciste o no.'}
           {f.tipo === 'cantidad' && 'Sumás de a uno hasta llegar a la meta del día.'}
           {f.tipo === 'medicion' && 'Registrás valores (peso, cintura…) y ves cómo avanzás hacia la meta.'}
@@ -245,7 +245,7 @@ export function Editor() {
                   placeholder={['Almuerzo', 'Merienda', 'Cena', 'Desayuno', 'Colación', 'Postre'][i] ?? 'Otro'}
                 />
                 {f.items.length > LIMITES_HABITO.itemsMin && (
-                  <button type="button" className="link" style={{ color: 'var(--cor)', flex: 'none' }} aria-label={`Quitar ítem ${i + 1}`} onClick={() => poner({ items: f.items.filter((y) => y.id !== x.id) })}>
+                  <button type="button" className="link" style={{ color: 'var(--serie-2)', flex: 'none' }} aria-label={`Quitar ítem ${i + 1}`} onClick={() => poner({ items: f.items.filter((y) => y.id !== x.id) })}>
                     Quitar
                   </button>
                 )}
@@ -267,7 +267,7 @@ export function Editor() {
                 </option>
               ))}
             </select>
-            {existente && <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>Si quitás un ítem, los días anteriores quedan como estaban.</p>}
+            {existente && <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>Si quitás un ítem, los días anteriores quedan como estaban.</p>}
           </div>
         )}
 
@@ -275,7 +275,7 @@ export function Editor() {
           <div style={{ marginTop: 16 }}>
             {f.variables.map((v, i) => (
               <fieldset key={v.id} style={{ border: '1px solid var(--ln2)', borderRadius: 12, padding: '12px 14px', margin: '0 0 12px' }}>
-                <legend className="cap gold" style={{ padding: '0 6px', fontSize: 10.5 }}>
+                <legend className="cap gold" style={{ padding: '0 6px', fontSize: 11 }}>
                   Variable {i + 1}
                 </legend>
                 <div className="g2">
@@ -312,7 +312,7 @@ export function Editor() {
                   ))}
                 </div>
                 {f.variables.length > 1 && (
-                  <button type="button" className="link" style={{ color: 'var(--cor)', paddingLeft: 0, marginTop: 6 }} onClick={() => poner({ variables: f.variables.filter((x) => x.id !== v.id) })}>
+                  <button type="button" className="link" style={{ color: 'var(--serie-2)', paddingLeft: 0, marginTop: 6 }} onClick={() => poner({ variables: f.variables.filter((x) => x.id !== v.id) })}>
                     Quitar variable
                   </button>
                 )}
@@ -382,7 +382,7 @@ export function Editor() {
           Recordatorios
         </div>
         <Horas idBase="h-rec" etiqueta="Hora del recordatorio" valores={f.recordatorios} alCambiar={(v) => poner({ recordatorios: v })} />
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 6 }}>
+        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
           Hasta 3 horas, a cualquier minuto. Si ya cumpliste, no te avisa.
         </p>
       </div>
@@ -424,7 +424,7 @@ function SelectorIcono({ icono, virtud, alElegir }: { icono: string; virtud: Vir
   const nombreActual = GRUPOS_ICONOS.flatMap(([, l]) => l).find(([x]) => x === icono)?.[1];
   return (
     <div>
-      <div className="pestanas-iconos" role="tablist" aria-label="Grupos de íconos">
+      <div className="solapas-iconos" role="tablist" aria-label="Grupos de íconos">
         {GRUPOS_ICONOS.map(([g]) => (
           <button key={g} type="button" role="tab" aria-selected={grupo === g} className={`chip ${grupo === g ? 'on' : ''}`} onClick={() => setGrupo(g)}>
             {GRUPO_CORTO[g] ?? g}

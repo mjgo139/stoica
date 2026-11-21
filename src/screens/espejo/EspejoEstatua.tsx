@@ -72,14 +72,14 @@ export function EspejoEstatua() {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-        <div className="card" style={{ flex: '1 1 340px', minWidth: 0, overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 30%, #3a352f 0%, #1d1a17 80%)', border: 'none' }}>
+        <div className="card" style={{ flex: '1 1 340px', minWidth: 0, overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 30%, #3a352f 0%, #1d1a17 80%)' /* familia-ok: ilustración de El Espejo */, border: 'none' }}>
           {error ? (
-            <p style={{ padding: 24, color: '#e9e2d6' }}>{error}</p>
+            <p style={{ padding: 24, color: '#e9e2d6' /* familia-ok: ilustración de El Espejo */ }}>{error}</p>
           ) : (
             <div style={{ position: 'relative' }}>
               <canvas ref={lienzo} style={{ width: '100%', height: 'min(64vh, 560px)', display: 'block', touchAction: 'pan-y' }} aria-label={`Tu estatua: ${NOMBRES_ETAPA[etapaActual]}`} />
               {cargando && (
-                <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 14, color: '#d8cfc2' }}>Esculpiendo tu estatua…</div>
+                <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 13.5, color: '#d8cfc2' /* familia-ok: ilustración de El Espejo */ }}>Esculpiendo tu estatua…</div>
               )}
               <div className="seg3" role="radiogroup" aria-label="Vista" style={{ position: 'absolute', left: 12, right: 12, bottom: 12, maxWidth: 260, marginInline: 'auto', background: 'var(--sf)' }}>
                 {(
@@ -101,7 +101,7 @@ export function EspejoEstatua() {
           <label style={{ display: 'block' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span className="cap gold">Peso</span>
-              <span className="mu2" style={{ fontSize: 12, fontWeight: 700 }}>
+              <span className="mu2" style={{ fontSize: 12.5, fontWeight: 700 }}>
                 {NOMBRES_ETAPA[etapaActual]}
               </span>
             </div>
@@ -142,8 +142,8 @@ export function EspejoEstatua() {
       </div>
 
       {/* Tira de evolución: tocá una etapa para verla grande */}
-      <div className="card" style={{ marginTop: 16, padding: '12px 10px', background: '#1d1a17', border: 'none' }}>
-        <div className="cap" style={{ color: '#c9a24a', marginLeft: 6 }}>
+      <div className="card" style={{ marginTop: 16, padding: '12px 10px', background: '#1d1a17' /* familia-ok: ilustración de El Espejo */, border: 'none' }}>
+        <div className="cap" style={{ color: '#c9a24a' /* familia-ok: ilustración de El Espejo */, marginLeft: 6 }}>
           Evolución
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 4, marginTop: 8 }} role="radiogroup" aria-label="Etapas de peso">
@@ -155,10 +155,10 @@ export function EspejoEstatua() {
               aria-checked={etapaActual === i}
               aria-label={NOMBRES_ETAPA[i]}
               onClick={() => setE((a) => ({ ...a, peso }))}
-              style={{ padding: 0, borderRadius: 10, border: etapaActual === i ? '2px solid #c9a24a' : '2px solid transparent', background: 'transparent', overflow: 'hidden' }}
+              style={{ padding: 0, borderRadius: 10, border: etapaActual === i ? '2px solid #c9a24a' /* familia-ok: ilustración de El Espejo */ : '2px solid transparent', background: 'transparent', overflow: 'hidden' }}
             >
               {tira[i] ? <img src={tira[i]} alt="" style={{ width: '100%', display: 'block', aspectRatio: '180 / 330', objectFit: 'cover' }} /> : <div style={{ aspectRatio: '180 / 330' }} />}
-              <div style={{ fontSize: 10, color: '#d8cfc2', padding: '2px 0 4px', fontWeight: 700 }}>{i + 1}</div>
+              <div style={{ fontSize: 11, color: '#d8cfc2' /* familia-ok: ilustración de El Espejo */, padding: '2px 0 4px', fontWeight: 700 }}>{i + 1}</div>
             </button>
           ))}
         </div>

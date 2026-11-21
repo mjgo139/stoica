@@ -92,15 +92,15 @@ export default function JardinDeOtro({ nombre, compartidos, jardin, fecha, hoy, 
       <style>{`
         ${ESTILOS_GRAFICOS}
         ${ESTILOS_ESCENA}
-        .hoja-planta { position: fixed; inset: 0; z-index: 200; background: rgba(20,14,6,.55); display: flex; justify-content: center; align-items: flex-end; }
-        .hoja-planta > div { background: var(--bg, #f4ede1); width: min(1000px, 100%); max-height: 94vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 14px 16px 24px; }
+        .hoja-planta { position: fixed; inset: 0; z-index: 200; background: color-mix(in srgb, var(--bg) 70%, transparent); display: flex; justify-content: center; align-items: flex-end; }
+        .hoja-planta > div { background: var(--bg); width: min(1000px, 100%); max-height: 94vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 14px 16px 24px; }
         @media (min-width: 760px) { .hoja-planta { align-items: center } .hoja-planta > div { border-radius: 22px } }
       `}</style>
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="cap gold">Jardín estoico</div>
-            <h2 className="titulo" style={{ fontSize: 22, margin: 0 }}>
+            <h2 className="titulo" style={{ fontSize: 20, margin: 0 }}>
               Jardín de {nombre}
             </h2>
           </div>

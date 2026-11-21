@@ -28,7 +28,7 @@ function Deslizante({ titulo, valor, texto, extremos, alCambiar }: { titulo: str
     <label style={{ display: 'block', marginTop: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span className="cap gold">{titulo}</span>
-        <span className="mu2" style={{ fontSize: 12, fontWeight: 700 }}>
+        <span className="mu2" style={{ fontSize: 12.5, fontWeight: 700 }}>
           {texto}
         </span>
       </div>
@@ -84,20 +84,20 @@ export function EspejoCuerpo() {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-        <div className="card" style={{ flex: '1 1 340px', minWidth: 0, overflow: 'hidden', background: '#ece9e4', border: 'none' }}>
+        <div className="card" style={{ flex: '1 1 340px', minWidth: 0, overflow: 'hidden', background: '#ece9e4' /* familia-ok: ilustración de El Espejo */, border: 'none' }}>
           {error ? (
-            <p style={{ padding: 24, color: '#333' }}>{error}</p>
+            <p style={{ padding: 24, color: '#333' /* familia-ok: ilustración de El Espejo */ }}>{error}</p>
           ) : (
             <div style={{ position: 'relative' }}>
               <canvas ref={lienzo} style={{ width: '100%', height: 'min(64vh, 560px)', display: 'block', touchAction: 'pan-y' }} aria-label="Tu cuerpo en 3D" />
-              {cargando && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 14, color: '#555' }}>Cargando tu cuerpo…</div>}
+              {cargando && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 13.5, color: '#555' /* familia-ok: ilustración de El Espejo */ }}>Cargando tu cuerpo…</div>}
               {e.comparar && !cargando && (
-                <div style={{ position: 'absolute', top: 10, left: 0, right: 0, display: 'flex', justifyContent: 'space-around', fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: '.08em', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: 10, left: 0, right: 0, display: 'flex', justifyContent: 'space-around', fontSize: 12.5, fontWeight: 800, color: '#555' /* familia-ok: ilustración de El Espejo */, letterSpacing: '.08em', pointerEvents: 'none' }}>
                   <span>HOY</span>
                   <span>META</span>
                 </div>
               )}
-              <p style={{ position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center', fontSize: 11.5, color: '#777', margin: 0, pointerEvents: 'none' }}>Arrastrá para girar · pellizcá para acercar</p>
+              <p style={{ position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center', fontSize: 11.5, color: '#777' /* familia-ok: ilustración de El Espejo */, margin: 0, pointerEvents: 'none' }}>Arrastrá para girar · pellizcá para acercar</p>
             </div>
           )}
         </div>

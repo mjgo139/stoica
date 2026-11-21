@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { CabeceraPagina } from '../../../familia/react';
 import { Link } from "react-router-dom";
 import { DIAS_LETRA, diaSemanaDeClave, sumarDias } from "@core/fechas";
 import {
@@ -42,9 +43,7 @@ export function ListaHabitos() {
         }}
       >
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div className="cap gold">Tus prácticas</div>
-          <h1 className="titulo">Hábitos</h1>
-          <p className="lead">Cada hábito cultiva una virtud.</p>
+          <CabeceraPagina etiqueta="Tus prácticas" titulo="Hábitos" linea="Cada hábito cultiva una virtud." />
         </div>
         <Link
           to="/habitos/nuevo"
@@ -56,7 +55,7 @@ export function ListaHabitos() {
       </div>
 
       {archivados.length > 0 && (
-        <div className="pestanas" role="tablist">
+        <div className="solapas" role="tablist">
           <button
             type="button"
             role="tab"
@@ -81,7 +80,7 @@ export function ListaHabitos() {
       {listo && lista.length === 0 && !verArchivados && (
         <div className="card vacio" style={{ marginTop: 22 }}>
           <IconoHabito icono="read" virtud="sabiduria" grande />
-          <div className="serif" style={{ fontSize: 22, marginTop: 12 }}>
+          <div className="serif" style={{ fontSize: 20, marginTop: 12 }}>
             Todavía no tenés hábitos
           </div>
           <p>Creá uno desde cero o empezá con una plantilla.</p>
@@ -152,11 +151,11 @@ export function TarjetaHabito({
           <span style={{ textAlign: "right" }}>
             <span
               className="num gold"
-              style={{ fontSize: 22, display: "block" }}
+              style={{ fontSize: 20, display: "block" }}
             >
               {aRomano(r)}
             </span>
-            <span className="cap mu2" style={{ fontSize: 9.5 }}>
+            <span className="cap mu2" style={{ fontSize: 11 }}>
               racha
             </span>
           </span>
@@ -188,12 +187,12 @@ export function TarjetaHabito({
         style={{
           display: "flex",
           alignItems: "center",
-          borderTop: "1px solid var(--ln)",
+          borderTop: "1px solid var(--ln2)",
           marginTop: 14,
           paddingTop: 10,
         }}
       >
-        <span className="cap mu" style={{ fontSize: 10.5, flex: 1 }}>
+        <span className="cap mu" style={{ fontSize: 11, flex: 1 }}>
           30 días · {p}%
         </span>
         {archivado ? (

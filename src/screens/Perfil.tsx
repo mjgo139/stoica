@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
+import { CabeceraPagina, Grupo, ElegirTema } from '../../familia/react';
 import { useMutation } from '@tanstack/react-query';
 import type { CambiosPerfil } from '@core/perfil';
 import { inicial } from '@core/perfil';
-import { limpiarNombre, validarContrasena, validarNombre, type Tema } from '@core/validaciones';
+import { limpiarNombre, validarContrasena, validarNombre } from '@core/validaciones';
 import { useSesion } from '@/app/sesion';
 import { esModoPrueba, obtenerDriver } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
@@ -16,11 +17,6 @@ import { BotonInstalar } from './Instalar';
 import { Accesos, MisDatos, Notificaciones } from './PerfilExtra';
 import { AppAndroid } from '@/nativo/AppAndroid';
 
-const TEMAS: Array<{ id: Tema; nombre: string }> = [
-  { id: 'claro', nombre: 'Claro' },
-  { id: 'oscuro', nombre: 'Oscuro' },
-  { id: 'sistema', nombre: 'Sistema' },
-];
 
 function useActualizarPerfil() {
   const uid = useSesion((s) => s.usuario?.uid);
@@ -59,8 +55,7 @@ export function Perfil() {
 
   return (
     <div className="entra">
-      <div className="cap gold">Tu cuenta</div>
-      <h1 className="titulo">Perfil</h1>
+      <CabeceraPagina etiqueta="Tu cuenta" titulo="Perfil" />
 
       <div className="cols" style={{ marginTop: 24 }}>
         <div className="panel" style={{ textAlign: 'center', paddingBlock: 28 }}>
@@ -68,7 +63,7 @@ export function Perfil() {
             <span style={{ position: 'absolute', inset: 0 }}>
               <Laurel ancho={112} alto={104} />
             </span>
-            <span className="serif" style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', background: 'var(--goldbg)', color: 'var(--goldtx)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, marginTop: -6 }}>
+            <span className="serif" style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', background: 'var(--goldbg)', color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, marginTop: -6 }}>
               {inicial(perfil.nombre)}
             </span>
           </div>
@@ -78,7 +73,7 @@ export function Perfil() {
           <div className="mu" style={{ fontWeight: 500, marginTop: 4, overflowWrap: 'anywhere' }}>
             {usuario.correo}
           </div>
-          <div className="cap mu2" style={{ marginTop: 10, fontSize: 10.5 }}>
+          <div className="cap mu2" style={{ marginTop: 10, fontSize: 11 }}>
             {usuario.proveedor === 'google' ? 'Entra con Google' : usuario.proveedor === 'prueba' ? 'Cuenta de prueba' : 'Entra con correo'}
             {perfil.rol === 'admin' ? ' · Admin' : ''}
           </div>
@@ -97,40 +92,30 @@ export function Perfil() {
         </div>
 
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Apariencia</span>
+          <Grupo n={1} className="sep-grupo sin-arriba">Apariencia</Grupo>
+          <div style={{ marginTop: 12 }}>
+            <ElegirTema valor={perfil.tema} cambiar={(t) => actualizar.mutate({ tema: t })} />
           </div>
-          <div className="seg3" role="radiogroup" aria-label="Tema" style={{ marginTop: 12 }}>
-            {TEMAS.map((t) => (
-              <button key={t.id} type="button" role="radio" aria-checked={perfil.tema === t.id} className={perfil.tema === t.id ? 'on' : ''} onClick={() => actualizar.mutate({ tema: t.id })}>
-                {t.nombre}
-              </button>
-            ))}
-          </div>
-          <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>
-            Sistema sigue el modo de tu celular o tu PC.
+          <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>
+            Noche romana es el tema de la familia estoica. Sistema sigue el modo de tu celular o tu PC.
           </p>
 
-          <div className="grp cap">
-            <span>Ajustes</span>
-          </div>
+          <Grupo n={2} className="sep-grupo">Ajustes</Grupo>
           <Interruptor etiqueta="Memento mori" detalle="Mostrar los días que quedan del año" activo={perfil.mementoMori} alCambiar={(v) => actualizar.mutate({ mementoMori: v })} />
           <div className="fila" style={{ cursor: 'default' }}>
             <span style={{ flex: 1 }}>
               <span style={{ display: 'block' }}>Zona horaria</span>
-              <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+              <span className="mu" style={{ display: 'block', fontSize: 13.5, fontWeight: 500, marginTop: 2 }}>
                 {perfil.zonaHoraria.replace('_', ' ')}
               </span>
             </span>
           </div>
-          <Notificaciones />
+          <Notificaciones n={3} />
           <AppAndroid />
-          <Accesos />
-          <MisDatos />
+          <Accesos n={4} />
+          <MisDatos n={5} />
           {perfil.rol === 'admin' && <VersionYNovedades />}
-          <div className="grp cap">
-            <span>Sesión</span>
-          </div>
+          <Grupo n={6} className="sep-grupo">Sesión</Grupo>
           <BotonInstalar estilo="fila" />
           {usuario.proveedor !== 'google' && (
             <button type="button" className="fila" onClick={() => setCambiandoClave(true)}>
@@ -138,12 +123,12 @@ export function Perfil() {
               <span style={{ flex: 1 }}>Cambiar contraseña</span>
             </button>
           )}
-          <button type="button" className="fila" onClick={salir} style={{ color: 'var(--cor)' }}>
+          <button type="button" className="fila" onClick={salir} style={{ color: 'var(--serie-2)' }}>
             <Icono nombre="salir" />
             <span style={{ flex: 1 }}>Cerrar sesión</span>
           </button>
-          <p className="cap mu2" style={{ marginTop: 18, fontSize: 10.5 }}>
-            Stoica v{__VERSION__}
+          <p className="cap mu2" style={{ marginTop: 18, fontSize: 11 }}>
+            StoaHabit v{__VERSION__}
             {esModoPrueba() ? ' · modo prueba' : ''}
           </p>
         </div>
@@ -255,7 +240,7 @@ function VersionYNovedades() {
         <Icono nombre="info" />
         <span style={{ flex: 1 }}>
           <span style={{ display: 'block' }}>Versión {__VERSION__}</span>
-          <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+          <span className="mu" style={{ display: 'block', fontSize: 13.5, fontWeight: 500, marginTop: 2 }}>
             Armada {cuando} · {__COMMIT__} · solo la ves vos (admin)
           </span>
         </span>

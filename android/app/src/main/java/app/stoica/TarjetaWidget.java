@@ -74,7 +74,7 @@ public class TarjetaWidget extends AppWidgetProvider {
         JSONObject h = Estado.conDatos(d) ? Estado.habito(d, hid) : null;
         String hoy = Estado.hoy(d);
         if (h == null) {
-            v.setTextViewText(R.id.c_nombre, !Estado.conDatos(d) ? "Entrá a Stoica" : hid == null ? "Elegí un hábito" : "Ese hábito ya no está");
+            v.setTextViewText(R.id.c_nombre, !Estado.conDatos(d) ? "Entrá a StoaHabit" : hid == null ? "Elegí un hábito" : "Ese hábito ya no está");
             v.setTextViewText(R.id.c_virtud, "MANTENÉ APRETADO PARA ELEGIR");
             for (int i = 0; i < 7; i++) v.setTextViewText(LB[i], "");
             v.setTextViewText(R.id.c_pct, "");

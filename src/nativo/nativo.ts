@@ -55,7 +55,7 @@ export async function registrarAvisosNativos(): Promise<{ token: string } | { er
   const { PushNotifications } = await import('@capacitor/push-notifications');
   let permiso = await PushNotifications.checkPermissions();
   if (permiso.receive === 'prompt' || permiso.receive === 'prompt-with-rationale') permiso = await PushNotifications.requestPermissions();
-  if (permiso.receive !== 'granted') return { error: 'No diste permiso para avisos. Activalo en Ajustes del celular › Apps › Stoica › Notificaciones.' };
+  if (permiso.receive !== 'granted') return { error: 'No diste permiso para avisos. Activalo en Ajustes del celular › Apps › StoaHabit › Notificaciones.' };
   return new Promise((resolver) => {
     let listo = false;
     const fin = (r: { token: string } | { error: string }) => {

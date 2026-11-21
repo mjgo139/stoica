@@ -35,7 +35,7 @@ public class JardinWidget extends AppWidgetProvider {
         JSONArray plantas = Estado.conDatos(d) ? d.optJSONArray("jardin") : null;
         if (plantas == null || plantas.length() == 0) {
             v.setViewVisibility(R.id.j_plantas, View.GONE);
-            v.setTextViewText(R.id.j_resumen, plantas == null ? "Abrí Stoica para ver tu jardín." : "Creá un hábito y aparece su semilla en tu jardín.");
+            v.setTextViewText(R.id.j_resumen, plantas == null ? "Abrí StoaHabit para ver tu jardín." : "Creá un hábito y aparece su semilla en tu jardín.");
             v.setTextViewText(R.id.j_nombres, "");
             manager.updateAppWidget(widgetId, v);
             return;

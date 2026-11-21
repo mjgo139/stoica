@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { CabeceraPagina } from '../../../familia/react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { esCodigo, MAX_MIEMBROS, normalizarCodigo, validarNombreGrupo } from '@core/comunidad';
 import { crearGrupo, unirseAGrupo, useComunidad } from '@/app/comunidad';
@@ -15,9 +16,7 @@ export function Comunidad() {
     <div className="entra">
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <div className="cap gold">Comunidad</div>
-          <h1 className="titulo">Grupos</h1>
-          <p className="lead">Pequeños grupos privados para acompañarse: reacciones, y con el plan, fotos que el grupo comenta.</p>
+          <CabeceraPagina etiqueta="Tus grupos" titulo="Comunidad" linea="Pequeños grupos privados para acompañarse: reacciones, y con el plan, fotos que el grupo comenta." />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="ghost" onClick={() => setHoja('unirse')}>
@@ -31,7 +30,7 @@ export function Comunidad() {
 
       {listo && grupos.size === 0 && (
         <div className="card vacio" style={{ marginTop: 22 }}>
-          <div className="serif" style={{ fontSize: 22 }}>
+          <div className="serif" style={{ fontSize: 20 }}>
             Todavía no estás en ningún grupo
           </div>
           <p>Creá uno e invitá hasta {MAX_MIEMBROS - 1} personas con un código, o unite al de alguien más. Cada uno elige qué hábitos comparte.</p>
@@ -41,13 +40,13 @@ export function Comunidad() {
       <div className="tarjetas" style={{ marginTop: 22 }}>
         {[...grupos.values()].map(({ grupo, yo, desafios }) => (
           <Link key={grupo.id} to={`/comunidad/${grupo.id}`} className="card tarjeta-h">
-            <div className="serif" style={{ fontSize: 22 }}>
+            <div className="serif" style={{ fontSize: 20 }}>
               {grupo.nombre}
             </div>
             <div className="mu" style={{ fontWeight: 600, marginTop: 6 }}>
               {grupo.miembros.length} {grupo.miembros.length === 1 ? 'integrante' : 'integrantes'} · {desafios.length} {desafios.length === 1 ? 'desafío' : 'desafíos'}
             </div>
-            <div className="cap mu2" style={{ fontSize: 10.5, marginTop: 12 }}>
+            <div className="cap mu2" style={{ fontSize: 11, marginTop: 12 }}>
               {yo?.compartidos.length ? `Compartís ${yo.compartidos.length} ${yo.compartidos.length === 1 ? 'hábito' : 'hábitos'}` : 'Todavía no compartís hábitos'}
             </div>
           </Link>
@@ -84,7 +83,7 @@ function HojaCrear({ abierta, alCerrar, alCrear }: { abierta: boolean; alCerrar:
           Nombre del grupo
         </label>
         <input id="g-nombre" className="inp" maxLength={40} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Por ejemplo: El Pórtico" />
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 10 }}>
+        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 10 }}>
           Después te damos un código para invitar. Máximo {MAX_MIEMBROS} integrantes.
         </p>
         <div className="err" role="alert">

@@ -41,7 +41,7 @@ export function perfilInicial(uid: string, nombre: string, correo: string, zona:
   return {
     nombre: limpiarNombre(nombre).slice(0, 40) || 'Estoico',
     correo: correo.trim().toLowerCase(),
-    tema: 'sistema',
+    tema: 'oscuro',
     mementoMori: true,
     zonaHoraria: zonaValida(zona) ? zona : ZONA_POR_DEFECTO,
     notificaciones: false,
@@ -74,7 +74,7 @@ export function completarPerfil(p: Partial<Perfil>): Perfil {
   return {
     nombre: p.nombre ?? 'Estoico',
     correo: p.correo ?? '',
-    tema: p.tema ?? 'sistema',
+    tema: p.tema ?? 'oscuro',
     mementoMori: p.mementoMori ?? true,
     zonaHoraria: p.zonaHoraria ?? ZONA_POR_DEFECTO,
     notificaciones: p.notificaciones ?? false,

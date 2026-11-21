@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Grupo as TituloGrupo } from '../../../familia/react';
 import { estadoPlan, type EstadoPlan } from '@core/plan';
 import type { Grupo } from '@core/comunidad';
 import { canjearCodigo, useDiasGracia } from '@/app/plan';
@@ -56,9 +57,7 @@ export function PanelPlan({ grupoId, plan }: { grupoId: string; plan: EstadoPlan
   const [abierta, setAbierta] = useState(false);
   return (
     <div data-plan={plan.estado}>
-      <div className="grp cap">
-        <span>Fotos y comentarios</span>
-      </div>
+      <TituloGrupo n={1} className="sep-grupo">Fotos y comentarios</TituloGrupo>
       {plan.estado === 'activo' && (
         <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
           Activo hasta el <b>{fechaPlan(plan.hasta)}</b>

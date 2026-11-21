@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { CabeceraPagina, Grupo } from '../../familia/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fechaCorta, fechaLargaDeClave, MOMENTOS, sumarDias } from '@core/fechas';
 import { type Momento } from '@core/habitos';
@@ -77,6 +78,14 @@ export function Tareas() {
 
   const tarjetaProyecto = (p: ConId<Proyecto>) => <DesgloseProyecto key={p.id} p={p} hoy={hoy} alEditar={(t) => setEditando(t)} alAgregar={() => setNuevaEnProyecto(p.id)} />;
 
+  // Secciones numeradas en el orden en que aparecen (las vacías no cuentan)
+  const nums = (() => {
+    let k = 1;
+    const atrasadas = vencidas.length ? ++k : 0;
+    const proximasN = proximas.length ? ++k : 0;
+    const sinFechaN = sinFecha.length ? ++k : 0;
+    return { hoy: 1, atrasadas, proximas: proximasN, sinFecha: sinFechaN, proyectos: ++k, noDepende: ++k };
+  })();
   return (
     <div className="entra">
       <div
@@ -88,9 +97,7 @@ export function Tareas() {
         }}
       >
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div className="cap gold">Lo que hay que hacer</div>
-          <h1 className="titulo">Tareas</h1>
-          <p className="lead">Ocupate de lo que depende de ti. Lo demás, soltalo.</p>
+          <CabeceraPagina etiqueta="Lo que hay que hacer" titulo="Tareas" linea="Ocupate de lo que depende de ti. Lo demás, soltalo." />
         </div>
         <div className="acciones-tareas">
           <Link to="/tareas/enfoque" className="btn btn-enfoque v-sabiduria" aria-label="Enfoque: temporizador para una tarea, un descanso o meditar">
@@ -105,41 +112,31 @@ export function Tareas() {
       <div className="cols c64" style={{ marginTop: 24 }}>
         <div className="pila">
           <div className="panel">
-            <div className="grp cap" style={{ marginTop: 0 }}>
-              <span>Hoy · {fechaLargaDeClave(hoy)}</span>
-            </div>
+            <Grupo n={nums.hoy} className="sep-grupo sin-arriba">Hoy · {fechaLargaDeClave(hoy)}</Grupo>
             {dependen.length === 0 && <p className="vacio-mini">Nada pendiente para hoy que dependa de vos.</p>}
             {dependen.map((t) => fila(t, hoy))}
             {vencidas.length > 0 && (
               <>
-                <div className="grp cap" style={{ color: 'var(--miss)' }}>
-                  <span>Atrasadas</span>
-                </div>
+                <Grupo n={nums.atrasadas} className="sep-grupo">Atrasadas</Grupo>
                 {vencidas.map((t) => fila(t, t.fecha!))}
               </>
             )}
             {proximas.length > 0 && (
               <>
-                <div className="grp cap">
-                  <span>Próximas</span>
-                </div>
+                <Grupo n={nums.proximas} className="sep-grupo">Próximas</Grupo>
                 {proximas.map((t) => fila(t, t.fecha!))}
               </>
             )}
             {sinFecha.length > 0 && (
               <>
-                <div className="grp cap">
-                  <span>Sin fecha</span>
-                </div>
+                <Grupo n={nums.sinFecha} className="sep-grupo">Sin fecha</Grupo>
                 {sinFecha.map((t) => fila(t, hoy))}
               </>
             )}
           </div>
           <div className="panel">
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
-                <span>Proyectos</span>
-              </div>
+              <Grupo n={nums.proyectos} className="sep-grupo sin-arriba">Proyectos</Grupo>
               <button type="button" className="link" onClick={() => setNuevoProyecto(true)}>
                 + Nuevo
               </button>
@@ -158,9 +155,7 @@ export function Tareas() {
         </div>
         <div className="pila">
           <div className="panel">
-            <div className="grp cap" style={{ marginTop: 0 }}>
-              <span>No depende de ti</span>
-            </div>
+            <Grupo n={nums.noDepende} className="sep-grupo sin-arriba">No depende de ti</Grupo>
             <p className="quote" style={{ fontSize: 16 }}>
               “Hay cosas que dependen de nosotros y otras que no.” — Epicteto
             </p>
@@ -174,12 +169,12 @@ export function Tareas() {
                     style={{
                       width: 10,
                       height: 10,
-                      borderColor: 'var(--mu3)',
+                      borderColor: 'var(--mu2)',
                       margin: '0 6px',
                     }}
                   />
                   <span style={{ flex: 1, fontWeight: 600 }}>{t.titulo}</span>
-                  <span className="cap mu2" style={{ fontSize: 10 }}>
+                  <span className="cap mu2" style={{ fontSize: 11 }}>
                     Soltar
                   </span>
                 </button>
@@ -214,10 +209,10 @@ function DesgloseProyecto({ p, hoy, alEditar, alAgregar }: { p: ConId<Proyecto>;
     <div className="desglose" data-proyecto={p.nombre}>
       <button type="button" className="desglose-cab" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
         <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <strong style={{ flex: 1, fontSize: 15.5, textAlign: 'left', color: 'var(--tx)' }}>
+          <strong style={{ flex: 1, fontSize: 16, textAlign: 'left', color: 'var(--tx)' }}>
             {p.nombre}
           </strong>
-          <span className="num mu2" style={{ fontSize: 13 }}>
+          <span className="num mu2" style={{ fontSize: 13.5 }}>
             {a.hechas}/{a.total}
           </span>
           <span className={`flecha ${abierto ? 'abierta' : ''}`} aria-hidden="true">
@@ -228,7 +223,7 @@ function DesgloseProyecto({ p, hoy, alEditar, alAgregar }: { p: ConId<Proyecto>;
           <i
             style={{
               width: `${pct}%`,
-              background: completo ? 'var(--ok)' : 'var(--gold)',
+              background: completo ? 'var(--verde)' : 'var(--gold)',
             }}
           />
         </span>
@@ -236,7 +231,7 @@ function DesgloseProyecto({ p, hoy, alEditar, alAgregar }: { p: ConId<Proyecto>;
           className="mu2"
           style={{
             display: 'block',
-            fontSize: 12,
+            fontSize: 12.5,
             fontWeight: 600,
             marginTop: 6,
             textAlign: 'left',
@@ -349,7 +344,7 @@ export function EditorTarea({ tarea, abierta, alCerrar, hoy, proyectoFijo }: { t
           </button>
         </div>
         {!depende && (
-          <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+          <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>
             La anotamos para que la sueltes: no se marca, solo se recuerda que no está en tus manos.
           </p>
         )}
@@ -388,7 +383,7 @@ export function EditorTarea({ tarea, abierta, alCerrar, hoy, proyectoFijo }: { t
           <>
             <div className="lbl cap">Aviso</div>
             {sinFecha ? (
-              <p className="mu" style={{ fontSize: 13, fontWeight: 500, margin: 0 }}>
+              <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>
                 Para avisarte a una hora, elegí un día o repetila todos los días.
               </p>
             ) : (

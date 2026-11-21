@@ -13,7 +13,7 @@ public class HabitoConfig extends ElegirWidget {
 
     @Override
     protected String sinOpciones() {
-        return "Abrí Stoica primero (y creá un hábito) para elegirlo acá.";
+        return "Abrí StoaHabit primero (y creá un hábito) para elegirlo acá.";
     }
 
     @Override

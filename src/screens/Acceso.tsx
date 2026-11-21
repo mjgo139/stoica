@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { validarContrasena, validarCorreo, validarNombre, limpiarNombre } from '@core/validaciones';
 import { obtenerDriver, esModoPrueba } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
-import { Laurel } from '@/ui/Laurel';
+import { Marca } from '@/ui/Marca';
 import { LogoGoogle } from '@/ui/Iconos';
 import { esNativo } from '@/nativo/nativo';
 import { BotonInstalar } from './Instalar';
@@ -66,11 +66,10 @@ export function Acceso() {
   return (
     <main className="entra" style={{ maxWidth: 420, margin: '0 auto', paddingTop: 24 }}>
       <div style={{ textAlign: 'center' }}>
-        <Laurel ancho={96} alto={88} />
-        <h1 className="marca-familia" style={{ fontSize: 44, letterSpacing: '.16em', paddingLeft: '.16em', margin: '14px 0 0' }}>
-          STOICA
+        <h1 style={{ margin: 0 }} aria-label="StoaHabit">
+          <Marca grande />
         </h1>
-        <p className="lead" style={{ fontFamily: 'var(--f-display)', fontSize: 17, fontWeight: 600 }}>
+        <p className="lead" style={{ fontFamily: 'var(--f-display)', fontSize: 18, fontWeight: 600 }}>
           Hábitos. Disciplina. Una vida más serena.
         </p>
       </div>

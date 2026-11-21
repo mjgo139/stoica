@@ -9,15 +9,15 @@ import { useAvisos } from '@/ui/avisos';
 
 const NOMBRE_ETAPA: Record<Etapa, string> = { aflojando: 'Aflojando', hoy: 'Hoy', mejorando: 'Mejorando', meta: 'Tu meta' };
 const COLORES: Array<[string, string, string]> = [
-  ['blanco', 'Blanco', '#f4f1ea'],
-  ['negro', 'Negro', '#2f2f33'],
-  ['gris', 'Gris', '#9a9a9a'],
-  ['rojo', 'Rojo', '#c8302c'],
-  ['azul', 'Azul', '#2f4f7f'],
-  ['jean', 'Jean', '#5878a8'],
-  ['verde', 'Verde', '#3f6b45'],
-  ['dorado', 'Mostaza', '#c9a24a'],
-  ['violeta', 'Violeta', '#7a4a8c'],
+  ['blanco', 'Blanco', '#f4f1ea' /* familia-ok: ilustración de El Espejo */],
+  ['negro', 'Negro', '#2f2f33' /* familia-ok: ilustración de El Espejo */],
+  ['gris', 'Gris', '#9a9a9a' /* familia-ok: ilustración de El Espejo */],
+  ['rojo', 'Rojo', '#c8302c' /* familia-ok: ilustración de El Espejo */],
+  ['azul', 'Azul', '#2f4f7f' /* familia-ok: ilustración de El Espejo */],
+  ['jean', 'Jean', '#5878a8' /* familia-ok: ilustración de El Espejo */],
+  ['verde', 'Verde', '#3f6b45' /* familia-ok: ilustración de El Espejo */],
+  ['dorado', 'Mostaza', '#c9a24a' /* familia-ok: ilustración de El Espejo */],
+  ['violeta', 'Violeta', '#7a4a8c' /* familia-ok: ilustración de El Espejo */],
 ];
 type Plano = 'lamina' | 0 | 1 | 2;
 const PLANOS: Array<[Plano, string]> = [
@@ -30,7 +30,7 @@ const PLANOS: Array<[Plano, string]> = [
 function ElegirColor({ titulo, valor, alCambiar }: { titulo: string; valor: string; alCambiar: (v: string) => void }) {
   return (
     <div style={{ marginTop: 14 }}>
-      <div className="cap mu2" style={{ fontSize: 10.5, marginBottom: 6 }}>
+      <div className="cap mu2" style={{ fontSize: 11, marginBottom: 6 }}>
         {titulo}
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} role="radiogroup" aria-label={titulo}>
@@ -98,7 +98,7 @@ export function EspejoImagen() {
     return (
       <div className="card" style={{ marginTop: 14, padding: '16px 16px 18px', maxWidth: 560 }}>
         <div className="cap gold">Crear tu reflejo</div>
-        <p className="mu" style={{ marginTop: 6, fontSize: 14 }}>
+        <p className="mu" style={{ marginTop: 6, fontSize: 13.5 }}>
           Subí una selfie de frente, con buena luz. La IA arma tu personaje de frente, perfil y espalda, respetando tu cuerpo tal como es. La foto no se guarda: se usa una vez y se descarta.
         </p>
         <input ref={entrada} type="file" accept="image/*" capture="user" hidden onChange={(e) => setSelfie(e.target.files?.[0] ?? null)} aria-label="Selfie" />
@@ -106,7 +106,7 @@ export function EspejoImagen() {
           {vistaPrevia ? (
             <img src={vistaPrevia} alt="Tu selfie" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--ln3)' }} />
           ) : (
-            <div style={{ width: 72, height: 72, borderRadius: 12, border: '1px dashed var(--ln4)', display: 'grid', placeItems: 'center' }} className="mu2">
+            <div style={{ width: 72, height: 72, borderRadius: 12, border: '1px dashed var(--ln)', display: 'grid', placeItems: 'center' }} className="mu2">
               ?
             </div>
           )}
@@ -115,7 +115,7 @@ export function EspejoImagen() {
           </button>
         </div>
         <label style={{ display: 'block', marginTop: 14 }}>
-          <span className="cap mu2" style={{ fontSize: 10.5 }}>
+          <span className="cap mu2" style={{ fontSize: 11 }}>
             Algo más de vos (opcional)
           </span>
           <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value.slice(0, 300))} rows={2} placeholder="Ej.: 34 años, 1,75 m, algo de panza, barba corta" style={{ width: '100%', marginTop: 6 }} />
@@ -130,7 +130,7 @@ export function EspejoImagen() {
             Cancelar
           </button>
         )}
-        <p className="mu2" style={{ fontSize: 12, marginTop: 10 }}>
+        <p className="mu2" style={{ fontSize: 12.5, marginTop: 10 }}>
           Imágenes usadas este mes: {usados} de {MAX_IMAGENES_MES}.
         </p>
       </div>
@@ -155,14 +155,14 @@ export function EspejoImagen() {
     <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 14 }}>
       <div className="card" style={{ flex: '1 1 340px', minWidth: 0, overflow: 'hidden', padding: 0 }}>
         <div
-          style={{ position: 'relative', width: '100%', aspectRatio: plano === 'lamina' ? '16 / 9' : undefined, height: alto, maxWidth: plano === 'lamina' ? undefined : 'calc(min(64vh, 560px) * 0.593)', marginInline: 'auto', background: '#eceae6' }}
+          style={{ position: 'relative', width: '100%', aspectRatio: plano === 'lamina' ? '16 / 9' : undefined, height: alto, maxWidth: plano === 'lamina' ? undefined : 'calc(min(64vh, 560px) * 0.593)', marginInline: 'auto', background: '#eceae6' /* familia-ok: ilustración de El Espejo */ }}
           aria-label={`Tu reflejo: ${NOMBRE_ETAPA[actualEtapa]}${imagenDe(actualEtapa) ? '' : ' (sin generar)'}`}
           role="img"
         >
           {urlA && <VistaLamina url={urlA} plano={plano} opacidad={urlB && urlB !== urlA ? 1 - mezcla : 1} />}
           {urlB && urlB !== urlA && <VistaLamina url={urlB} plano={plano} opacidad={mezcla} />}
           {!imagenDe(actualEtapa) && (
-            <div className="mu2" style={{ position: 'absolute', left: 10, right: 10, bottom: 10, textAlign: 'center', fontSize: 12.5, padding: '6px 10px', borderRadius: 10, background: 'rgba(255,255,255,.85)' }}>
+            <div className="mu2" style={{ position: 'absolute', left: 10, right: 10, bottom: 10, textAlign: 'center', fontSize: 12.5, padding: '6px 10px', borderRadius: 10, background: 'rgba(255,255,255,.85)' /* familia-ok: ilustración de El Espejo */ }}>
               Falta generar “{NOMBRE_ETAPA[actualEtapa]}”: se muestra la más cercana.
             </div>
           )}
@@ -180,7 +180,7 @@ export function EspejoImagen() {
         <label style={{ display: 'block' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span className="cap gold">Evolución</span>
-            <span className="mu2" style={{ fontSize: 12, fontWeight: 700 }}>
+            <span className="mu2" style={{ fontSize: 12.5, fontWeight: 700 }}>
               {NOMBRE_ETAPA[actualEtapa]}
             </span>
           </div>
@@ -199,7 +199,7 @@ export function EspejoImagen() {
         )}
         {faltantes.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <div className="cap mu2" style={{ fontSize: 10.5, marginBottom: 6 }}>
+            <div className="cap mu2" style={{ fontSize: 11, marginBottom: 6 }}>
               Generar etapas
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -209,12 +209,12 @@ export function EspejoImagen() {
                 </button>
               ))}
             </div>
-            <p className="mu2" style={{ fontSize: 12, marginTop: 8 }}>
+            <p className="mu2" style={{ fontSize: 12.5, marginTop: 8 }}>
               Cada etapa tarda unos 30 segundos y queda guardada.
             </p>
           </div>
         )}
-        <p className="mu2" style={{ fontSize: 12, marginTop: 14 }}>
+        <p className="mu2" style={{ fontSize: 12.5, marginTop: 14 }}>
           Imágenes usadas este mes: {usados} de {MAX_IMAGENES_MES}.
         </p>
         <button type="button" className="ghost" style={{ marginTop: 10, width: '100%' }} disabled={!!trabajando} onClick={() => setRehacer(true)}>
@@ -231,7 +231,7 @@ function BorrarReflejo() {
   const mostrar = useAvisos((s) => s.mostrar);
   return (
     <>
-      <button type="button" className="ghost" style={{ marginTop: 10, width: '100%', color: 'var(--misstx)' }} onClick={() => setAbierto(true)}>
+      <button type="button" className="ghost" style={{ marginTop: 10, width: '100%', color: 'var(--miss)' }} onClick={() => setAbierto(true)}>
         Borrar mi reflejo
       </button>
       <Confirmar

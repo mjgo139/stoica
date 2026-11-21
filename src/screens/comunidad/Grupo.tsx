@@ -1,3 +1,5 @@
+import { DIRECCION } from '@/ui/AvisoMudanza';
+import { Grupo as TituloGrupo } from '../../../familia/react';
 import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { estadoDesafio, finDesafio, REACCIONES, semanaAlDia, validarDesafio, validarNombreGrupo, type Compartido, type Desafio, type Miembro, type Progreso, type Reaccion, type TipoReaccion } from '@core/comunidad';
@@ -45,6 +47,8 @@ export function Grupo() {
   const [renombrando, setRenombrando] = useState(false);
   const plan = usePlan(estado?.grupo);
   const fotos = useFotosSemana(id, plan);
+  // Si arriba están las fotos de hoy, son la sección I y las demás se corren uno
+  const conFotos = planVisible(plan) && fotos.some((f) => f.dia === hoy) ? 1 : 0;
   const [verFotos, setVerFotos] = useState<VerFotos | null>(null);
   const [subirFotos, setSubirFotos] = useState<SubirFotos | null>(null);
   const celebrando = useDatos((s) => !!s.celebracion);
@@ -53,7 +57,7 @@ export function Grupo() {
   if (!estado) {
     return listo ? (
       <div className="card vacio">
-        <div className="serif" style={{ fontSize: 22 }}>
+        <div className="serif" style={{ fontSize: 20 }}>
           No estás en este grupo
         </div>
         <p>Puede que hayas salido o que el grupo se haya eliminado.</p>
@@ -64,11 +68,11 @@ export function Grupo() {
     ) : null;
   }
   const { grupo, yo, desafios } = estado;
-  const enlace = `${location.origin}/unirse/${grupo.codigo}`;
+  const enlace = `${DIRECCION}/unirse/${grupo.codigo}`;
   const compartir = async () => {
-    const texto = `Sumate a mi grupo "${grupo.nombre}" en Stoica. Código: ${grupo.codigo}`;
+    const texto = `Sumate a mi grupo "${grupo.nombre}" en StoaHabit. Código: ${grupo.codigo}`;
     try {
-      if (navigator.share) await navigator.share({ title: 'Stoica', text: texto, url: enlace });
+      if (navigator.share) await navigator.share({ title: 'StoaHabit', text: texto, url: enlace });
       else {
         await navigator.clipboard.writeText(`${texto}\n${enlace}`);
         mostrar('Invitación copiada.');
@@ -93,7 +97,7 @@ export function Grupo() {
           <h1 className="titulo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {grupo.nombre}
             {grupo.creador === uid && (
-              <button type="button" className="link" style={{ fontSize: 14 }} onClick={() => setRenombrando(true)}>
+              <button type="button" className="link" style={{ fontSize: 13.5 }} onClick={() => setRenombrando(true)}>
                 Editar nombre
               </button>
             )}
@@ -112,9 +116,7 @@ export function Grupo() {
         <div className="pila">
         {planVisible(plan) && <FotosDeHoy fotos={fotos} miembros={miembros} alVer={setVerFotos} />}
         <div className="panel">
-          <div className="grp cap" style={{ marginTop: 0 }}>
-            <span>Integrantes · hoy</span>
-          </div>
+          <TituloGrupo n={conFotos + 1} className="sep-grupo sin-arriba">Integrantes · hoy</TituloGrupo>
           {ordenados.map((m) => (
             <TarjetaMiembro key={m.id} m={m} esYo={m.id === uid} grupoId={id} reacciones={reacciones} hoy={hoy} plan={plan} fotos={fotos} />
           ))}
@@ -138,9 +140,7 @@ export function Grupo() {
         <div className="pila">
           <div className="panel">
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div className="grp cap" style={{ marginTop: 0, flex: 1 }}>
-                <span>Desafíos</span>
-              </div>
+              <TituloGrupo n={conFotos + 2} className="sep-grupo sin-arriba">Desafíos</TituloGrupo>
               <button type="button" className="link" onClick={() => setHoja('desafio')}>
                 + Nuevo
               </button>
@@ -153,19 +153,15 @@ export function Grupo() {
               ))}
           </div>
           <div className="panel">
-            <div className="grp cap" style={{ marginTop: 0 }}>
-              <span>Invitación</span>
-            </div>
+            <TituloGrupo n={conFotos + 3} className="sep-grupo sin-arriba">Invitación</TituloGrupo>
             <div className="num" style={{ fontSize: 28, letterSpacing: '.18em' }}>
               {grupo.codigo}
             </div>
-            <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 6 }}>
+            <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
               Compartí este código o el enlace. Quien lo tenga puede entrar mientras haya lugar.
             </p>
             <PanelPlan grupoId={id} plan={plan} />
-            <div className="grp cap">
-              <span>Tu lugar en el grupo</span>
-            </div>
+            <TituloGrupo n={conFotos + 4} className="sep-grupo">Tu lugar en el grupo</TituloGrupo>
             <button type="button" className="ghost peligro" style={{ marginTop: 4 }} onClick={() => setSaliendo(true)}>
               {grupo.creador === uid ? 'Eliminar o salir' : 'Salir del grupo'}
             </button>
@@ -217,13 +213,13 @@ function TarjetaMiembro({ m, esYo, grupoId, reacciones, hoy, plan, fotos }: { m:
             {esYo && <span className="mu2"> · vos</span>}
           </span>
           {conteo.length > 0 && (
-            <span className="mu" style={{ fontSize: 13, fontWeight: 600 }}>
+            <span className="mu" style={{ fontSize: 13.5, fontWeight: 600 }}>
               {conteo.map((c) => `${c.simbolo} ${c.n}`).join('  ')}
             </span>
           )}
         </span>
         {m.compartidos.length > 0 && (
-          <button type="button" className="ghost" style={{ minHeight: 34, padding: '0 12px', fontSize: 13 }} onClick={() => setVerJardin(true)} aria-label={esYo ? 'Ver mi jardín como lo ve el grupo' : `Ver el jardín de ${m.nombre}`}>
+          <button type="button" className="ghost" style={{ minHeight: 34, padding: '0 12px', fontSize: 13.5 }} onClick={() => setVerJardin(true)} aria-label={esYo ? 'Ver mi jardín como lo ve el grupo' : `Ver el jardín de ${m.nombre}`}>
             <Icono nombre="planta" tam={16} /> Jardín
           </button>
         )}
@@ -405,9 +401,9 @@ export function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId
     <span key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
       <span className="nombre-barra">{nombre}</span>
       <span className="barra-prog" style={{ flex: 1 }}>
-        <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--ok)' : 'var(--gold)' }} />
+        <i style={{ width: `${Math.min(100, (p.cumplidos / d.meta) * 100)}%`, background: p.cumplidos >= d.meta ? 'var(--verde)' : 'var(--gold)' }} />
       </span>
-      <span className="num" style={{ fontSize: 14, width: 48, textAlign: 'right' }}>
+      <span className="num" style={{ fontSize: 13.5, width: 48, textAlign: 'right' }}>
         {p.cumplidos}/{d.meta}
       </span>
     </span>
@@ -418,14 +414,14 @@ export function TarjetaDesafio({ d, grupoId, hoy }: { d: ConId<Desafio>; grupoId
         <strong className={`v-${d.virtud} vt`} style={{ flex: 1, fontSize: 16 }}>
           {d.titulo}
         </strong>
-        <span className="cap mu2" style={{ fontSize: 10 }}>
+        <span className="cap mu2" style={{ fontSize: 11 }}>
           {e.estado === 'activo' ? `Día ${e.dia} de ${d.duracion}` : e.estado === 'proximo' ? `Empieza en ${e.quedan} días` : 'Terminado'}
         </span>
       </span>
-      <span className="mu" style={{ display: 'block', fontSize: 13, fontWeight: 500, marginTop: 2 }}>
+      <span className="mu" style={{ display: 'block', fontSize: 13.5, fontWeight: 500, marginTop: 2 }}>
         Meta: {d.meta} de {d.duracion} días · {fechaCorta(d.inicio)} al {fechaCorta(finDesafio(d))}
       </span>
-      {mio ? barra(mio, 'Vos') : <span className="mu2" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginTop: 8 }}>Todavía no participás</span>}
+      {mio ? barra(mio, 'Vos') : <span className="mu2" style={{ display: 'block', fontSize: 13.5, fontWeight: 600, marginTop: 8 }}>Todavía no participás</span>}
       {otros.map((p) => barra(p, p.nombre))}
       <span style={{ display: 'flex', alignItems: 'center', marginTop: 10, gap: 8 }}>
         <span className="mu2" style={{ flex: 1, fontSize: 12.5, fontWeight: 600 }}>
@@ -491,7 +487,7 @@ export function HojaElegirHabito({ d, grupoId, abierta, alCerrar }: { d: ConId<D
             <IconoHabito icono={sugerido.icono} virtud={sugerido.virtud} tam={34} />
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block' }}>¿No tenés un hábito para esto?</span>
-              <span style={{ fontWeight: 500, fontSize: 13 }}>
+              <span style={{ fontWeight: 500, fontSize: 13.5 }}>
                 Creamos “{sugerido.nombre}” ({NOMBRE_VIRTUD[sugerido.virtud]}, todos los días). Después lo podés editar.
               </span>
             </span>
@@ -656,7 +652,7 @@ export function HojaDesafio({ abierta, alCerrar, grupoId, hoy, existente }: { ab
             <input id="d-meta" className="fi" inputMode="numeric" value={meta} onChange={(e) => setMeta(e.target.value.replace(/\D/g, ''))} />
           </div>
         </div>
-        <p className="mu" style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>
           {existente ? 'La fecha de inicio no cambia y la duración solo se puede alargar, para no romper el conteo de quienes participan.' : 'Empieza hoy. Cada integrante elige con qué hábito participa.'}
         </p>
         <div className="err" role="alert">

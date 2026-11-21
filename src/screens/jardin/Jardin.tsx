@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as PE } from 'react';
+import { CabeceraPagina } from '../../../familia/react';
 import { createPortal } from 'react-dom';
 import { useSesion } from '@/app/sesion';
 import { alCien, consejo, DIAS_PARA_MARCHITAR, DIAS_POR_RETONO, ETAPAS_PLANTA, faltanParaCrecer, hashTexto, MARCHITA, MAX_RETONOS, PLANTA_DE_VIRTUD, UMBRALES, visitaDelDia, type Consejo } from '@core/jardin';
@@ -533,35 +534,31 @@ export function Jardin() {
           .jardin-panel { max-width: 1000px; }
         }
         @keyframes latir { 0%,100% { transform: translate(-50%, -100%) scale(1); opacity: .9 } 50% { transform: translate(-50%, -100%) scale(1.15); opacity: 1 } }
-        .jardin-nombre { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; background: rgba(30,24,16,.78); color: #f3e6c8; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; pointer-events: none; }
-        .pide-agua { position: absolute; animation: latir 1.4s ease-in-out infinite; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); pointer-events: none; }
-        .pide-agua svg { fill: rgba(110,190,250,.9); stroke: #eaf7ff; display: block; }
+        .jardin-nombre { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; background: color-mix(in srgb, var(--icono-fondo) 78%, transparent); color: var(--icono-figura); font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; pointer-events: none; }
+        .pide-agua { position: absolute; animation: latir 1.4s ease-in-out infinite; filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--icono-fondo) 40%, transparent)); pointer-events: none; }
+        .pide-agua svg { fill: var(--serie-1); stroke: var(--icono-figura); display: block; }
         @keyframes globo { 0%,100% { transform: translate(-50%, -100%) } 50% { transform: translate(-50%, -104%) } }
-        .globo, .nube { position: absolute; transform: translate(-50%, -100%); background: #fffaf0; color: #3b2a12; border: 1.5px solid #c9a24a; border-radius: 12px; padding: 5px 9px; font-size: 11.5px; font-weight: 700; line-height: 1.25; max-width: 170px; text-align: center; box-shadow: 0 3px 8px rgba(0,0,0,.25); animation: globo 2.6s ease-in-out infinite; cursor: pointer; }
-        .globo::after, .nube::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -6px; border: 6px solid transparent; border-top-color: #c9a24a; border-bottom: 0; }
+        .globo, .nube { position: absolute; transform: translate(-50%, -100%); background: var(--sf); color: var(--tx); border: 1.5px solid var(--gold2); border-radius: 12px; padding: 5px 9px; font-size: 11.5px; font-weight: 700; line-height: 1.25; max-width: 170px; text-align: center; box-shadow: var(--sombra-boton); animation: globo 2.6s ease-in-out infinite; cursor: pointer; }
+        .globo::after, .nube::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--gold2); border-bottom: 0; }
         .zona-maceta { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
-        .hoja-planta { position: fixed; inset: 0; z-index: 200; background: rgba(20,14,6,.55); display: flex; justify-content: center; align-items: flex-end; }
-        .hoja-planta > div { background: var(--bg, #f4ede1); width: min(760px, 100%); max-height: 92vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 14px 16px 28px; }
+        .hoja-planta { position: fixed; inset: 0; z-index: 200; background: color-mix(in srgb, var(--bg) 70%, transparent); display: flex; justify-content: center; align-items: flex-end; }
+        .hoja-planta > div { background: var(--bg); width: min(760px, 100%); max-height: 92vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 14px 16px 28px; }
         @media (min-width: 760px) { .hoja-planta { align-items: center } .hoja-planta > div { border-radius: 22px } }
-        .celda-libre { position: absolute; border: 1.5px dashed rgba(255,248,225,.9); border-radius: 10px; background: rgba(255,248,225,.14); pointer-events: none; }
-        .celda-libre.destino { background: rgba(255,214,120,.4); border-color: #ffd678; border-style: solid; }
-        .celda-pasillo { position: absolute; background: repeating-linear-gradient(45deg, rgba(95,62,20,.30) 0 6px, rgba(95,62,20,.18) 6px 12px); pointer-events: none; }
-        .festejo { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center; background: rgba(20,14,6,.55); padding: 16px; }
-        .festejo > div { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, #fff6de, #ecd9b2 70%); border: 2px solid #c9a24a; border-radius: 22px; padding: 22px 18px 18px; width: min(380px, 100%); text-align: center; color: #3b2a12; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
-        .festejo .rayos { position: absolute; left: 50%; top: 38%; width: 520px; height: 520px; background: repeating-conic-gradient(rgba(255,206,110,.35) 0 10deg, rgba(255,206,110,0) 10deg 20deg); border-radius: 50%; animation: rayos 18s linear infinite; pointer-events: none; }
+        .celda-libre { position: absolute; border: 1.5px dashed color-mix(in srgb, var(--icono-figura) 90%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--icono-figura) 14%, transparent); pointer-events: none; }
+        .celda-libre.destino { background: color-mix(in srgb, var(--goldh) 40%, transparent); border-color: var(--goldh); border-style: solid; }
+        .celda-pasillo { position: absolute; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--gold2) 30%, transparent) 0 6px, color-mix(in srgb, var(--gold2) 18%, transparent) 6px 12px); pointer-events: none; }
+        .festejo { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bg) 70%, transparent); padding: 16px; }
+        .festejo > div { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--gold) 16%, var(--sf)), var(--sf) 70%); border: 2px solid var(--gold2); border-radius: 22px; padding: 22px 18px 18px; width: min(380px, 100%); text-align: center; color: var(--tx); box-shadow: var(--sombra); }
+        .festejo .rayos { position: absolute; left: 50%; top: 38%; width: 520px; height: 520px; background: repeating-conic-gradient(color-mix(in srgb, var(--goldh) 35%, transparent) 0 10deg, transparent 10deg 20deg); border-radius: 50%; animation: rayos 18s linear infinite; pointer-events: none; }
         .festejo img { position: relative; width: 150px; height: 150px; object-fit: contain; animation: crecer 1.4s ease-out; }
         @media (prefers-reduced-motion: reduce) { .pide-agua, .globo, .nube, .festejo .rayos, .festejo img { animation: none } }
       `}</style>
-      <div className="cap gold">Jardín estoico</div>
-      <h1 className="titulo">Tu jardín</h1>
-      <p className="mu" style={{ marginTop: 4 }}>
-        Cada hábito es una planta de su virtud. Crece con tu constancia, llega al 100 % (medalla de laurel), da retoños y se marchita si lo dejás.
-      </p>
+      <CabeceraPagina etiqueta="Tu jardín estoico" titulo="Jardín" linea="Cada hábito es una planta de su virtud. Crece con tu constancia, llega al 100 % (medalla de laurel), da retoños y se marchita si lo dejás." />
 
       <div className="jardin-cols" style={{ marginTop: 10 }}>
         <div className="jardin-lienzo">
           {laureles.length > 0 && (
-            <div className="card" role="status" style={{ marginBottom: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, border: '1.5px solid #c9a24a' }}>
+            <div className="card" role="status" style={{ marginBottom: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, border: '1.5px solid var(--gold2)' }}>
               <img src="/jardin/adorno-corona.webp" alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
               <span style={{ fontSize: 13.5 }}>
                 <b>{laureles.length === 1 ? laureles[0] : `${laureles.slice(0, -1).join(', ')} y ${laureles[laureles.length - 1]}`}</b> te {laureles.length === 1 ? 'dejó un laurel' : 'dejaron laureles'} hoy en tu jardín.
@@ -637,7 +634,7 @@ export function Jardin() {
                   const it = items.find((i) => i.id === moviendo.id);
                   if (!it) return null;
                   const w = anchoMaceta(forma, moviendo.y) * 1.1;
-                  return <img src={`/jardin/${PLANTA_DE_VIRTUD[it.virtud].id}-${it.etapa}.webp`} alt="" style={{ position: 'absolute', left: `${moviendo.x}%`, top: `${moviendo.y}%`, width: `${w}%`, transform: 'translate(-50%, -85%)', opacity: 0.9, zIndex: 170, pointerEvents: 'none', filter: 'drop-shadow(0 8px 8px rgba(0,0,0,.45))' }} />;
+                  return <img src={`/jardin/${PLANTA_DE_VIRTUD[it.virtud].id}-${it.etapa}.webp`} alt="" style={{ position: 'absolute', left: `${moviendo.x}%`, top: `${moviendo.y}%`, width: `${w}%`, transform: 'translate(-50%, -85%)', opacity: 0.9, zIndex: 170, pointerEvents: 'none', filter: 'drop-shadow(0 8px 8px color-mix(in srgb, var(--icono-fondo) 45%, transparent))' }} />;
                 })()}
               {visita && recorrido && (
                 <Filosofo
@@ -667,7 +664,7 @@ export function Jardin() {
                   Que la llama acompañe tu noche
                 </span>
               )}
-              {prueba && <div style={{ position: 'absolute', left: 10, top: 10, zIndex: 170, background: '#5a3d0c', color: '#ffe7b0', borderRadius: 10, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}>MODO PRUEBA</div>}
+              {prueba && <div style={{ position: 'absolute', left: 10, top: 10, zIndex: 170, background: 'var(--goldbg)', color: 'var(--gold)', border: '1px solid var(--gold2)', borderRadius: 10, padding: '4px 10px', fontSize: 12.5, fontWeight: 700 }}>MODO PRUEBA</div>}
             </Escena>
           </div>
           <p id="ayuda-mover" className="mu2" style={{ fontSize: 12.5, marginTop: 8 }}>
@@ -692,7 +689,7 @@ export function Jardin() {
           )}
 
           {verConsejo && visita?.tipo === 'consejo' && (
-            <div className="card" style={{ marginTop: 12, padding: '12px 16px', display: 'flex', gap: 14, alignItems: 'flex-start', border: '1.5px solid #c9a24a' }}>
+            <div className="card" style={{ marginTop: 12, padding: '12px 16px', display: 'flex', gap: 14, alignItems: 'flex-start', border: '1.5px solid var(--gold2)' }}>
               <span
                 aria-hidden
                 style={{ width: 60, height: 76, flex: 'none', backgroundImage: `url(${atlas.archivo})`, backgroundSize: `${atlas.ancho * (76 / atlas.celda[1])}px ${atlas.alto * (76 / atlas.celda[1])}px`, backgroundPosition: `${-((atlas.celda[0] * 76) / atlas.celda[1] - 60) / 2}px ${-atlas.filas.hablar_abajo.fila * 76}px`, backgroundRepeat: 'no-repeat' }}
@@ -700,8 +697,8 @@ export function Jardin() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="cap gold">{visita.c.filosofo.nombre}</div>
                 <div style={{ fontWeight: 800, fontSize: 15, marginTop: 2 }}>{visita.c.titulo}</div>
-                <div style={{ fontSize: 13, marginTop: 4 }}>{visita.c.texto}</div>
-                <blockquote style={{ margin: '8px 0 0', paddingLeft: 10, borderLeft: '3px solid #c9a24a', fontStyle: 'italic', fontSize: 13.5 }}>«{visita.c.frase}»</blockquote>
+                <div style={{ fontSize: 13.5, marginTop: 4 }}>{visita.c.texto}</div>
+                <blockquote style={{ margin: '8px 0 0', paddingLeft: 10, borderLeft: '3px solid var(--gold2)', fontStyle: 'italic', fontSize: 13.5 }}>«{visita.c.frase}»</blockquote>
                 <button type="button" className="ghost" style={{ marginTop: 10 }} onClick={despedirFilosofo}>
                   {visita.aviso ? 'Entendido' : 'Gracias, maestro'}
                 </button>
@@ -712,7 +709,7 @@ export function Jardin() {
           {sel ? (
             <Ficha item={sel} prueba={!!prueba} modo={modo} dificil={g.dificil} alCerrar={() => setElegido(null)} alMarcar={marcarHoy} alRegar={() => regar([sel.id])} alAbrir={(id) => setPagina(id)} />
           ) : (
-            <p className="mu2" style={{ fontSize: 13, marginTop: 10 }}>
+            <p className="mu2" style={{ fontSize: 13.5, marginTop: 10 }}>
               {items.length ? 'La medalla de laurel al pie de la maceta marca las plantas al 100 %.' : `Todavía no tenés hábitos: creá uno y aparece su semilla en el jardín${esAdmin ? ' (o probá el modo prueba)' : ''}.`}
               {habitos.length > MAX_MACETEROS && ` Tenés ${habitos.length} hábitos; el jardín muestra los primeros ${MAX_MACETEROS}.`}
             </p>
@@ -721,7 +718,7 @@ export function Jardin() {
           <div className="card" style={{ marginTop: 14, padding: '12px 16px' }}>
             <div className="cap gold">Tu jardín hoy</div>
             <Resumen items={items} enVivero={enVivero} adornos={Math.min(logros, ADORNOS.length)} logros={logros} />
-            <details style={{ marginTop: 10, fontSize: 13 }}>
+            <details style={{ marginTop: 10, fontSize: 13.5 }}>
               <summary style={{ cursor: 'pointer', fontWeight: 700 }}>¿Cómo funciona el jardín?</summary>
               <ul style={{ paddingLeft: 18, margin: '6px 0 0', lineHeight: 1.6 }}>
                 <li>
@@ -784,7 +781,7 @@ export function Jardin() {
             </div>
             <img src={`/jardin/${PLANTA_DE_VIRTUD[festejo.virtud].id}-${festejo.etapa}.webp`} alt="" />
             <div style={{ position: 'relative', fontWeight: 800, fontSize: 20, marginTop: 4 }}>{alCien(festejo.etapa) ? '¡Al 100 %!' : `¡Creció: ${ETAPAS_PLANTA[festejo.etapa].toLowerCase()}!`}</div>
-            <div style={{ position: 'relative', fontSize: 14, marginTop: 4 }}>{festejo.nombre}</div>
+            <div style={{ position: 'relative', fontSize: 13.5, marginTop: 4 }}>{festejo.nombre}</div>
             <blockquote style={{ position: 'relative', margin: '10px 0 0', fontStyle: 'italic', fontSize: 13.5 }}>
               {alCien(festejo.etapa) ? '«La perfección del carácter: vivir cada día como si fuera el último.» — Marco Aurelio' : '«Ningún gran fruto nace de golpe.» — Epicteto'}
             </blockquote>
@@ -813,13 +810,13 @@ function Resumen({ items, enVivero, adornos, logros }: { items: Item[]; enVivero
         [adornos, 'adornos'],
       ].map(([n, t]) => (
         <div key={t as string}>
-          <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{n}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1 }}>{n}</div>
           <div className="mu2" style={{ fontSize: 11 }}>
             {t}
           </div>
         </div>
       ))}
-      {enVivero > 0 && <div className="mu2" style={{ fontSize: 12, alignSelf: 'center' }}>(+{enVivero} en el vivero: no entran en el jardín)</div>}
+      {enVivero > 0 && <div className="mu2" style={{ fontSize: 12.5, alignSelf: 'center' }}>(+{enVivero} en el vivero: no entran en el jardín)</div>}
     </div>
   );
 }
@@ -853,7 +850,7 @@ function Ficha({ item, prueba, modo, dificil, alCerrar, alMarcar, alRegar, alAbr
           {alCien(item.etapa) && ' · 100 %'}
           {p && p.retonos > 0 && ` · ${p.retonos} ${p.retonos === 1 ? 'retoño' : 'retoños'}`}
         </div>
-        <div style={{ fontSize: 13, marginTop: 4 }}>{texto}</div>
+        <div style={{ fontSize: 13.5, marginTop: 4 }}>{texto}</div>
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           {p?.habito && !prueba && p.habito.tipo === 'sino' && (
             <button type="button" className="ghost" onClick={() => alMarcar(p.habito!)}>
@@ -902,7 +899,7 @@ function Prueba({
   const n = Math.min(cumplidos, total);
   return (
     <div className="card" style={{ marginTop: 14, padding: '10px 16px' }}>
-      <button type="button" className="mu2" style={{ fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
+      <button type="button" className="mu2" style={{ fontSize: 13.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
         <Icono nombre="enfoque" tam={15} /> Modo prueba {abierto ? '▲' : '▼'}
       </button>
       {abierto && (
@@ -910,12 +907,12 @@ function Prueba({
           <p className="mu2" style={{ fontSize: 12.5, margin: '0 0 8px' }}>
             Hacé pasar días inventados y mirá cómo crecen, llegan al 100 %, dan retoños, desbloquean adornos o reciben la visita del filósofo. No toca tus hábitos reales. Si no tenés hábitos, llena el jardín con plantas de ejemplo.
           </p>
-          <label style={{ display: 'block', fontSize: 13 }}>
+          <label style={{ display: 'block', fontSize: 13.5 }}>
             Hábitos cumplidos por día: <b>{n}</b> de {total}
             <input type="range" min={0} max={total} value={n} onChange={(e) => setCumplidos(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--gold)' }} aria-label="Hábitos cumplidos por día" />
           </label>
           {modo === 'manual' && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, margin: '4px 0 8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, margin: '4px 0 8px' }}>
               <input type="checkbox" checked={regaste} onChange={(e) => setRegaste(e.target.checked)} style={{ accentColor: 'var(--gold)' }} />
               Entré a regar esos días
             </label>

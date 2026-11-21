@@ -19,7 +19,7 @@ function Deslizante({ etiqueta, izq, der, valor, alCambiar }: { etiqueta: string
     <label style={{ display: 'block', marginTop: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span className="cap gold">{etiqueta}</span>
-        <span className="mu2" style={{ fontSize: 12, fontWeight: 700 }}>
+        <span className="mu2" style={{ fontSize: 12.5, fontWeight: 700 }}>
           {Math.round(valor * 100)}
         </span>
       </div>
@@ -43,7 +43,7 @@ function Deslizante({ etiqueta, izq, der, valor, alCambiar }: { etiqueta: string
 function Colores({ titulo, valor, opciones, alCambiar }: { titulo: string; valor: string; opciones: string[]; alCambiar: (v: string) => void }) {
   return (
     <div style={{ marginTop: 14 }}>
-      <div className="cap mu2" style={{ fontSize: 10.5, marginBottom: 6 }}>
+      <div className="cap mu2" style={{ fontSize: 11, marginBottom: 6 }}>
         {titulo}
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} role="radiogroup" aria-label={titulo}>
@@ -66,7 +66,7 @@ function Colores({ titulo, valor, opciones, alCambiar }: { titulo: string; valor
 function Opciones<T extends string>({ titulo, valor, opciones, alCambiar }: { titulo: string; valor: T; opciones: Array<[T, string]>; alCambiar: (v: T) => void }) {
   return (
     <div style={{ marginTop: 14 }}>
-      <div className="cap mu2" style={{ fontSize: 10.5, marginBottom: 6 }}>
+      <div className="cap mu2" style={{ fontSize: 11, marginBottom: 6 }}>
         {titulo}
       </div>
       <div className="seg3" role="radiogroup" aria-label={titulo}>
@@ -141,7 +141,7 @@ export function Espejo3D() {
             <div style={{ position: 'relative' }}>
               <canvas ref={lienzo} style={{ width: '100%', height: 'min(64vh, 560px)', display: 'block', touchAction: 'pan-y' }} aria-label="Tu reflejo en 3D" />
               {cargando && (
-                <div className="mu" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 14 }}>
+                <div className="mu" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 13.5 }}>
                   Preparando tu reflejo…
                 </div>
               )}

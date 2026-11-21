@@ -147,7 +147,7 @@ export function Filosofo({ atlas, paradas, salida, seguir, irse, altoEn, anchoPx
       {/* Sombra en el piso, bajo los pies */}
       <span
         aria-hidden
-        style={{ position: 'absolute', left: `${s.x}%`, top: `${s.y}%`, width: cw * esc * 0.62, height: cw * esc * 0.17, transform: 'translate(-50%, -50%)', borderRadius: '50%', background: 'radial-gradient(ellipse at center, rgba(45,28,10,.5), rgba(45,28,10,0) 70%)', pointerEvents: 'none', zIndex: 2 }}
+        style={{ position: 'absolute', left: `${s.x}%`, top: `${s.y}%`, width: cw * esc * 0.62, height: cw * esc * 0.17, transform: 'translate(-50%, -50%)', borderRadius: '50%', background: 'radial-gradient(ellipse at center, rgba(45,28,10,.5), rgba(45,28,10,0) 70%)' /* familia-ok: ilustración del jardín */, pointerEvents: 'none', zIndex: 2 }}
       />
     <button
       type="button"
@@ -169,7 +169,7 @@ export function Filosofo({ atlas, paradas, salida, seguir, irse, altoEn, anchoPx
         border: 0,
         padding: 0,
         cursor: 'pointer',
-        filter: 'drop-shadow(1px 3px 2px rgba(60,40,10,.3))',
+        filter: 'drop-shadow(1px 3px 2px rgba(60,40,10,.3))' /* familia-ok: ilustración del jardín */,
         // Delante de las plantas de su fila y detrás de las de adelante
         zIndex: 3 + Math.round(s.y),
       }}

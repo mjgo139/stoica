@@ -49,17 +49,17 @@ export function EspejoMarmol() {
 
   return (
     <div style={{ marginTop: 14 }}>
-      <div className="card" style={{ overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 30%, #3a352f 0%, #1d1a17 80%)', border: 'none' }}>
+      <div className="card" style={{ overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 30%, #3a352f 0%, #1d1a17 80%)' /* familia-ok: ilustración de El Espejo */, border: 'none' }}>
         {error ? (
-          <p style={{ padding: 24, color: '#e9e2d6' }}>{error}</p>
+          <p style={{ padding: 24, color: '#e9e2d6' /* familia-ok: ilustración de El Espejo */ }}>{error}</p>
         ) : (
           <div style={{ position: 'relative' }}>
             <canvas ref={lienzo} style={{ width: '100%', height: 'min(68vh, 600px)', display: 'block', touchAction: 'none' }} aria-label={`Estatua: ${nombreActual}`} />
-            {cargando && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 14, color: '#d8cfc2' }}>Trayendo tu estatua…</div>}
-            <div className="cap" style={{ position: 'absolute', left: 16, top: 14, color: '#c9a24a' }}>
+            {cargando && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 13.5, color: '#d8cfc2' /* familia-ok: ilustración de El Espejo */ }}>Trayendo tu estatua…</div>}
+            <div className="cap" style={{ position: 'absolute', left: 16, top: 14, color: '#c9a24a' /* familia-ok: ilustración de El Espejo */ }}>
               {nombreActual}
             </div>
-            <div style={{ position: 'absolute', right: 14, top: 14, fontSize: 11.5, color: '#bdb3a5' }}>Arrastrá para girar · pellizcá para acercar</div>
+            <div style={{ position: 'absolute', right: 14, top: 14, fontSize: 11.5, color: '#bdb3a5' /* familia-ok: ilustración de El Espejo */ }}>Arrastrá para girar · pellizcá para acercar</div>
             <div className="seg3" role="radiogroup" aria-label="Vista" style={{ position: 'absolute', left: 12, right: 12, bottom: 12, maxWidth: 260, marginInline: 'auto', background: 'var(--sf)' }}>
               {(
                 [

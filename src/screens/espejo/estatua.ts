@@ -19,8 +19,8 @@ export const ESTATUA_INICIAL: Estatua = { peso: 0.45, barba: true, laurel: false
 export const ETAPAS_PESO = [0, 1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6, 1];
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const MARMOL = new THREE.Color('#efe9df').convertSRGBToLinear();
-const VETA = new THREE.Color('#9d958a').convertSRGBToLinear();
+const MARMOL = new THREE.Color('#efe9df' /* familia-ok: ilustración de El Espejo */).convertSRGBToLinear();
+const VETA = new THREE.Color('#9d958a' /* familia-ok: ilustración de El Espejo */).convertSRGBToLinear();
 
 /** Pinta vetas de mármol según la posición (no hace falta textura). */
 export function marmolizar(g: THREE.BufferGeometry, tono = 1) {
@@ -312,7 +312,7 @@ export async function crearEstatua(lienzo: HTMLCanvasElement, inicial: Estatua):
   escena.add(relleno);
 
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.48, metalness: 0 });
-  const matLiso = new THREE.MeshStandardMaterial({ color: new THREE.Color('#e9e2d6'), roughness: 0.5, metalness: 0 });
+  const matLiso = new THREE.MeshStandardMaterial({ color: new THREE.Color('#e9e2d6' /* familia-ok: ilustración de El Espejo */), roughness: 0.5, metalness: 0 });
   const pivote = new THREE.Group();
   escena.add(pivote);
   let actual: THREE.Group | null = null;

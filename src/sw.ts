@@ -40,7 +40,7 @@ self.addEventListener('push', (e) => {
     d = { cuerpo: e.data?.text() };
   }
   e.waitUntil(
-    self.registration.showNotification(d.titulo || 'Stoica', {
+    self.registration.showNotification(d.titulo || 'StoaHabit', {
       body: d.cuerpo || '',
       // En Android el logo de la app ya aparece a la izquierda: a la derecha va solo el laurel con el rombo
       // (sin imagen, Chrome dibuja una letra en un círculo gris).

@@ -99,7 +99,7 @@ describe('perfil', () => {
     expect(p).toEqual({
       nombre: 'Séneca el joven',
       correo: 'seneca@roma.it',
-      tema: 'sistema',
+      tema: 'oscuro',
       mementoMori: true,
       zonaHoraria: 'America/Asuncion',
       notificaciones: false,

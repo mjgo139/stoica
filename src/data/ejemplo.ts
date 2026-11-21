@@ -171,12 +171,12 @@ export function sembrarEjemplo(escribir: Escribir, crearCuenta: CrearCuenta) {
   const comentario = (foto: string, id: string, de: string, nombre: string, texto: string, horas: number) =>
     escribir(`groups/${g}/fotos/${foto}/comentarios/${id}`, { de, nombre, texto, dia: hoy, creado: ahora - horas * 36e5, actualizado: ahora - horas * 36e5, actualizadoPor: de });
   const dibujo = (a: string, b: string) =>
-    `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><circle cx="200" cy="250" r="70" fill="#fbe3b0"/><path d="M0 300 L120 230 L210 290 L300 220 L400 280 L400 400 L0 400Z" fill="#3b2a2a"/></svg>`)}`;
+    `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><circle cx="200" cy="250" r="70" fill="#fbe3b0"/><path d="M0 300 L120 230 L210 290 L300 220 L400 280 L400 400 L0 400Z" fill="#3b2a2a"/></svg>`)}`; /* familia-ok: foto de ejemplo */
   const fotoDe = (uid: string, nombre: string, habitId: string, habito: string, dia: string, cumplido: boolean, texto: string, a: string, b: string, comentarios = 0) =>
     escribir(`groups/${g}/fotos/${uid}_${habitId}_${dia}`, { de: uid, nombre, habitId, habito, dia, cumplido, texto, fotoUrl: dibujo(a, b), miniUrl: dibujo(a, b), rutas: [], comentarios, creado: ahora - 2 * 36e5, actualizado: ahora - 2 * 36e5, actualizadoPor: 'servidor' });
-  fotoDe('u-epicteto', 'Epicteto', 'a', 'Meditar', hoy, true, 'Al amanecer, antes que nadie.', '#2c2a4a', '#e8956b', 2);
-  fotoDe('u-epicteto', 'Epicteto', 'a', 'Meditar', sumarDias(hoy, -1), true, '', '#1f3a4d', '#9fc5c8');
-  fotoDe('u-seneca', 'Lucio Séneca', 'b', 'Ayuno', hoy, false, 'Hoy no pude: cena con amigos.', '#4a2c2a', '#c9925a');
+  fotoDe('u-epicteto', 'Epicteto', 'a', 'Meditar', hoy, true, 'Al amanecer, antes que nadie.', '#2c2a4a' /* familia-ok: foto de ejemplo */, '#e8956b', 2);
+  fotoDe('u-epicteto', 'Epicteto', 'a', 'Meditar', sumarDias(hoy, -1), true, '', '#1f3a4d' /* familia-ok: foto de ejemplo */, '#9fc5c8');
+  fotoDe('u-seneca', 'Lucio Séneca', 'b', 'Ayuno', hoy, false, 'Hoy no pude: cena con amigos.', '#4a2c2a' /* familia-ok: foto de ejemplo */, '#c9925a');
   comentario(`u-epicteto_a_${hoy}`, 'k1', 'u-seneca', 'Lucio Séneca', 'Qué buena luz. Mañana te sigo.', 1.5);
   comentario(`u-epicteto_a_${hoy}`, 'k2', 'u-epicteto', 'Epicteto', 'Lo que depende de nosotros: sentarse. Lo demás llega solo.', 1);
   escribir('codigos/STOA-PRUE-BA22', { meses: 1, nota: 'Código de prueba', creado: ahora - 864e5, usado: false, usadoPor: null, grupoId: null, grupoNombre: null, usadoEn: null });

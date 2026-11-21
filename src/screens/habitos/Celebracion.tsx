@@ -15,10 +15,10 @@ export function Celebracion() {
         <div style={{ position: 'relative', width: 180, height: 164, margin: '0 auto' }}>
           <Laurel ancho={180} alto={164} />
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingBottom: 10 }}>
-            <div className="num rebote" style={{ fontSize: 44, lineHeight: 1 }}>
+            <div className="num rebote" style={{ fontSize: 48, lineHeight: 1 }}>
               {aRomano(c.dias)}
             </div>
-            <div className="cap mu" style={{ fontSize: 10.5, marginTop: 6 }}>
+            <div className="cap mu" style={{ fontSize: 11, marginTop: 6 }}>
               {c.dias} días
             </div>
           </div>
@@ -26,7 +26,7 @@ export function Celebracion() {
         <div className="cap gold" style={{ marginTop: 8 }}>
           Victoria sobre ti mismo
         </div>
-        <h2 className="serif" style={{ fontSize: 24, fontWeight: 700, margin: '8px 0 0' }}>
+        <h2 className="serif" style={{ fontSize: 26, fontWeight: 700, margin: '8px 0 0' }}>
           {c.dias} días seguidos de {c.habito}
         </h2>
         <p className="mu" style={{ fontWeight: 500, marginTop: 10 }}>

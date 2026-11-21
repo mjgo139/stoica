@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { citaDelDia } from '@core/citas';
-import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLarga, fechaLargaDeClave, momentoDelDia, MOMENTOS, partesDeClave, partesEnZona, saludo, sumarDias } from '@core/fechas';
+import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLargaDeClave, momentoDelDia, MOMENTOS, partesDeClave, partesEnZona, sumarDias } from '@core/fechas';
 import { cumplido, esDiaActivo, racha, type Habito } from '@core/habitos';
-import { inicial, primerNombre, rangoDe } from '@core/perfil';
-import { calcularJardin, leerGuardado, medallasGanadas } from './jardin/estado';
+import { primerNombre } from '@core/perfil';
+import { Ficha, Grupo, iniciales, PanelDia, TuSemana, type DiaSemana } from '../../familia/react';
+import { Icono as IconoFamilia } from '../../familia/iconos';
+import { useRango } from '@/app/rango';
 import { aRomano } from '@core/romanos';
 import { examenCompleto, tareaDelDia, tareaHecha } from '@core/rutina';
 import { useSesion } from '@/app/sesion';
 import { useComunidad } from '@/app/comunidad';
 import { alternarTarea, registrosDe, useDatos, useHabitosActivos, useHoy, VENTANA_DIAS } from '@/app/datos';
-import { Laurel } from '@/ui/Laurel';
-import { Icono } from '@/ui/Iconos';
 import { IconoHabito } from '@/ui/IconoHabito';
 import { FilaHabito } from './habitos/FilaHabito';
 import { Plantillas } from './habitos/Editor';
@@ -45,62 +45,63 @@ export function Hoy() {
   const tareasDia = tareas
     .filter((t) => tareaDelDia(t, dia) && !(t.repetir === 'no' && !t.fecha && (t.proyectoId || (t.completada && t.completada < dia))))
     .sort((a, b) => (a.hora ?? '').localeCompare(b.hora ?? '') || a.momento - b.momento);
-  // Rango y nivel por medallas del jardín (como en TITANUS)
-  const uid = useSesion((s) => s.usuario?.uid ?? '');
-  const rango = useMemo(() => {
-    try {
-      return rangoDe(medallasGanadas(calcularJardin({ habitos, registros, hoy, g: leerGuardado(uid), prueba: null }).plantas));
-    } catch {
-      return rangoDe(0);
-    }
-  }, [habitos, registros, hoy, uid]);
-  const titulo = sel === 0 ? `${saludo(hora)}${primerNombre(perfil.nombre) ? `, ${primerNombre(perfil.nombre)}` : ''}` : sel === -1 ? 'Ayer' : sel === 1 ? 'Mañana' : fechaLargaDeClave(dia).split(' ')[0];
+  const rango = useRango();
+  const comunidad = useComunidad((st) => st.grupos.size > 0);
+  const navegar = useNavigate();
+  const ir = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    navegar(href);
+  };
+  // Tu semana (lunes a domingo): cumplido = todas las prácticas del día hechas
+  const lunes = sumarDias(hoy, -((diaSemanaDeClave(hoy) + 6) % 7));
+  const semana: DiaSemana[] = [0, 1, 2, 3, 4, 5, 6].map((o) => {
+    const d = sumarDias(lunes, o);
+    const r = hechosDe(d);
+    return { fecha: d, hoy: d === hoy, hecho: d <= hoy && r.total > 0 && r.ok === r.total, plan: d > hoy && r.total > 0 };
+  });
+  const momentosDelDia = ([0, 1, 2] as const).filter((m) => delDia.some((h) => h.momento === m));
+  const nTareas = momentosDelDia.length + 1;
+  const nRail = momentosDelDia.length + (tareasDia.length > 0 ? 1 : 0);
 
   return (
     <div className="entra">
-      <section className="hero" aria-label="Bienvenida">
-        <Laurel ancho={300} alto={272} completo={false} grosor={2} className="wm" />
-        <div className="acciones">
-          <Link to="/habitos/nuevo" className="ico ring" style={{ background: 'var(--sf)' }} aria-label="Nuevo hábito">
-            <Icono nombre="mas" tam={18} />
+      <PanelDia
+        nombre={primerNombre(perfil.nombre) || 'estoico'}
+        avatar={
+          <Link to="/perfil" className="panel-dia-iniciales" aria-label="Perfil">
+            {iniciales(perfil.nombre)}
           </Link>
-          <Link to="/perfil" className="avatar solo-mov" aria-label="Perfil" style={{ textDecoration: 'none' }}>
-            {inicial(perfil.nombre)}
+        }
+        linea={
+          <Link to="/jardin" className="rango" data-testid="rango">
+            {rango.nombre} · Nivel {rango.nivel}
           </Link>
-        </div>
-        <div style={{ position: 'relative', minWidth: 0, paddingRight: 100 }}>
-          <div className="cap gold">{sel === 0 ? 'Panel del día' : 'Viendo otro día'}</div>
-          <h1 className="titulo">{titulo}</h1>
-          {sel === 0 && (
-            <Link to="/jardin" className="rango" data-testid="rango" style={{ display: 'inline-block' }}>
-              {rango.nombre} · Nivel {rango.nivel}
-            </Link>
-          )}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-            <span className="chip-fecha">
-              <Icono nombre="sol" tam={15} />
-              {sel === 0 ? fechaLarga(ahora, zona) : fechaLargaDeClave(dia)}
-            </span>
+        }
+        esquina={
+          <Link to="/habitos/nuevo" className="btn-redondo" aria-label="Nuevo hábito">
+            <IconoFamilia n="mas" size={20} />
+          </Link>
+        }
+        fichas={
+          <>
             {perfil.mementoMori && (
-              <Link to="/memento" className="chip-fecha" style={{ textDecoration: 'none' }}>
-                Memento mori · {quedan} {quedan === 1 ? 'día' : 'días'} ›
-              </Link>
+              <Ficha href="/memento" ir={ir}>
+                Memento mori · {quedan} {quedan === 1 ? 'día' : 'días'}
+              </Ficha>
             )}
-            <Link to="/jardin" className="chip-fecha" style={{ textDecoration: 'none' }}>
-              <Icono nombre="planta" tam={15} />
-              Tu jardín ›
-            </Link>
-          </div>
-        </div>
-        <figure className="hq" style={{ margin: 0 }}>
-          <blockquote className="quote" style={{ margin: 0, fontSize: 18 }}>
-            “{cita.texto}”
-          </blockquote>
-          <figcaption className="cap gold" style={{ marginTop: 8, fontSize: 11 }}>
-            {cita.autor}
-          </figcaption>
-        </figure>
-      </section>
+            <Ficha href="/jardin" ir={ir}>
+              <IconoFamilia n="laurel" size={16} />
+              Tu jardín
+            </Ficha>
+          </>
+        }
+        lado={
+          <figure className="cita-dia">
+            <blockquote className="quote">“{cita.texto}”</blockquote>
+            <figcaption className="grupo">{cita.autor}</figcaption>
+          </figure>
+        }
+      />
 
       <div style={{ marginTop: 18 }}>
         <InvitarAvisos />
@@ -114,10 +115,10 @@ export function Hoy() {
               const punto = r.total > 0 && r.ok === r.total ? 'ok' : r.ok > 0 ? 'medio' : '';
               return (
                 <button key={off} type="button" role="tab" aria-selected={off === sel} className={`${off === sel ? 'on' : ''} ${off > 0 ? 'fut' : ''}`} onClick={() => setSel(off)} aria-label={fechaLargaDeClave(d)}>
-                  <span className="cap" style={{ fontSize: 10.5, letterSpacing: '.1em' }}>
+                  <span className="cap" style={{ fontSize: 11, letterSpacing: '.1em' }}>
                     {DIAS_CORTOS[diaSemanaDeClave(d)]}
                   </span>
-                  <span className="num" style={{ fontSize: 21 }}>
+                  <span className="num" style={{ fontSize: 20 }}>
                     {partesDeClave(d).dia}
                   </span>
                   <span className={`punto ${off <= 0 ? punto : ''}`} />
@@ -126,7 +127,7 @@ export function Hoy() {
             })}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 16 }}>
-            <span className="num" style={{ fontSize: 34, color: resumen.total && resumen.ok === resumen.total ? 'var(--ok)' : 'var(--tx)' }}>
+            <span className="num" style={{ fontSize: 36, color: resumen.total && resumen.ok === resumen.total ? 'var(--verde)' : 'var(--tx)' }}>
               {resumen.ok}
               <span className="mu2" style={{ fontSize: 20 }}>/{resumen.total}</span>
             </span>
@@ -143,7 +144,7 @@ export function Hoy() {
           {listo && habitos.length === 0 ? (
             <div className="card vacio">
               <IconoHabito icono="med" virtud="sabiduria" grande />
-              <div className="serif" style={{ fontSize: 22, marginTop: 12 }}>
+              <div className="serif" style={{ fontSize: 20, marginTop: 12 }}>
                 Empezá por una práctica
               </div>
               <p>Elegí un hábito: algo que marcás, una cantidad que vas sumando o una medida como tu peso.</p>
@@ -161,10 +162,13 @@ export function Hoy() {
                 if (!lista.length) return null;
                 return (
                   <div key={m}>
-                    <div className="grp cap" style={{ marginTop: m === firstMomento(delDia) ? 0 : 24 }}>
-                      <span>{MOMENTOS[m]}</span>
-                      {sel === 0 && momentoDelDia(hora) === m && <span className="mu2" style={{ fontSize: 10 }}>· ahora</span>}
-                    </div>
+                    <Grupo
+                      n={momentosDelDia.indexOf(m) + 1}
+                      className={`sep-grupo${m === firstMomento(delDia) ? ' sin-arriba' : ''}`}
+                      extra={sel === 0 && momentoDelDia(hora) === m ? <span className="mu2 ahora">ahora</span> : undefined}
+                    >
+                      {MOMENTOS[m].replace(/^[IVX]+ · /, "")}
+                    </Grupo>
                     {lista.map((h) => (
                       <FilaHabito
                         key={h.id}
@@ -186,9 +190,9 @@ export function Hoy() {
 
           {tareasDia.length > 0 && (
             <>
-              <div className="grp cap" style={{ marginTop: 28 }}>
-                <span>Tareas</span>
-              </div>
+              <Grupo n={nTareas} className="sep-grupo mt-[28px]">
+                Tareas
+              </Grupo>
               {tareasDia.slice(0, 6).map((t) => {
                 const hecha = tareaHecha(t, dia, tareasHechas);
                 return (
@@ -216,11 +220,12 @@ export function Hoy() {
         </section>
 
         <aside className="rail" style={{ display: 'grid', gap: 18, alignContent: 'start' }}>
-          <UltimosSiete hoy={hoy} habitos={habitos} />
+          <div>
+            <Grupo n={nRail + 1} className="sep-grupo sin-arriba">Tu semana</Grupo>
+            <TuSemana dias={semana} texto="días cumplidos" />
+          </div>
           <div className="panel">
-            <div className="grp cap" style={{ marginTop: 0 }}>
-              <span>Rachas</span>
-            </div>
+            <Grupo n={nRail + 2} className="sep-grupo sin-arriba">Rachas</Grupo>
             {[...habitos]
               .sort((a, b) => (rachas.get(b.id) ?? 0) - (rachas.get(a.id) ?? 0))
               .slice(0, 4)
@@ -235,12 +240,10 @@ export function Hoy() {
               ))}
             {habitos.length === 0 && <p className="vacio-mini">Tus rachas van a aparecer acá.</p>}
           </div>
-          <PanelComunidad />
+          <PanelComunidad n={nRail + 3} />
           <Link to="/examen" className="panel" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-            <div className="grp cap" style={{ marginTop: 0 }}>
-              <span>Examen nocturno</span>
-            </div>
-            <div className="serif" style={{ fontSize: 19 }}>
+            <Grupo n={nRail + (comunidad ? 4 : 3)} className="sep-grupo sin-arriba">Examen nocturno</Grupo>
+            <div className="serif" style={{ fontSize: 20 }}>
               {examenCompleto(examenes.get(hoy)) ? 'Examen de hoy hecho' : '¿Qué mal he corregido hoy?'}
             </div>
             <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
@@ -254,34 +257,6 @@ export function Hoy() {
 }
 
 const firstMomento = (hs: Habito[]) => Math.min(...hs.map((h) => h.momento), 3);
-
-function UltimosSiete({ hoy, habitos }: { hoy: string; habitos: Habito[] }) {
-  const registros = useDatos((s) => s.registros);
-  const dias = [-6, -5, -4, -3, -2, -1, 0].map((o) => sumarDias(hoy, o));
-  return (
-    <div className="panel">
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Últimos 7 días</span>
-      </div>
-      <div className="barras" role="img" aria-label="Porcentaje cumplido en los últimos 7 días">
-        {dias.map((d) => {
-          const hs = habitos.filter((h) => esDiaActivo(h, d));
-          const ok = hs.filter((h) => cumplido(h, registrosDe(registros, h.id).get(d))).length;
-          const p = hs.length ? Math.round((ok / hs.length) * 100) : 0;
-          return (
-            <div key={d} className={d === hoy ? 'hoy' : ''}>
-              <span className="p">{hs.length ? `${p}%` : '—'}</span>
-              <span className={`b ${p === 100 ? 'full' : ''}`} style={{ height: `${Math.max(3, p * 0.8)}px` }} />
-              <span className="cap" style={{ fontSize: 10, color: 'var(--mu2)' }}>
-                {DIAS_CORTOS[diaSemanaDeClave(d)].charAt(0)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /** Invita a activar los avisos en este dispositivo (el navegador solo pregunta al tocar un botón). */
 function InvitarAvisos() {
@@ -297,11 +272,9 @@ function InvitarAvisos() {
   if (activa || !soportado || bloqueado || oculta) return null;
   return (
     <div className="panel">
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Recordatorios</span>
-      </div>
+      <Grupo className="sep-grupo sin-arriba">Recordatorios</Grupo>
       <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, margin: '0 0 12px' }}>
-        Activá los avisos en este dispositivo para que Stoica te recuerde tus prácticas y el examen nocturno.
+        Activá los avisos en este dispositivo para que StoaHabit te recuerde tus prácticas y el examen nocturno.
       </p>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button type="button" className="btn" style={{ width: 'auto', padding: '0 22px', height: 44 }} disabled={ocupado} onClick={() => activar(true)}>
@@ -326,16 +299,14 @@ function InvitarAvisos() {
   );
 }
 
-function PanelComunidad() {
+function PanelComunidad({ n }: { n: number }) {
   const grupos = useComunidad((s) => s.grupos);
   // Sin grupos no se muestra: la Comunidad ya tiene su pestaña.
   if (grupos.size === 0) return null;
   return (
     <Link to="/comunidad" className="panel" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-      <div className="grp cap" style={{ marginTop: 0 }}>
-        <span>Comunidad</span>
-      </div>
-      <div className="serif" style={{ fontSize: 19 }}>
+      <Grupo n={n} className="sep-grupo sin-arriba">Comunidad</Grupo>
+      <div className="serif" style={{ fontSize: 20 }}>
         {`${grupos.size} ${grupos.size === 1 ? 'grupo' : 'grupos'}`}
       </div>
       <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
