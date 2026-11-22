@@ -11,6 +11,7 @@ const esCelular = () => test.info().project.name === 'celular';
 
 async function entrarConEjemplo(page: Page) {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
   await page.getByLabel('Correo').fill('prueba@stoica.app');
   await page.getByLabel('Contraseña').fill('stoica');
   await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
@@ -201,7 +202,7 @@ test.describe('v0.2–v0.3 · hábitos', () => {
 
   test('hito: Victoria sobre ti mismo al llegar a 3 días', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('tab', { name: 'Crear cuenta' }).click();
+    await page.getByRole('button', { name: 'Crear cuenta' }).click();
     await page.getByLabel('Nombre').fill('Cleantes');
     await page.getByLabel('Correo').fill('cleantes2@ejemplo.com');
     await page.getByLabel('Contraseña').fill('aguador');
@@ -357,6 +358,7 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByText('Contraseña cambiada.')).toBeVisible();
     // Sale y entra con la nueva
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click();
     await page.getByLabel('Correo').fill('prueba@stoica.app');
     await page.getByLabel('Contraseña').fill('estoico2');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
@@ -844,7 +846,7 @@ test.describe('v0.5–v1.0', () => {
 
   test('borrar mi cuenta', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('tab', { name: 'Crear cuenta' }).click();
+    await page.getByRole('button', { name: 'Crear cuenta' }).click();
     await page.getByLabel('Nombre').fill('Temporal');
     await page.getByLabel('Correo').fill('temporal@ejemplo.com');
     await page.getByLabel('Contraseña').fill('temporal1');
@@ -858,6 +860,7 @@ test.describe('v0.5–v1.0', () => {
     await borrar.click();
     await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
     // Ya no puede entrar
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click();
     await page.getByLabel('Correo').fill('temporal@ejemplo.com');
     await page.getByLabel('Contraseña').fill('temporal1');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();

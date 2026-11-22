@@ -10,18 +10,28 @@ test.describe('v0.1 · base', () => {
   test('pantalla de acceso', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Continuar con Google' })).toBeVisible();
+    // Portada de la familia (v2.4.0): filósofo sentado y los tres botones en este orden
+    const acciones = page.locator('.portada-acciones');
+    await expect(acciones.locator('button').nth(0)).toHaveText('Iniciar sesión');
+    await expect(acciones.locator('button').nth(1)).toHaveText('Crear cuenta');
+    await expect(acciones.locator('button').nth(2)).toHaveText('Continuar como invitado');
+    await expect(page.locator('.portada-foto')).toBeVisible();
     // El contenido va encima de las vetas del fondo de la familia (contenedor #root)
     await expect(page.locator('#root')).toHaveCSS('z-index', '1');
     await page.emulateMedia({ colorScheme: 'light' });
     await captura(page, '01-acceso-claro');
     await page.emulateMedia({ colorScheme: 'dark' });
     await captura(page, '02-acceso-oscuro');
+    // Google va dentro del formulario
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Continuar con Google' })).toBeVisible();
+    await captura(page, '02b-acceso-formulario');
   });
 
   test('errores claros al entrar', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Entrar', exact: true }).last().click();
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+    await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByRole('alert')).toHaveText('Escribí tu correo.');
     await page.getByLabel('Correo').fill('prueba@stoica.app');
     await page.getByLabel('Contraseña').fill('equivocada');
@@ -32,7 +42,7 @@ test.describe('v0.1 · base', () => {
   test('crear cuenta, recorrer, cambiar tema y nombre, salir', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/');
-    await page.getByRole('tab', { name: 'Crear cuenta' }).click();
+    await page.getByRole('button', { name: 'Crear cuenta' }).click();
     await page.getByLabel('Nombre').fill('Epicteto de Hierápolis');
     await page.getByLabel('Correo').fill('epicteto.nuevo@ejemplo.com');
     await page.getByLabel('Contraseña').fill('123');
@@ -86,6 +96,7 @@ test.describe('v0.1 · base', () => {
 
   test('entrar con la cuenta de ejemplo y con Google simulado', async ({ page }) => {
     await page.goto('/');
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click();
     await page.getByLabel('Correo').fill('prueba@stoica.app');
     await page.getByLabel('Contraseña').fill('stoica');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
@@ -96,6 +107,7 @@ test.describe('v0.1 · base', () => {
     await expect(panel).not.toContainText('Nivel');
     await expect(panel.getByTestId('practicas-de-hoy')).toHaveCount(0);
     await page.goto('/');
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click();
     await page.getByRole('button', { name: 'Continuar con Google' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucio');
   });

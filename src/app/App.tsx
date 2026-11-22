@@ -38,7 +38,7 @@ export function App() {
   if (estado === 'cargando') return enLinea ? <Cargando /> : <SinConexion />;
   if (estado === 'fuera')
     return (
-      <div className="app-contenido sin-nav">{enLinea ? <Acceso /> : <SinConexion />}</div>
+      enLinea ? <Acceso /> : <div className="app-contenido sin-nav"><SinConexion /></div>
     );
 
   return (

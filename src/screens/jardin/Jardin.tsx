@@ -60,7 +60,7 @@ function useLaurelesDeHoy(uid: string, hoy: string): string[] {
     let vivo = true;
     void obtenerDriver().then(async (d) => {
       const listas = await Promise.all(
-        grupos.split(',').map((gid) => d.leerLista<Reaccion>({ ruta: `groups/${gid}/reactions`, filtros: [['para', '==', uid], ['dia', '==', hoy]] }).catch(() => [] as Reaccion[])),
+        grupos.split(',').map((gid) => d.leerListaRapida<Reaccion>({ ruta: `groups/${gid}/reactions`, filtros: [['para', '==', uid], ['dia', '==', hoy]] }).catch(() => [] as Reaccion[])),
       );
       if (vivo) setNombres([...new Set(listas.flat().filter((r) => r.tipo === 'laurel').map((r) => r.nombreDe || 'Alguien'))]);
     });

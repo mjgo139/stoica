@@ -2,7 +2,8 @@
 /**
  * Service worker de Stoica.
  * - Precarga la app y borra cachés de versiones anteriores (nunca deja versiones viejas).
- * - La versión nueva espera hasta que la persona toca "Actualizar".
+ * - La versión nueva se instala y se activa sola (v2.4.0); la página se recarga recién cuando la app
+ *   queda en segundo plano (eso lo decide src/pwa/Actualizacion.tsx).
  * - Muestra las notificaciones push (recordatorios, examen, reacciones).
  */
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
@@ -17,6 +18,10 @@ precacheAndRoute(self.__WB_MANIFEST);
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/__\//] }));
 registerRoute(({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com', new StaleWhileRevalidate({ cacheName: 'fuentes' }));
 clientsClaim();
+
+self.addEventListener('install', () => {
+  void self.skipWaiting();
+});
 
 self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();

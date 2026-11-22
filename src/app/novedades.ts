@@ -11,6 +11,16 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.4.0',
+    fecha: '2026-11-22',
+    cambios: [
+      'Pantalla de acceso nueva, igual en las apps de la familia: el filósofo sentado, "Iniciar sesión", "Crear cuenta" y "Continuar como invitado". Google está dentro del formulario.',
+      'Arranque más rápido: tu perfil, tus hábitos y tus días se muestran al instante con lo guardado en el teléfono, y el servidor completa por detrás.',
+      'Actualizaciones sin cortes: la versión nueva se instala sola y la app se recarga recién cuando la dejás en segundo plano.',
+      'Familia estoica 1.7.1.',
+    ],
+  },
+  {
     version: '2.3.1',
     fecha: '2026-11-21',
     cambios: ['Panel del día más limpio: se quitó "Prácticas de hoy" de la derecha (el avance del día sigue más abajo).'],

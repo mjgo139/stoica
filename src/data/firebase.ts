@@ -27,6 +27,8 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocFromCache,
+  getDocFromServer,
   getDocs,
   getDocsFromCache,
   initializeFirestore,
@@ -40,6 +42,7 @@ import {
   updateDoc,
   where,
   type Firestore,
+  type Query,
   type QueryConstraint,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -113,6 +116,24 @@ export function crearDriverFirebase(): Driver {
     proveedor: u.isAnonymous ? 'invitado' : u.providerData.some((p) => p.providerId === 'google.com') ? 'google' : 'password',
   });
 
+  /**
+   * Arranque rápido (v2.4.0, igual que StoaGym): primero lo que ya está guardado en el dispositivo (caché de
+   * Firestore) y, si hay algo, se devuelve al instante y se pide al servidor por detrás para la próxima vez.
+   * Si no hay nada guardado, se espera al servidor como antes.
+   */
+  const docsRapido = async (q: Query) => {
+    try {
+      const c = await getDocsFromCache(q);
+      if (!c.empty) {
+        void getDocs(q).catch(() => undefined);
+        return c;
+      }
+    } catch {
+      /* no estaba en el dispositivo */
+    }
+    return getDocs(q);
+  };
+
   const envolver = async <T>(fn: () => Promise<T>): Promise<T> => {
     try {
       return await fn();
@@ -185,16 +206,32 @@ export function crearDriverFirebase(): Driver {
       await signOut(auth);
     }),
     observarPerfil(uid, cb, alFallar) {
+      // Primero el perfil guardado en el dispositivo (al instante, sin esqueleto); después, el oyente de siempre.
+      let llegoOyente = false;
+      getDocFromCache(doc(db, 'users', uid))
+        .then((s) => {
+          if (!llegoOyente && s.exists()) cb(s.data() as Perfil);
+        })
+        .catch(() => undefined);
       return onSnapshot(
         doc(db, 'users', uid),
         { includeMetadataChanges: false },
         (snap) => {
+          llegoOyente = true;
           if (snap.exists()) cb(snap.data() as Perfil);
           // Solo decimos "no existe" si lo confirma el servidor (no la caché local).
           else if (!snap.metadata.fromCache) cb(null);
         },
         (e) => alFallar(traducirError(e)),
       );
+    },
+    async perfilDelServidor(uid) {
+      try {
+        const s = await getDocFromServer(doc(db, 'users', uid));
+        return s.exists() ? (s.data() as Perfil) : null;
+      } catch {
+        return null;
+      }
     },
     crearPerfil: (uid, perfil) => envolver(async () => {
       await setDoc(doc(db, 'users', uid), perfil);
@@ -226,6 +263,7 @@ export function crearDriverFirebase(): Driver {
       );
     },
     leerLista: (c) => envolver(async () => (await getDocs(armar(c))).docs.map((d) => ({ id: d.id, ...d.data() }) as never)),
+    leerListaRapida: (c) => envolver(async () => (await docsRapido(armar(c))).docs.map((d) => ({ id: d.id, ...d.data() }) as never)),
     async leerListaLocal(c) {
       try {
         return (await getDocsFromCache(armar(c))).docs.map((d) => ({ id: d.id, ...d.data() }) as never);

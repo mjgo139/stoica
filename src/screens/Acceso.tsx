@@ -2,15 +2,99 @@ import { useState, type FormEvent } from 'react';
 import { validarContrasena, validarCorreo, validarNombre, limpiarNombre } from '@core/validaciones';
 import { obtenerDriver, esModoPrueba, esPruebaPorEnlace, salirDelModoPrueba } from '@/data';
 import { mensajeDeError } from '@/data/tipos';
-import { Marca } from '@/ui/Marca';
 import { LogoGoogle } from '@/ui/Iconos';
+import { Hoja } from '@/ui/Hoja';
+import { AvisoMudanza } from '@/ui/AvisoMudanza';
+import { Emblema, PortadaAcceso } from '../../familia/react';
+import { FIGURAS } from '../../familia/figuras';
+import { Icono } from '../../familia/iconos';
+import portada from '../../familia/portada-filosofo.webp';
 import { esNativo } from '@/nativo/nativo';
 import { BotonInstalar } from './Instalar';
 
 type Modo = 'entrar' | 'crear' | 'recuperar';
 
+/** Pantalla de acceso: la portada común de la familia (filósofo sentado) y el formulario en una hoja. */
 export function Acceso() {
-  const [modo, setModo] = useState<Modo>('entrar');
+  const [abierta, setAbierta] = useState<Modo | null>(null);
+  const [error, setError] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+
+  const comoInvitado = async () => {
+    setError('');
+    setOcupado(true);
+    try {
+      await (await obtenerDriver()).entrarComoInvitado();
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setOcupado(false);
+    }
+  };
+  const conEjemplo = async () => {
+    setError('');
+    setOcupado(true);
+    try {
+      await (await obtenerDriver()).entrar('prueba@stoica.app', 'stoica');
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  return (
+    <>
+      <PortadaAcceso
+        imagen={portada}
+        emblema={<Emblema figura={FIGURAS.check} size={92} />}
+        nombre="StoaHabit"
+        lema="Hábitos · Disciplina · Serenidad"
+        frase="Cumplí tus prácticas de cada día y construí, paso a paso, una vida más serena."
+        aviso={<AvisoMudanza />}
+      >
+        <button type="button" className="btn" onClick={() => setAbierta('entrar')}>
+          <Icono n="corona" size={20} />
+          Iniciar sesión
+        </button>
+        <button type="button" className="btn-sec" onClick={() => setAbierta('crear')}>
+          Crear cuenta
+        </button>
+        <button type="button" className="portada-invitado" onClick={comoInvitado} disabled={ocupado}>
+          Continuar como invitado
+        </button>
+        {error && (
+          <div className="err" role="alert">
+            {error}
+          </div>
+        )}
+        {!esNativo() && <BotonInstalar estilo="discreto" />}
+        {esModoPrueba() && (
+          <div className="franja info modo-prueba">
+            <span>Modo prueba: nada se guarda en Firebase. Entrá con la cuenta de ejemplo (prueba@stoica.app · stoica) o creá una cuenta inventada.</span>
+            <span className="acciones-prueba">
+              <button type="button" className="btn" onClick={conEjemplo} disabled={ocupado}>
+                Entrar con la cuenta de ejemplo
+              </button>
+              {esPruebaPorEnlace() && (
+                <button type="button" className="link" onClick={salirDelModoPrueba}>
+                  Salir del modo prueba
+                </button>
+              )}
+            </span>
+          </div>
+        )}
+      </PortadaAcceso>
+      <Hoja titulo={abierta === 'crear' ? 'Crear cuenta' : abierta === 'recuperar' ? 'Recuperar acceso' : 'Iniciar sesión'} abierta={!!abierta} alCerrar={() => setAbierta(null)}>
+        {abierta && <FormAcceso inicial={abierta} alCambiar={setAbierta} />}
+      </Hoja>
+    </>
+  );
+}
+
+/** Formulario de ingresar / crear cuenta / recuperar, con Google adentro. */
+function FormAcceso({ inicial, alCambiar }: { inicial: Modo; alCambiar: (m: Modo) => void }) {
+  const [modo, setModo] = useState<Modo>(inicial);
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -20,6 +104,7 @@ export function Acceso() {
 
   const cambiar = (m: Modo) => {
     setModo(m);
+    alCambiar(m);
     setError('');
     setOk('');
   };
@@ -51,29 +136,6 @@ export function Acceso() {
     }
   };
 
-  const comoInvitado = async () => {
-    setError('');
-    setOcupado(true);
-    try {
-      await (await obtenerDriver()).entrarComoInvitado();
-    } catch (err) {
-      setError(mensajeDeError(err));
-    } finally {
-      setOcupado(false);
-    }
-  };
-  const conEjemplo = async () => {
-    setError('');
-    setOcupado(true);
-    try {
-      await (await obtenerDriver()).entrar('prueba@stoica.app', 'stoica');
-    } catch (err) {
-      setError(mensajeDeError(err));
-    } finally {
-      setOcupado(false);
-    }
-  };
-
   const conGoogle = async () => {
     setError('');
     setOcupado(true);
@@ -87,18 +149,9 @@ export function Acceso() {
   };
 
   return (
-    <main className="entra" style={{ maxWidth: 420, margin: '0 auto', paddingTop: 24 }}>
-      <div style={{ textAlign: 'center' }}>
-        <h1 style={{ margin: 0 }} aria-label="StoaHabit">
-          <Marca grande />
-        </h1>
-        <p className="lead" style={{ fontFamily: 'var(--f-display)', fontSize: 18, fontWeight: 600 }}>
-          Hábitos. Disciplina. Una vida más serena.
-        </p>
-      </div>
-
+    <div className="form-acceso">
       {modo !== 'recuperar' ? (
-        <div className="seg3" role="tablist" style={{ marginTop: 30 }}>
+        <div className="seg3" role="tablist">
           <button type="button" role="tab" aria-selected={modo === 'entrar'} className={modo === 'entrar' ? 'on' : ''} onClick={() => cambiar('entrar')}>
             Entrar
           </button>
@@ -107,9 +160,8 @@ export function Acceso() {
           </button>
         </div>
       ) : (
-        <div style={{ marginTop: 30 }}>
-          <div className="cap gold">Recuperar acceso</div>
-          <p className="mu" style={{ fontWeight: 500, marginTop: 6 }}>
+        <div>
+          <p className="mu" style={{ fontWeight: 500, marginTop: 0 }}>
             Te mandamos un correo con un enlace para crear una contraseña nueva.
           </p>
         </div>
@@ -178,30 +230,9 @@ export function Acceso() {
           <button type="button" className="btn-google" onClick={conGoogle} disabled={ocupado}>
             <LogoGoogle /> Continuar con Google
           </button>
-          <button type="button" className="btn-sec invitado" onClick={comoInvitado} disabled={ocupado}>
-            Continuar como invitado
-          </button>
-          <p className="mu2 nota-invitado">Sin correo: después podés guardar tu cuenta desde Perfil sin perder nada.</p>
         </>
       )}
 
-      {!esNativo() && <BotonInstalar estilo="discreto" />}
-
-      {esModoPrueba() && (
-        <div className="franja info modo-prueba" style={{ marginTop: 22 }}>
-          <span>Modo prueba: nada se guarda en Firebase. Entrá con la cuenta de ejemplo (prueba@stoica.app · stoica) o creá una cuenta inventada.</span>
-          <span className="acciones-prueba">
-            <button type="button" className="btn" onClick={conEjemplo} disabled={ocupado}>
-              Entrar con la cuenta de ejemplo
-            </button>
-            {esPruebaPorEnlace() && (
-              <button type="button" className="link" onClick={salirDelModoPrueba}>
-                Salir del modo prueba
-              </button>
-            )}
-          </span>
-        </div>
-      )}
-    </main>
+    </div>
   );
 }

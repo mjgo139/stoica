@@ -58,6 +58,7 @@ export function Arranque({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!usuario) return;
     let creando = false;
+    let refrescado = false;
     let cancelar: (() => void) | undefined;
     obtenerDriver().then((d) => {
       cancelar = d.observarPerfil(
@@ -72,6 +73,16 @@ export function Arranque({ children }: { children: ReactNode }) {
             // o el correo del admin configurado después). Si cambia, llega por el perfil y se refresca el token.
             if (p.rol !== 'admin') revisarCuenta(usuario.uid, () => d.llamar('asegurarCuenta'));
             registrarAccesoDelDia(usuario.uid, p.zonaHoraria);
+            // El perfil se mostró al instante (desde el dispositivo); ahora se refresca con lo del servidor,
+            // sin pisar un cambio hecho acá que sea más nuevo.
+            if (!refrescado) {
+              refrescado = true;
+              void d.perfilDelServidor(usuario.uid).then((fresco) => {
+                const actual = useSesion.getState().perfil;
+                if (!fresco || !actual || useSesion.getState().usuario?.uid !== usuario.uid) return;
+                if ((fresco.actualizado ?? 0) > (actual.actualizado ?? 0)) poner({ perfil: completarPerfil(fresco) });
+              });
+            }
           } else if (!creando) {
             creando = true;
             const nuevo = perfilInicial(usuario.uid, usuario.nombre, usuario.correo, zonaDelDispositivo(), Date.now());

@@ -397,8 +397,6 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .grupo-fila .ahora { font-size: 11px; font-weight: 600; white-space: nowrap; }
 
 /* Acceso: invitado y modo prueba */
-.btn-sec.invitado { width: 100%; margin-top: 10px; }
-.nota-invitado { margin: 8px 0 0; text-align: center; font-size: 12.5px; }
 .franja.modo-prueba { flex-direction: column; align-items: stretch; gap: 10px; }
 .franja.modo-prueba .acciones-prueba { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .franja.modo-prueba .btn { width: auto; padding: 0 20px; height: 44px; }

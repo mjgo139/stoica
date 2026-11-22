@@ -1,56 +1,53 @@
-import { useEffect, useRef } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
-
-/** ¿La persona está escribiendo algo? (no se recarga en ese momento) */
-const escribiendo = () => {
-  const a = document.activeElement;
-  return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || (a as HTMLElement).isContentEditable);
-};
+import { useEffect } from 'react';
+import { registerSW } from 'virtual:pwa-register';
 
 /**
- * Actualización automática: se revisa si hay versión nueva al abrir la app, al volver a ella y cada
- * 30 minutos. Si hay una, se instala sola al abrir o al volver a la app (nunca mientras escribís);
- * si te encuentra en medio de algo, aparece el aviso "Hay una versión nueva · Actualizar".
+ * Actualización automática (v2.4.0, igual que StoaGym): se revisa si hay versión nueva al abrir la app,
+ * al volver a ella y cada 30 minutos. La versión nueva se instala y se activa sola, pero la página se recarga
+ * SOLO cuando la app queda en segundo plano (nunca con la app en pantalla). La próxima vez que la abras ya está.
+ * Si falta un pedazo de la versión vieja (evento 'vite:preloadError'), se recarga para traer la nueva.
  */
 export function AvisoActualizacion() {
-  const inicio = useRef(Date.now());
-  const volvio = useRef(0);
-  const {
-    needRefresh: [hayNueva, setHayNueva],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegisteredSW(_url, reg) {
-      if (!reg) return;
-      const revisar = () => reg.update().catch(() => undefined);
-      revisar();
-      setInterval(revisar, 30 * 60 * 1000);
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          volvio.current = Date.now();
-          revisar();
-        }
-      });
-    },
-  });
-
-  // Recién abierta o recién vuelta a la app (y sin estar escribiendo): se actualiza sola.
   useEffect(() => {
-    if (!hayNueva) return;
-    const ahora = Date.now();
-    const recien = ahora - inicio.current < 20_000 || ahora - volvio.current < 20_000;
-    if (recien && !escribiendo()) void updateServiceWorker(true);
-  }, [hayNueva, updateServiceWorker]);
-
-  if (!hayNueva) return null;
-  return (
-    <div className="aviso" role="status">
-      <span>Hay una versión nueva</span>
-      <button type="button" onClick={() => updateServiceWorker(true)}>
-        Actualizar
-      </button>
-      <button type="button" aria-label="Más tarde" onClick={() => setHayNueva(false)} style={{ textDecoration: 'none' }}>
-        ×
-      </button>
-    </div>
-  );
+    if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
+    let recargando = false;
+    const recargar = () => {
+      if (!recargando) {
+        recargando = true;
+        location.reload();
+      }
+    };
+    const habiaVersion = !!navigator.serviceWorker.controller;
+    let pendiente = false;
+    const alOcultar = () => {
+      if (pendiente && document.visibilityState === 'hidden') recargar();
+    };
+    const alCambiar = () => {
+      // La primera instalación también "cambia" de controlador: ahí no hace falta recargar.
+      if (!habiaVersion) return;
+      pendiente = true;
+      if (document.visibilityState === 'hidden') recargar();
+    };
+    const revisar = () => navigator.serviceWorker.getRegistration().then((r) => r?.update()).catch(() => undefined);
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') void revisar();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', alCambiar);
+    document.addEventListener('visibilitychange', alOcultar);
+    document.addEventListener('visibilitychange', alVolver);
+    window.addEventListener('vite:preloadError', recargar);
+    registerSW({
+      immediate: true,
+      onRegisteredSW(_url, r) {
+        if (r) setInterval(() => void r.update().catch(() => undefined), 30 * 60_000);
+      },
+    });
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', alCambiar);
+      document.removeEventListener('visibilitychange', alOcultar);
+      document.removeEventListener('visibilitychange', alVolver);
+      window.removeEventListener('vite:preloadError', recargar);
+    };
+  }, []);
+  return null;
 }

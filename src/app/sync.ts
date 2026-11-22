@@ -75,10 +75,9 @@ export class Coleccion<T extends { actualizado?: number }> {
     const ruta = `users/${this.uid}/${this.col}`;
     let ultima = this.d.nombre === 'firebase' ? leerNumero(this.clave) : 0;
     if (Date.now() - ultima > RESINCRONIZAR_CADA) ultima = 0;
-    if (ultima > 0) {
-      for (const x of await this.d.leerListaLocal<T>({ ruta, filtros: this.base })) this.todos.set(x.id, x);
-      if (this.todos.size === 0) ultima = 0; // la caché del dispositivo se borró: descargar todo
-    }
+    // Arranque rápido: lo guardado en el dispositivo se muestra al instante (si hay algo) y el servidor completa por detrás.
+    for (const x of await this.d.leerListaLocal<T>({ ruta, filtros: this.base })) this.todos.set(x.id, x);
+    if (ultima > 0 && this.todos.size === 0) ultima = 0; // la caché del dispositivo se borró: descargar todo
     if (this.todos.size) this.emitir();
     const filtros: Filtro[] = ultima > 0 ? [['actualizado', '>=', ultima - DIA]] : this.base;
     this.cancelar = this.d.observarLista<T>(

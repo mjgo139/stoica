@@ -378,6 +378,9 @@ export function crearDriverMemoria(): Driver {
     observarPerfil(uid, cb) {
       return this.observarDoc<Perfil>(`users/${uid}`, (p) => cb(p as Perfil | null), () => undefined);
     },
+    async perfilDelServidor(uid) {
+      return (leerDoc(`users/${uid}`) as Perfil | undefined) ?? null;
+    },
     async crearPerfil(uid, perfil) {
       await espera(40);
       if (leerDoc(`users/${uid}`)) return;
@@ -414,6 +417,9 @@ export function crearDriverMemoria(): Driver {
     },
     async leerLista<T>(c: Consulta) {
       await espera(20);
+      return ejecutar(c) as Array<ConId<T>>;
+    },
+    async leerListaRapida<T>(c: Consulta) {
       return ejecutar(c) as Array<ConId<T>>;
     },
     async leerListaLocal<T>(c: Consulta) {

@@ -62,6 +62,8 @@ export interface Driver {
   cambiarContrasena(actual: string, nueva: string): Promise<void>;
   salir(): Promise<void>;
   observarPerfil(uid: string, cb: (p: Perfil | null) => void, alFallar: (e: unknown) => void): Cancelar;
+  /** El perfil recién traído del servidor (para refrescar el que se mostró desde la caché). null si no se pudo. */
+  perfilDelServidor(uid: string): Promise<Perfil | null>;
   crearPerfil(uid: string, perfil: Perfil): Promise<void>;
   actualizarPerfil(uid: string, cambios: CambiosPerfil): Promise<void>;
   registrarAcceso(uid: string, plataforma: string): Promise<void>;
@@ -71,7 +73,10 @@ export interface Driver {
   observarDoc<T>(ruta: string, cb: (d: ConId<T> | null) => void, alFallar: (e: unknown) => void): Cancelar;
   /** `desdeServidor` es false cuando la respuesta vino solo de la caché del dispositivo (por ejemplo, sin conexión). */
   observarLista<T>(c: Consulta, cb: (docs: Array<ConId<T>>, info: { desdeServidor: boolean }) => void, alFallar: (e: unknown) => void): Cancelar;
+  /** Siempre del servidor (para borrar, exportar y validar). */
   leerLista<T>(c: Consulta): Promise<Array<ConId<T>>>;
+  /** Arranque rápido: si hay datos en el dispositivo se devuelven al instante y se pide al servidor por detrás; si no, espera al servidor. */
+  leerListaRapida<T>(c: Consulta): Promise<Array<ConId<T>>>;
   /** Lo que ya está guardado en este dispositivo (sin ir al servidor, sin costo de lectura). */
   leerListaLocal<T>(c: Consulta): Promise<Array<ConId<T>>>;
   /** Crea o reemplaza (o combina con merge) el documento. No espera al servidor si no hay conexión. */
