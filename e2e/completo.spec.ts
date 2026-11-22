@@ -12,8 +12,8 @@ const esCelular = () => test.info().project.name === 'celular';
 async function entrarConEjemplo(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-  await page.getByLabel('Correo').fill('prueba@stoica.app');
-  await page.getByLabel('Contraseña').fill('stoica');
+  await page.getByLabel('Correo', { exact: true }).fill('prueba@stoica.app');
+  await page.getByLabel('Contraseña', { exact: true }).fill('stoica');
   await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Marco');
 }
@@ -70,8 +70,8 @@ test.describe('v0.2–v0.3 · hábitos', () => {
 
     await page.getByRole('link', { name: /Nuevo hábito/ }).click();
     await page.getByRole('button', { name: /Ducha fría/ }).first().click();
-    await expect(page.getByLabel('Nombre')).toHaveValue('Ducha fría');
-    await page.getByLabel('Nombre').fill('Caminar al alba');
+    await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue('Ducha fría');
+    await page.getByLabel('Nombre', { exact: true }).fill('Caminar al alba');
     await page.getByRole('radio', { name: 'Cantidad' }).click();
     await page.getByLabel('Meta por día').fill('30');
     await page.getByLabel('Unidad').fill('minutos');
@@ -142,7 +142,7 @@ test.describe('v0.2–v0.3 · hábitos', () => {
 
     // Crear una lista desde cero: alcanza con 2 de 3
     await ir(page, '/habitos/nuevo');
-    await page.getByLabel('Nombre').fill('Rutina de mañana');
+    await page.getByLabel('Nombre', { exact: true }).fill('Rutina de mañana');
     await page.getByRole('radio', { name: 'Lista' }).click();
     await page.getByLabel('Ítem 1', { exact: true }).fill('Cama');
     await page.getByLabel('Ítem 2', { exact: true }).fill('Agua');
@@ -178,7 +178,7 @@ test.describe('v0.2–v0.3 · hábitos', () => {
   test('cantidad grande: 8.000 pasos se registran escribiendo el total', async ({ page }) => {
     await entrarConEjemplo(page);
     await ir(page, '/habitos/nuevo');
-    await page.getByLabel('Nombre').fill('Caminar');
+    await page.getByLabel('Nombre', { exact: true }).fill('Caminar');
     await page.getByRole('radio', { name: 'Cantidad' }).click();
     await page.getByLabel('Meta por día').fill('8000');
     await page.getByLabel('Unidad').fill('pasos');
@@ -203,9 +203,9 @@ test.describe('v0.2–v0.3 · hábitos', () => {
   test('hito: Victoria sobre ti mismo al llegar a 3 días', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Crear cuenta' }).click();
-    await page.getByLabel('Nombre').fill('Cleantes');
-    await page.getByLabel('Correo').fill('cleantes2@ejemplo.com');
-    await page.getByLabel('Contraseña').fill('aguador');
+    await page.getByLabel('Nombre', { exact: true }).fill('Cleantes');
+    await page.getByLabel('Correo', { exact: true }).fill('cleantes2@ejemplo.com');
+    await page.getByLabel('Contraseña', { exact: true }).fill('aguador');
     await page.locator('form').getByRole('button', { name: 'Crear cuenta' }).click();
     await expect(page.getByText('Empezá por una práctica')).toBeVisible();
     await page.getByRole('button', { name: /Meditar/ }).first().click();
@@ -359,8 +359,8 @@ test.describe('v0.5–v1.0', () => {
     // Sale y entra con la nueva
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
     await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-    await page.getByLabel('Correo').fill('prueba@stoica.app');
-    await page.getByLabel('Contraseña').fill('estoico2');
+    await page.getByLabel('Correo', { exact: true }).fill('prueba@stoica.app');
+    await page.getByLabel('Contraseña', { exact: true }).fill('estoico2');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();
   });
@@ -449,7 +449,7 @@ test.describe('v0.5–v1.0', () => {
 
     // Desafío sin hábito propio: se crea el hábito y se suma en un toque
     await page.getByRole('button', { name: '+ Nuevo' }).click();
-    await page.getByLabel('Nombre').fill('10 días de gratitud');
+    await page.getByLabel('Nombre', { exact: true }).fill('10 días de gratitud');
     await page.getByRole('dialog').getByRole('button', { name: 'Crear desafío' }).click();
     await page.locator('[data-desafio="10 días de gratitud"]').click();
     await page.locator('[data-mi-habito]').getByRole('button', { name: 'Sumarme' }).click();
@@ -459,7 +459,7 @@ test.describe('v0.5–v1.0', () => {
 
     // Quien lo creó lo edita: la duración solo se alarga
     await page.getByRole('button', { name: 'Editar', exact: true }).click();
-    await page.getByLabel('Nombre').fill('15 días de gratitud');
+    await page.getByLabel('Nombre', { exact: true }).fill('15 días de gratitud');
     await page.getByLabel('Duración (días)').fill('5');
     await page.getByRole('dialog').getByRole('button', { name: 'Guardar cambios' }).click();
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('solo se puede alargar');
@@ -660,7 +660,7 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.locator('[data-contador="Probablemente te quedan"]')).toContainText('días');
     await expect(page.getByRole('img', { name: /semanas vividas de 3796/ })).toBeVisible();
     await page.getByRole('button', { name: '+ Agregar' }).click();
-    await page.getByLabel('Nombre').fill('Viaje');
+    await page.getByLabel('Nombre', { exact: true }).fill('Viaje');
     await page.getByLabel('Fecha', { exact: true }).fill('2030-01-01');
     await page.getByRole('dialog').getByRole('button', { name: 'Agregar' }).click();
     await expect(page.locator('[data-contador-propio="Viaje"]')).toContainText('faltan');
@@ -847,9 +847,9 @@ test.describe('v0.5–v1.0', () => {
   test('borrar mi cuenta', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Crear cuenta' }).click();
-    await page.getByLabel('Nombre').fill('Temporal');
-    await page.getByLabel('Correo').fill('temporal@ejemplo.com');
-    await page.getByLabel('Contraseña').fill('temporal1');
+    await page.getByLabel('Nombre', { exact: true }).fill('Temporal');
+    await page.getByLabel('Correo', { exact: true }).fill('temporal@ejemplo.com');
+    await page.getByLabel('Contraseña', { exact: true }).fill('temporal1');
     await page.locator('form').getByRole('button', { name: 'Crear cuenta' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Temporal');
     await ir(page, '/perfil');
@@ -861,8 +861,8 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByRole('heading', { name: 'StoaHabit' })).toBeVisible();
     // Ya no puede entrar
     await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-    await page.getByLabel('Correo').fill('temporal@ejemplo.com');
-    await page.getByLabel('Contraseña').fill('temporal1');
+    await page.getByLabel('Correo', { exact: true }).fill('temporal@ejemplo.com');
+    await page.getByLabel('Contraseña', { exact: true }).fill('temporal1');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByRole('alert')).toHaveText('El correo o la contraseña no coinciden.');
   });

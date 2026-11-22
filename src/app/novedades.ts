@@ -11,6 +11,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.5.0',
+    fecha: '2026-11-22',
+    cambios: [
+      'Iniciar sesión, crear cuenta y recuperar contraseña con la pantalla de la familia estoica, igual en todas las apps: pantalla completa, ojito para ver la contraseña, Google y "Volver" a la portada.',
+      'El invitado guarda su cuenta con el mismo formulario (ahora también puede poner su nombre).',
+      'Familia estoica 1.8.0.',
+    ],
+  },
+  {
     version: '2.4.0',
     fecha: '2026-11-22',
     cambios: [

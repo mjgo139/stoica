@@ -1,238 +1,111 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { validarContrasena, validarCorreo, validarNombre, limpiarNombre } from '@core/validaciones';
 import { obtenerDriver, esModoPrueba, esPruebaPorEnlace, salirDelModoPrueba } from '@/data';
-import { mensajeDeError } from '@/data/tipos';
-import { LogoGoogle } from '@/ui/Iconos';
-import { Hoja } from '@/ui/Hoja';
+import { ErrorStoica, mensajeDeError } from '@/data/tipos';
+import { esNativo } from '@/nativo/nativo';
 import { AvisoMudanza } from '@/ui/AvisoMudanza';
-import { Emblema, PortadaAcceso } from '../../familia/react';
+import { EmblemaStoaHabit } from '@/ui/Marca';
+import { Emblema, FormularioAcceso, PantallaAcceso, PortadaAcceso, type VistaAcceso } from '../../familia/react';
 import { FIGURAS } from '../../familia/figuras';
 import { Icono } from '../../familia/iconos';
 import portada from '../../familia/portada-filosofo.webp';
-import { esNativo } from '@/nativo/nativo';
 import { BotonInstalar } from './Instalar';
 
-type Modo = 'entrar' | 'crear' | 'recuperar';
+/** Lanza el error de la validación (lo muestra el formulario de la familia) */
+const exigir = (r: { ok: true } | { ok: false; error: string }) => {
+  if (!r.ok) throw new ErrorStoica(r.error, 'invalido');
+};
 
-/** Pantalla de acceso: la portada común de la familia (filósofo sentado) y el formulario en una hoja. */
+/** Funciones de StoaHabit para el formulario de acceso de la familia (con las validaciones de siempre) */
+export const accionesAcceso = {
+  ingresar: async (email: string, clave: string) => {
+    exigir(validarCorreo(email));
+    if (!clave) throw new ErrorStoica('Escribí tu contraseña.', 'invalido');
+    await (await obtenerDriver()).entrar(email, clave);
+  },
+  registrar: async (nombre: string, email: string, clave: string) => {
+    exigir(validarNombre(nombre));
+    exigir(validarCorreo(email));
+    exigir(validarContrasena(clave));
+    await (await obtenerDriver()).registrar(limpiarNombre(nombre), email, clave);
+  },
+  recuperar: async (email: string) => {
+    exigir(validarCorreo(email));
+    await (await obtenerDriver()).recuperarContrasena(email);
+  },
+  google: async () => {
+    await (await obtenerDriver()).entrarConGoogle();
+  },
+};
+
+/** Acceso: la portada de la familia (filósofo sentado) y, al tocar Iniciar sesión o Crear cuenta, la pantalla completa de la familia. */
 export function Acceso() {
-  const [abierta, setAbierta] = useState<Modo | null>(null);
+  const [vista, setVista] = useState<VistaAcceso | null>(null);
   const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
 
-  const comoInvitado = async () => {
+  const hacer = async (f: () => Promise<unknown>) => {
     setError('');
     setOcupado(true);
     try {
-      await (await obtenerDriver()).entrarComoInvitado();
+      await f();
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
       setOcupado(false);
     }
   };
-  const conEjemplo = async () => {
-    setError('');
-    setOcupado(true);
-    try {
-      await (await obtenerDriver()).entrar('prueba@stoica.app', 'stoica');
-    } catch (err) {
-      setError(mensajeDeError(err));
-    } finally {
-      setOcupado(false);
-    }
-  };
+  const comoInvitado = () => hacer(async () => (await obtenerDriver()).entrarComoInvitado());
+  const conEjemplo = () => hacer(async () => (await obtenerDriver()).entrar('prueba@stoica.app', 'stoica'));
+
+  if (vista) {
+    return (
+      <PantallaAcceso emblema={<EmblemaStoaHabit size={72} />} nombre="StoaHabit" alVolver={() => setVista(null)}>
+        <FormularioAcceso vista={vista} alCambiarVista={setVista} mensajeError={mensajeDeError} acciones={accionesAcceso} />
+      </PantallaAcceso>
+    );
+  }
 
   return (
-    <>
-      <PortadaAcceso
-        imagen={portada}
-        emblema={<Emblema figura={FIGURAS.check} size={92} />}
-        nombre="StoaHabit"
-        lema="Hábitos · Disciplina · Serenidad"
-        frase="Cumplí tus prácticas de cada día y construí, paso a paso, una vida más serena."
-        aviso={<AvisoMudanza />}
-      >
-        <button type="button" className="btn" onClick={() => setAbierta('entrar')}>
-          <Icono n="corona" size={20} />
-          Iniciar sesión
-        </button>
-        <button type="button" className="btn-sec" onClick={() => setAbierta('crear')}>
-          Crear cuenta
-        </button>
-        <button type="button" className="portada-invitado" onClick={comoInvitado} disabled={ocupado}>
-          Continuar como invitado
-        </button>
-        {error && (
-          <div className="err" role="alert">
-            {error}
-          </div>
-        )}
-        {!esNativo() && <BotonInstalar estilo="discreto" />}
-        {esModoPrueba() && (
-          <div className="franja info modo-prueba">
-            <span>Modo prueba: nada se guarda en Firebase. Entrá con la cuenta de ejemplo (prueba@stoica.app · stoica) o creá una cuenta inventada.</span>
-            <span className="acciones-prueba">
-              <button type="button" className="btn" onClick={conEjemplo} disabled={ocupado}>
-                Entrar con la cuenta de ejemplo
-              </button>
-              {esPruebaPorEnlace() && (
-                <button type="button" className="link" onClick={salirDelModoPrueba}>
-                  Salir del modo prueba
-                </button>
-              )}
-            </span>
-          </div>
-        )}
-      </PortadaAcceso>
-      <Hoja titulo={abierta === 'crear' ? 'Crear cuenta' : abierta === 'recuperar' ? 'Recuperar acceso' : 'Iniciar sesión'} abierta={!!abierta} alCerrar={() => setAbierta(null)}>
-        {abierta && <FormAcceso inicial={abierta} alCambiar={setAbierta} />}
-      </Hoja>
-    </>
-  );
-}
-
-/** Formulario de ingresar / crear cuenta / recuperar, con Google adentro. */
-function FormAcceso({ inicial, alCambiar }: { inicial: Modo; alCambiar: (m: Modo) => void }) {
-  const [modo, setModo] = useState<Modo>(inicial);
-  const [nombre, setNombre] = useState('');
-  const [correo, setCorreo] = useState('');
-  const [contrasena, setContrasena] = useState('');
-  const [error, setError] = useState('');
-  const [ok, setOk] = useState('');
-  const [ocupado, setOcupado] = useState(false);
-
-  const cambiar = (m: Modo) => {
-    setModo(m);
-    alCambiar(m);
-    setError('');
-    setOk('');
-  };
-
-  const enviar = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setOk('');
-    const chequeos = [
-      modo === 'crear' ? validarNombre(nombre) : { ok: true as const },
-      validarCorreo(correo),
-      modo !== 'recuperar' ? (modo === 'crear' ? validarContrasena(contrasena) : contrasena ? { ok: true as const } : { ok: false as const, error: 'Escribí tu contraseña.' }) : { ok: true as const },
-    ];
-    const falla = chequeos.find((c) => !c.ok);
-    if (falla && !falla.ok) return setError(falla.error);
-    setOcupado(true);
-    try {
-      const d = await obtenerDriver();
-      if (modo === 'entrar') await d.entrar(correo, contrasena);
-      else if (modo === 'crear') await d.registrar(limpiarNombre(nombre), correo, contrasena);
-      else {
-        await d.recuperarContrasena(correo);
-        setOk('Si hay una cuenta con ese correo, te llegó un enlace para crear una contraseña nueva. Revisá también la carpeta de spam.');
-      }
-    } catch (err) {
-      setError(mensajeDeError(err));
-    } finally {
-      setOcupado(false);
-    }
-  };
-
-  const conGoogle = async () => {
-    setError('');
-    setOcupado(true);
-    try {
-      await (await obtenerDriver()).entrarConGoogle();
-    } catch (err) {
-      setError(mensajeDeError(err));
-    } finally {
-      setOcupado(false);
-    }
-  };
-
-  return (
-    <div className="form-acceso">
-      {modo !== 'recuperar' ? (
-        <div className="seg3" role="tablist">
-          <button type="button" role="tab" aria-selected={modo === 'entrar'} className={modo === 'entrar' ? 'on' : ''} onClick={() => cambiar('entrar')}>
-            Entrar
-          </button>
-          <button type="button" role="tab" aria-selected={modo === 'crear'} className={modo === 'crear' ? 'on' : ''} onClick={() => cambiar('crear')}>
-            Crear cuenta
-          </button>
-        </div>
-      ) : (
-        <div>
-          <p className="mu" style={{ fontWeight: 500, marginTop: 0 }}>
-            Te mandamos un correo con un enlace para crear una contraseña nueva.
-          </p>
-        </div>
-      )}
-
-      <form onSubmit={enviar} noValidate>
-        {modo === 'crear' && (
-          <>
-            <label className="lbl cap" htmlFor="nombre">
-              Nombre
-            </label>
-            <input id="nombre" className="inp" autoComplete="name" maxLength={40} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Cómo querés que te llamemos" />
-          </>
-        )}
-        <label className="lbl cap" htmlFor="correo">
-          Correo
-        </label>
-        <input id="correo" className="inp" type="email" inputMode="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tu@correo.com" />
-        {modo !== 'recuperar' && (
-          <>
-            <label className="lbl cap" htmlFor="contrasena">
-              Contraseña
-            </label>
-            <input
-              id="contrasena"
-              className="inp"
-              type="password"
-              autoComplete={modo === 'crear' ? 'new-password' : 'current-password'}
-              value={contrasena}
-              onChange={(e) => setContrasena(e.target.value)}
-              placeholder={modo === 'crear' ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
-            />
-          </>
-        )}
+    <PortadaAcceso
+      imagen={portada}
+      emblema={<Emblema figura={FIGURAS.check} size={92} />}
+      nombre="StoaHabit"
+      lema="Hábitos · Disciplina · Serenidad"
+      frase="Cumplí tus prácticas de cada día y construí, paso a paso, una vida más serena."
+      aviso={<AvisoMudanza />}
+    >
+      <button type="button" className="btn" onClick={() => setVista('ingresar')}>
+        <Icono n="corona" size={20} />
+        Iniciar sesión
+      </button>
+      <button type="button" className="btn-sec" onClick={() => setVista('registrar')}>
+        Crear cuenta
+      </button>
+      <button type="button" className="portada-invitado" onClick={comoInvitado} disabled={ocupado}>
+        Continuar como invitado
+      </button>
+      {error && (
         <div className="err" role="alert">
           {error}
         </div>
-        {ok && (
-          <div className="okmsg" role="status">
-            {ok}
-          </div>
-        )}
-        <button className="btn" type="submit" disabled={ocupado} style={{ marginTop: 8 }}>
-          {modo === 'entrar' ? 'Entrar' : modo === 'crear' ? 'Crear cuenta' : 'Enviar enlace'}
-        </button>
-      </form>
-
-      {modo === 'entrar' && (
-        <div style={{ textAlign: 'center', marginTop: 6 }}>
-          <button type="button" className="link" onClick={() => cambiar('recuperar')}>
-            Olvidé mi contraseña
-          </button>
+      )}
+      {!esNativo() && <BotonInstalar estilo="discreto" />}
+      {esModoPrueba() && (
+        <div className="franja info modo-prueba">
+          <span>Modo prueba: nada se guarda en Firebase. Entrá con la cuenta de ejemplo (prueba@stoica.app · stoica) o creá una cuenta inventada.</span>
+          <span className="acciones-prueba">
+            <button type="button" className="btn" onClick={conEjemplo} disabled={ocupado}>
+              Entrar con la cuenta de ejemplo
+            </button>
+            {esPruebaPorEnlace() && (
+              <button type="button" className="link" onClick={salirDelModoPrueba}>
+                Salir del modo prueba
+              </button>
+            )}
+          </span>
         </div>
       )}
-      {modo === 'recuperar' && (
-        <div style={{ textAlign: 'center', marginTop: 6 }}>
-          <button type="button" className="link" onClick={() => cambiar('entrar')}>
-            Volver a entrar
-          </button>
-        </div>
-      )}
-
-      {modo !== 'recuperar' && (
-        <>
-          <div className="sep cap">o</div>
-          <button type="button" className="btn-google" onClick={conGoogle} disabled={ocupado}>
-            <LogoGoogle /> Continuar con Google
-          </button>
-        </>
-      )}
-
-    </div>
+    </PortadaAcceso>
   );
 }

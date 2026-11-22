@@ -1,11 +1,16 @@
 import { useState, type FormEvent } from 'react';
-import { Avatar, BotonFoto, CabeceraPagina, ElegirTema, Grupo, TarjetaPerfil } from '../../familia/react';
+import { Avatar, BotonFoto, CabeceraPagina, ElegirTema, FormularioAcceso, Grupo, TarjetaPerfil, type VistaAcceso } from '../../familia/react';
 import { useMutation } from '@tanstack/react-query';
 import type { CambiosPerfil } from '@core/perfil';
-import { limpiarNombre, validarContrasena, validarNombre } from '@core/validaciones';
+import { limpiarNombre, validarContrasena, validarCorreo, validarNombre } from '@core/validaciones';
 import { useSesion } from '@/app/sesion';
 import { esPruebaPorEnlace, salirDelModoPrueba, esModoPrueba, obtenerDriver } from '@/data';
-import { mensajeDeError } from '@/data/tipos';
+import { ErrorStoica, mensajeDeError } from '@/data/tipos';
+import { accionesAcceso } from './Acceso';
+
+const exigirValido = (r: { ok: true } | { ok: false; error: string }) => {
+  if (!r.ok) throw new ErrorStoica(r.error, 'invalido');
+};
 import { Icono } from '@/ui/Iconos';
 import { NOVEDADES } from '@/app/novedades';
 import { Hoja } from '@/ui/Hoja';
@@ -280,24 +285,21 @@ function VersionYNovedades() {
 /** Cuenta de invitado: se guarda con correo y contraseña sin perder hábitos, registros ni grupos */
 function GuardarInvitado() {
   const mostrar = useAvisos((x) => x.mostrar);
+  const uid = useSesion((x) => x.usuario?.uid);
   const [abierta, setAbierta] = useState(false);
-  const [correo, setCorreo] = useState('');
-  const [clave, setClave] = useState('');
-  const [error, setError] = useState('');
-  const [ocupado, setOcupado] = useState(false);
-  const guardar = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setOcupado(true);
-    try {
-      await (await obtenerDriver()).guardarCuentaInvitado(correo, clave);
+  const [vista, setVista] = useState<VistaAcceso>('registrar');
+  // El invitado crea su cuenta con el formulario de la familia: mismo uid, no pierde nada.
+  const acciones = {
+    ...accionesAcceso,
+    registrar: async (nombre: string, email: string, clave: string) => {
+      exigirValido(validarCorreo(email));
+      exigirValido(validarContrasena(clave));
+      const d = await obtenerDriver();
+      await d.guardarCuentaInvitado(email, clave);
+      if (uid && nombre.trim() && validarNombre(nombre).ok) await d.actualizarPerfil(uid, { nombre: limpiarNombre(nombre) });
       setAbierta(false);
       mostrar('Cuenta guardada: ya podés entrar con tu correo.');
-    } catch (err) {
-      setError(mensajeDeError(err));
-    } finally {
-      setOcupado(false);
-    }
+    },
   };
   return (
     <>
@@ -311,16 +313,14 @@ function GuardarInvitado() {
         </span>
       </button>
       <Hoja titulo="Guardar mi cuenta" abierta={abierta} alCerrar={() => setAbierta(false)}>
-        <form onSubmit={guardar} noValidate>
-          <label className="lbl cap" htmlFor="inv-correo">Correo</label>
-          <input id="inv-correo" className="inp" type="email" inputMode="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} />
-          <label className="lbl cap" htmlFor="inv-clave">Contraseña</label>
-          <input id="inv-clave" className="inp" type="password" autoComplete="new-password" placeholder="Mínimo 6 caracteres" value={clave} onChange={(e) => setClave(e.target.value)} />
-          <div className="err" role="alert">{error}</div>
-          <button type="submit" className="btn" disabled={ocupado} style={{ width: '100%', marginTop: 8 }}>
-            Guardar
-          </button>
-        </form>
+        <FormularioAcceso
+          vista={vista}
+          alCambiarVista={setVista}
+          sinTitulo={vista === 'registrar'}
+          nota={vista === 'registrar' ? 'Todo lo que hiciste como invitado queda guardado en tu cuenta.' : undefined}
+          mensajeError={mensajeDeError}
+          acciones={acciones}
+        />
       </Hoja>
     </>
   );

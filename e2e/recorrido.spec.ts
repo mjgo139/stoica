@@ -22,10 +22,26 @@ test.describe('v0.1 · base', () => {
     await captura(page, '01-acceso-claro');
     await page.emulateMedia({ colorScheme: 'dark' });
     await captura(page, '02-acceso-oscuro');
-    // Google va dentro del formulario
+    // Iniciar sesión abre la pantalla completa de la familia (no una hoja), con Google adentro
     await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-    await expect(page.getByRole('dialog').getByRole('button', { name: 'Continuar con Google' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bienvenido de nuevo' })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.acceso-nombre')).toHaveText('StoaHabit');
+    await expect(page.getByRole('button', { name: 'Continuar con Google' })).toBeVisible();
     await captura(page, '02b-acceso-formulario');
+    // Recuperar contraseña
+    await page.getByRole('button', { name: 'Olvidé mi contraseña' }).click();
+    await expect(page.getByRole('heading', { name: 'Recuperar contraseña' })).toBeVisible();
+    await page.getByLabel('Correo', { exact: true }).fill('prueba@stoica.app');
+    await page.getByRole('button', { name: 'Enviar enlace' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'te llegó un enlace' })).toBeVisible();
+    await page.getByRole('button', { name: '¿Ya tenés cuenta? Iniciá sesión' }).click();
+    await page.getByRole('button', { name: '¿No tenés cuenta? Creá una' }).click();
+    await expect(page.getByRole('heading', { name: 'Creá tu cuenta' })).toBeVisible();
+    await expect(page.getByLabel('Nombre', { exact: true })).toBeVisible();
+    // Volver lleva a la portada
+    await page.getByRole('button', { name: 'Volver' }).click();
+    await expect(page.locator('.portada-acciones')).toBeVisible();
   });
 
   test('errores claros al entrar', async ({ page }) => {
@@ -33,8 +49,8 @@ test.describe('v0.1 · base', () => {
     await page.getByRole('button', { name: 'Iniciar sesión' }).click();
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByRole('alert')).toHaveText('Escribí tu correo.');
-    await page.getByLabel('Correo').fill('prueba@stoica.app');
-    await page.getByLabel('Contraseña').fill('equivocada');
+    await page.getByLabel('Correo', { exact: true }).fill('prueba@stoica.app');
+    await page.getByLabel('Contraseña', { exact: true }).fill('equivocada');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByRole('alert')).toHaveText('El correo o la contraseña no coinciden.');
   });
@@ -43,12 +59,12 @@ test.describe('v0.1 · base', () => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/');
     await page.getByRole('button', { name: 'Crear cuenta' }).click();
-    await page.getByLabel('Nombre').fill('Epicteto de Hierápolis');
-    await page.getByLabel('Correo').fill('epicteto.nuevo@ejemplo.com');
-    await page.getByLabel('Contraseña').fill('123');
+    await page.getByLabel('Nombre', { exact: true }).fill('Epicteto de Hierápolis');
+    await page.getByLabel('Correo', { exact: true }).fill('epicteto.nuevo@ejemplo.com');
+    await page.getByLabel('Contraseña', { exact: true }).fill('123');
     await page.locator('form').getByRole('button', { name: 'Crear cuenta' }).click();
     await expect(page.getByRole('alert')).toContainText('al menos 6');
-    await page.getByLabel('Contraseña').fill('nicopolis');
+    await page.getByLabel('Contraseña', { exact: true }).fill('nicopolis');
     await page.locator('form').getByRole('button', { name: 'Crear cuenta' }).click();
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Epicteto');
@@ -78,7 +94,7 @@ test.describe('v0.1 · base', () => {
     const dialogo = page.getByRole('dialog', { name: 'Cambiar nombre' });
     await expect(dialogo).toBeVisible();
     await captura(page, '06-hoja-nombre');
-    await dialogo.getByLabel('Nombre').fill('Epicteto');
+    await dialogo.getByLabel('Nombre', { exact: true }).fill('Epicteto');
     await dialogo.getByRole('button', { name: 'Guardar' }).click();
     await expect(page.getByText('Nombre guardado.')).toBeVisible();
     await captura(page, '07-perfil-oscuro');
@@ -97,8 +113,8 @@ test.describe('v0.1 · base', () => {
   test('entrar con la cuenta de ejemplo y con Google simulado', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Iniciar sesión' }).click();
-    await page.getByLabel('Correo').fill('prueba@stoica.app');
-    await page.getByLabel('Contraseña').fill('stoica');
+    await page.getByLabel('Correo', { exact: true }).fill('prueba@stoica.app');
+    await page.getByLabel('Contraseña', { exact: true }).fill('stoica');
     await page.locator('form').getByRole('button', { name: 'Entrar' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Marco');
     // Panel del día de la familia 1.5.0: frase estoica, sin rango ni nivel
@@ -130,9 +146,9 @@ test.describe('v0.1 · base', () => {
     await expect(page.getByTestId('tarjeta-perfil')).toContainText('Modo invitado');
     await page.getByTestId('guardar-invitado').click();
     const hoja = page.getByRole('dialog', { name: 'Guardar mi cuenta' });
-    await hoja.getByLabel('Correo').fill('invitado@ejemplo.com');
-    await hoja.getByLabel('Contraseña').fill('secreto123');
-    await hoja.getByRole('button', { name: 'Guardar' }).click();
+    await hoja.getByLabel('Correo', { exact: true }).fill('invitado@ejemplo.com');
+    await hoja.getByLabel('Contraseña', { exact: true }).fill('secreto123');
+    await hoja.getByRole('button', { name: 'Crear cuenta' }).click();
     await expect(page.getByText('Cuenta guardada: ya podés entrar con tu correo.')).toBeVisible();
     await expect(page.getByTestId('tarjeta-perfil')).toContainText('Entra con correo');
     await expect(page.getByTestId('tarjeta-perfil')).toContainText('invitado@ejemplo.com');
