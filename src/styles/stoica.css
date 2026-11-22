@@ -400,3 +400,4 @@ button.fila:active:not(:disabled), .fila:active, button.desglose-cab:active:not(
 .franja.modo-prueba { flex-direction: column; align-items: stretch; gap: 10px; }
 .franja.modo-prueba .acciones-prueba { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .franja.modo-prueba .btn { width: auto; padding: 0 20px; height: 44px; }
+.form-acceso .btn[type='submit'] { width: 100%; }
