@@ -5,35 +5,19 @@ let actual: Driver | null = null;
 const CLAVE_PRUEBA = 'stoica.prueba';
 
 /**
- * Modo prueba por enlace (igual que StoaGym): `?prueba=1` lo prende en este navegador y `?prueba=0` lo apaga.
- * Usa la cuenta de ejemplo con datos inventados y no toca Firebase.
+ * Modo prueba: solo en el armado de prueba (pruebas automáticas y `npm run prueba`).
+ * En la web publicada ya no existe `?prueba=1` (decisión del dueño, v2.6.0); se borra la marca vieja.
  */
-function pruebaPorEnlace(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    const p = new URLSearchParams(location.search).get('prueba');
-    if (p === '1') localStorage.setItem(CLAVE_PRUEBA, '1');
-    if (p === '0') localStorage.removeItem(CLAVE_PRUEBA);
-    return localStorage.getItem(CLAVE_PRUEBA) === '1';
-  } catch {
-    return false;
-  }
-}
-const PRUEBA_ARMADA = __MODO_PRUEBA__ || import.meta.env.VITE_DRIVER === 'memoria';
-const PRUEBA = PRUEBA_ARMADA || pruebaPorEnlace();
-
-export const esModoPrueba = (): boolean => PRUEBA;
-/** Prendido con ?prueba=1 en la versión publicada (se puede salir con ?prueba=0) */
-export const esPruebaPorEnlace = (): boolean => PRUEBA && !PRUEBA_ARMADA;
-/** Sale del modo prueba por enlace y vuelve a la app real */
-export function salirDelModoPrueba() {
+if (typeof window !== 'undefined') {
   try {
     localStorage.removeItem(CLAVE_PRUEBA);
   } catch {
     /* nada */
   }
-  location.href = '/?prueba=0';
 }
+const PRUEBA = __MODO_PRUEBA__ || import.meta.env.VITE_DRIVER === 'memoria';
+
+export const esModoPrueba = (): boolean => PRUEBA;
 
 /** Carga el driver una sola vez. Firebase se importa aparte para que el modo prueba no lo descargue. */
 export async function obtenerDriver(): Promise<Driver> {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { validarContrasena, validarCorreo, validarNombre, limpiarNombre } from '@core/validaciones';
-import { obtenerDriver, esModoPrueba, esPruebaPorEnlace, salirDelModoPrueba } from '@/data';
+import { obtenerDriver, esModoPrueba } from '@/data';
 import { ErrorStoica, mensajeDeError } from '@/data/tipos';
 import { esNativo } from '@/nativo/nativo';
 import { AvisoMudanza } from '@/ui/AvisoMudanza';
@@ -98,11 +98,6 @@ export function Acceso() {
             <button type="button" className="btn" onClick={conEjemplo} disabled={ocupado}>
               Entrar con la cuenta de ejemplo
             </button>
-            {esPruebaPorEnlace() && (
-              <button type="button" className="link" onClick={salirDelModoPrueba}>
-                Salir del modo prueba
-              </button>
-            )}
           </span>
         </div>
       )}

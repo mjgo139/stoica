@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { CambiosPerfil } from '@core/perfil';
 import { limpiarNombre, validarContrasena, validarCorreo, validarNombre } from '@core/validaciones';
 import { useSesion } from '@/app/sesion';
-import { esPruebaPorEnlace, salirDelModoPrueba, esModoPrueba, obtenerDriver } from '@/data';
+import { esModoPrueba, obtenerDriver } from '@/data';
 import { ErrorStoica, mensajeDeError } from '@/data/tipos';
 import { accionesAcceso } from './Acceso';
 
@@ -123,12 +123,6 @@ export function Perfil() {
           <Grupo n={6} className="sep-grupo">Sesión</Grupo>
           <BotonInstalar estilo="fila" />
           {usuario.proveedor === 'invitado' && <GuardarInvitado />}
-          {esPruebaPorEnlace() && (
-            <button type="button" className="fila" onClick={salirDelModoPrueba}>
-              <Icono nombre="salir" />
-              <span style={{ flex: 1 }}>Salir del modo prueba</span>
-            </button>
-          )}
           {(usuario.proveedor === 'password' || usuario.proveedor === 'prueba') && (
             <button type="button" className="fila" onClick={() => setCambiandoClave(true)}>
               <Icono nombre="llave" />

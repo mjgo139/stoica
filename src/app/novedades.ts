@@ -11,6 +11,13 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.6.0',
+    fecha: '2026-11-22',
+    cambios: [
+      'La web publicada ya no tiene modo prueba (?prueba=1): solo existe en las pruebas automáticas.',
+    ],
+  },
+  {
     version: '2.5.0',
     fecha: '2026-11-22',
     cambios: [

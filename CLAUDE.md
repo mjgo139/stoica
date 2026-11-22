@@ -41,6 +41,8 @@ App de hábitos con enfoque estoico. Es parte de la **familia estoica** del due�
 - `node familia/revisar.mjs` corre con las pruebas y falla si hay colores sueltos o si `familia/` fue cambiada.
 - Se conserva la estructura y las pantallas propias de esta app; lo común es el aspecto.
 
+**Modo prueba (v2.6.0, decisión del dueño):** solo en el armado de prueba (`npm run prueba`, pruebas automáticas). En la web publicada `?prueba=1` no existe; al abrir se borra la marca vieja `stoica.prueba`.
+
 ### Cómo está aplicada en StoaHabit (v2.5.0, versión de la familia 1.8.0)
 - `src/main.tsx` carga `familia/familia.css` antes de `src/styles/stoica.css`; Tailwind usa `presets: [familia]`. `stoica.css` ya no define colores: solo usa variables de la familia (las equivalencias viejas → nuevas están aplicadas: `--ok`→`--verde`, `--card-ln`→`--ln`, virtudes → `--serie-1/2/4/6`…).
 - `src/app/Shell.tsx`: `BarraLateral` (PC) + `Pestanas` (celular: Hoy, Hábitos, Tareas, Examen, Memento, Comunidad), contenedor `.con-lateral`, `AvisoMudanza` y `AvisoPrueba`. En el celular se entra a Perfil tocando el avatar del Panel del día.
