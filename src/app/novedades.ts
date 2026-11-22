@@ -11,6 +11,13 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.7.0',
+    fecha: '2026-11-22',
+    cambios: [
+      'En la portada, "Descargar para Android" baja la app (solo en el navegador; no aparece en la app instalada ni en iPhone).',
+    ],
+  },
+  {
     version: '2.6.0',
     fecha: '2026-11-22',
     cambios: [

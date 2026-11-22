@@ -5,7 +5,7 @@ import { ErrorStoica, mensajeDeError } from '@/data/tipos';
 import { esNativo } from '@/nativo/nativo';
 import { AvisoMudanza } from '@/ui/AvisoMudanza';
 import { EmblemaStoaHabit } from '@/ui/Marca';
-import { Emblema, FormularioAcceso, PantallaAcceso, PortadaAcceso, type VistaAcceso } from '../../familia/react';
+import { DescargarApp, Emblema, FormularioAcceso, PantallaAcceso, PortadaAcceso, type VistaAcceso } from '../../familia/react';
 import { FIGURAS } from '../../familia/figuras';
 import { Icono } from '../../familia/iconos';
 import portada from '../../familia/portada-filosofo.webp';
@@ -90,6 +90,7 @@ export function Acceso() {
           {error}
         </div>
       )}
+      <DescargarApp apk="/descargas/stoica.apk" />
       {!esNativo() && <BotonInstalar estilo="discreto" />}
       {esModoPrueba() && (
         <div className="franja info modo-prueba">
