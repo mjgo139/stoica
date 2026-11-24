@@ -550,10 +550,10 @@ export function Jardin() {
         .festejo { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bg) 70%, transparent); padding: 16px; }
         .festejo > div { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--gold) 16%, var(--sf)), var(--sf) 70%); border: 2px solid var(--gold2); border-radius: 22px; padding: 22px 18px 18px; width: min(380px, 100%); text-align: center; color: var(--tx); box-shadow: var(--sombra); }
         .festejo .rayos { position: absolute; left: 50%; top: 38%; width: 520px; height: 520px; background: repeating-conic-gradient(color-mix(in srgb, var(--goldh) 35%, transparent) 0 10deg, transparent 10deg 20deg); border-radius: 50%; animation: rayos 18s linear infinite; pointer-events: none; }
-        .festejo img { position: relative; width: 150px; height: 150px; object-fit: contain; animation: crecer 1.4s ease-out; }
+        .festejo img { position: relative; display: block; margin: 8px auto 0; width: 150px; height: 150px; object-fit: contain; animation: crecer 1.4s ease-out; }
         @media (prefers-reduced-motion: reduce) { .pide-agua, .globo, .nube, .festejo .rayos, .festejo img { animation: none } }
       `}</style>
-      <CabeceraPagina etiqueta="Tu jardín estoico" titulo="Jardín" linea="Cada hábito es una planta de su virtud. Crece con tu constancia, llega al 100 % (medalla de laurel), da retoños y se marchita si lo dejás." />
+      <CabeceraPagina etiqueta="Tu jardín estoico" titulo="Jardín" />
 
       <div className="jardin-cols" style={{ marginTop: 10 }}>
         <div className="jardin-lienzo">

@@ -119,6 +119,33 @@ test.describe('v0.2–v0.3 · hábitos', () => {
     await expect(page.getByText('Tiempo con la familia')).toHaveCount(0);
   });
 
+  test('marcar días pasados desde el calendario (y apagarlo por hábito)', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await ir(page, '/habitos/h-meditar');
+    await expect(page.getByRole('heading', { level: 1, name: 'Meditar' })).toBeVisible();
+    const sinCumplir = page.getByRole('button', { name: /: no cumplido · tocá para marcar/ });
+    const antes = await sinCumplir.count();
+    expect(antes).toBeGreaterThan(0);
+    await sinCumplir.first().click();
+    const hoja = page.getByRole('dialog');
+    await hoja.getByRole('button', { name: 'Marcar ese día como cumplido' }).click();
+    await page.keyboard.press('Escape');
+    await expect(sinCumplir).toHaveCount(antes - 1);
+    await captura(page, '13b-dia-pasado');
+    // Apagado en el editor: los días pasados ya no se tocan (hoy sí, arriba)
+    await ir(page, '/habitos/h-meditar/editar');
+    const interruptor = page.getByRole('switch', { name: /Marcar días pasados/ });
+    await expect(interruptor).toHaveAttribute('aria-checked', 'true');
+    await interruptor.click();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await ir(page, '/habitos/h-meditar');
+    await expect(page.getByRole('heading', { level: 1, name: 'Meditar' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /tocá para marcar/ })).toHaveCount(0);
+    // Un hábito nuevo lo trae prendido
+    await ir(page, '/habitos/nuevo');
+    await expect(page.getByRole('switch', { name: /Marcar días pasados/ })).toHaveAttribute('aria-checked', 'true');
+  });
+
   test('lista: comer bien con almuerzo, merienda y cena', async ({ page }) => {
     await entrarConEjemplo(page);
     const comer = page.locator('[data-habito="Comer bien"]');
@@ -552,9 +579,23 @@ test.describe('v0.5–v1.0', () => {
     // Tira "Fotos de hoy" arriba del grupo
     const tira = page.locator('[data-fotos-hoy]');
     await expect(tira).toContainText('Fotos de hoy · 2');
+    // Se abren como historias (pantalla completa, barritas arriba, tocar para pasar)
     await tira.getByRole('listitem', { name: 'Foto de Lucio Séneca: Ayuno, no cumplido' }).click();
+    const historias = page.getByRole('dialog', { name: 'Historias del grupo' });
+    await expect(historias).toContainText('Ayuno');
+    await expect(historias).toContainText('Hoy no pude');
+    await expect(historias.locator('.historias-barras span')).toHaveCount(2);
+    await captura(page, '25c-historias');
+    // Desde la historia se va a los comentarios de esa foto
+    await historias.getByRole('button', { name: /Comentar|comentario/ }).click();
+    await expect(historias).toHaveCount(0);
     await expect(page.getByRole('dialog', { name: 'Ayuno · Lucio Séneca' })).toContainText('Hoy no pude');
     await page.keyboard.press('Escape');
+    // Escape cierra las historias
+    await tira.getByRole('listitem').first().click();
+    await expect(page.getByRole('dialog', { name: 'Historias del grupo' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Historias del grupo' })).toHaveCount(0);
 
     // En la semana, los días con foto se tocan: ayer de Epicteto
     const semanaEpicteto = page.getByRole('group', { name: /Epicteto, Meditar: 7 de 7 días/ });
@@ -577,6 +618,10 @@ test.describe('v0.5–v1.0', () => {
     await expect(hojaFoto.getByLabel('Sacar foto con la cámara')).toHaveAttribute('capture', 'environment');
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP8z4APMOGVHbHSAEEsAROxCnMTAAAAAElFTkSuQmCC', 'base64');
     await hojaFoto.getByLabel('Elegir foto').setInputFiles({ name: 'dia.png', mimeType: 'image/png', buffer: png });
+    // La foto sale con el sello de StoaHabit (franja abajo: más alta que ancha aunque la foto sea cuadrada)
+    const previa = hojaFoto.locator('[data-vista-previa]');
+    await expect(previa).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => previa.evaluate((i: HTMLImageElement) => (i.complete ? i.naturalHeight - i.naturalWidth : 0))).toBeGreaterThan(0);
     await hojaFoto.getByLabel('Comentario (opcional)').fill('Diez minutos');
     await hojaFoto.getByRole('button', { name: 'Compartir' }).click();
     await expect(page.getByText('Foto de Meditar compartida.')).toBeVisible();

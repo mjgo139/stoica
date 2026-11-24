@@ -11,6 +11,18 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.8.0',
+    fecha: '2026-11-24',
+    cambios: [
+      'Widget nuevo del Jardín de 2×2 (dos columnas): hasta 4 plantas y si alguna te necesita hoy. Hay que reinstalar la APK para verlo.',
+      'Plantas al doble de nitidez en el jardín, en su ficha y en los widgets; la planta de la celebración queda centrada.',
+      'Fotos del grupo con el sello de StoaHabit: emblema, hábito, racha, fecha y la dirección de la app.',
+      'Fotos de hoy del grupo como historias: pantalla completa, pasan solas, tocá para avanzar y mantené para pausar.',
+      'Marcar días pasados: tocá un día del calendario del hábito. Viene prendido y se puede apagar por hábito.',
+      'Menos textos de explicación en Jardín, Comunidad, Hábitos, Tareas, Enfoque y Memento.',
+    ],
+  },
+  {
     version: '2.7.0',
     fecha: '2026-11-22',
     cambios: [

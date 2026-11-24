@@ -155,6 +155,9 @@ describe('users/{uid}/habits', () => {
     await assertSucceeds(setDoc(doc(db, 'users/ana/habits/h1'), habito('ana')));
     await assertSucceeds(updateDoc(doc(db, 'users/ana/habits/h1'), { racha: 3, actualizado: ahora(), actualizadoPor: 'ana' }));
     await assertSucceeds(deleteDoc(doc(db, 'users/ana/habits/h1')));
+    // Marcar días pasados (v2.8.0): booleano opcional
+    await assertSucceeds(setDoc(doc(db, 'users/ana/habits/h2'), habito('ana', { marcarPasado: false })));
+    await assertFails(setDoc(doc(db, 'users/ana/habits/h3'), habito('ana', { marcarPasado: 'si' })));
   });
   it('valida la forma del hábito', async () => {
     const db = usuario('ana');

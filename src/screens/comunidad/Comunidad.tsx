@@ -16,7 +16,7 @@ export function Comunidad() {
     <div className="entra">
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <CabeceraPagina etiqueta="Tus grupos" titulo="Comunidad" linea="Pequeños grupos privados para acompañarse: reacciones, y con el plan, fotos que el grupo comenta." />
+          <CabeceraPagina etiqueta="Tus grupos" titulo="Comunidad" />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="ghost" onClick={() => setHoja('unirse')}>

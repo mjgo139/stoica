@@ -161,9 +161,6 @@ export function Enfoque() {
               </button>
             </div>
           )}
-          <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 14 }}>
-            El temporizador sigue aunque cierres la app o cambies de pantalla.
-          </p>
         </div>
 
         <div className="panel">

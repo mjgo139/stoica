@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DIAS_CORTOS, diaSemanaDeClave, diasRestantesDelAnio, fechaLargaDeClave, momentoDelDia, MOMENTOS, partesDeClave, partesEnZona, sumarDias } from '@core/fechas';
-import { cumplido, esDiaActivo, racha, type Habito } from '@core/habitos';
+import { cumplido, esDiaActivo, puedeMarcarDia, racha, type Habito } from '@core/habitos';
 import { primerNombre } from '@core/perfil';
 import { Avatar, Ficha, Grupo, PanelDia, TuSemana, type DiaSemana } from '../../familia/react';
 import { Icono as IconoFamilia } from '../../familia/iconos';
@@ -164,7 +164,7 @@ export function Hoy() {
                         fecha={dia}
                         racha={rachas.get(h.id) ?? 0}
                         perdido={sel < 0 && !cumplido(h, registrosDe(registros, h.id).get(dia))}
-                        editable={sel <= 0}
+                        editable={puedeMarcarDia(h, dia, hoy)}
                       />
                     ))}
                   </div>

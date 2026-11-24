@@ -6,15 +6,17 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Grupo } from '../../../familia/react';
 import { COLLAGE_MAX, disenosPara, type DisenoCollage } from '@core/collage';
 import { fechaCorta, sumarDias } from '@core/fechas';
-import { cumplido } from '@core/habitos';
+import { cumplido, racha } from '@core/habitos';
 import { inicial } from '@core/perfil';
 import { fotoCumplida, MENSAJE_MAX, type ComentarioFoto, type EstadoPlan, type FotoHabito } from '@core/plan';
 import type { Miembro } from '@core/comunidad';
-import { registrosDe, uidActual, useDatos, useHoy } from '@/app/datos';
+import { registrosDe, uidActual, useDatos, useHoy, VENTANA_DIAS } from '@/app/datos';
+import { sellarFoto, type DatosSello } from '@/app/marcaFoto';
 import { armarCollage, borrarPublicacion, comentarFoto, reportarPublicacion, subirFoto, type Publicable } from '@/app/plan';
 import { useConsulta } from '@/data/hooks';
 import type { ConId } from '@/data/tipos';
 import { Confirmar, Hoja } from '@/ui/Hoja';
+import { Historias, leerVistas } from './Historias';
 import { Icono } from '@/ui/Iconos';
 import { useAvisos } from '@/ui/avisos';
 
@@ -28,6 +30,12 @@ export function useFotosSemana(gid: string, plan: EstadoPlan): Array<ConId<FotoH
 }
 
 /** ¿Cómo está hoy mi hábito? (con mis datos, siempre al día) */
+function useMiRacha(habitId: string, hoy: string): number {
+  const h = useDatos((s) => s.habitos.find((x) => x.id === habitId));
+  const regs = useDatos((s) => s.registros);
+  return h ? Math.max(racha(h, registrosDe(regs, habitId), hoy, VENTANA_DIAS), 0) : 0;
+}
+
 function useMiCumplido(habitId: string, hoy: string): boolean {
   const h = useDatos((s) => s.habitos.find((x) => x.id === habitId));
   const r = useDatos((s) => registrosDe(s.registros, habitId).get(hoy));
@@ -109,8 +117,17 @@ export function FotoDelHabito({ plan, miembro, habitId, habito, esYo, fotos, ped
 export function FotosDeHoy({ fotos, miembros, alVer }: { fotos: Array<ConId<FotoHabito>>; miembros: Array<ConId<Miembro>>; alVer: (v: VerFotos) => void }) {
   const hoy = useHoy();
   const uid = uidActual();
-  const deHoy = fotos.filter((f) => f.dia === hoy).sort((a, b) => b.actualizado - a.actualizado);
+  // Como historias: primero las que todavía no viste, cada grupo de la más vieja a la más nueva
+  const [historia, setHistoria] = useState<number | null>(null);
+  const [vistas, setVistas] = useState(() => leerVistas());
+  const deHoy = fotos
+    .filter((f) => f.dia === hoy)
+    .sort((a, b) => Number(vistas.has(a.id)) - Number(vistas.has(b.id)) || a.actualizado - b.actualizado);
   if (!deHoy.length) return null;
+  const abrir = (f: ConId<FotoHabito>) => {
+    const m = miembros.find((x) => x.id === f.de);
+    if (m) alVer({ miembro: m, habitId: f.habitId, habito: f.habito, esYo: f.de === uid, dia: f.dia });
+  };
   return (
     <div className="panel" data-fotos-hoy>
       <Grupo n={1} className="sep-grupo sin-arriba">Fotos de hoy · {deHoy.length}</Grupo>
@@ -124,7 +141,8 @@ export function FotosDeHoy({ fotos, miembros, alVer }: { fotos: Array<ConId<Foto
               key={f.id}
               type="button"
               role="listitem"
-              onClick={() => m && alVer({ miembro: m, habitId: f.habitId, habito: f.habito, esYo, dia: f.dia })}
+              className={vistas.has(f.id) ? 'vista' : 'nueva'}
+              onClick={() => setHistoria(deHoy.indexOf(f))}
               aria-label={`${esYo ? 'Tu foto' : `Foto de ${f.nombre}`}: ${f.habito}, ${ok ? 'cumplido' : 'no cumplido'}${f.comentarios ? `, ${f.comentarios} ${f.comentarios === 1 ? 'comentario' : 'comentarios'}` : ''}`}
             >
               <img src={f.miniUrl} alt="" loading="lazy" />
@@ -136,6 +154,23 @@ export function FotosDeHoy({ fotos, miembros, alVer }: { fotos: Array<ConId<Foto
           );
         })}
       </div>
+      {historia !== null && (
+        <Historias
+          fotos={deHoy}
+          miembros={miembros}
+          inicio={historia}
+          uid={uid}
+          alCerrar={() => {
+            setHistoria(null);
+            setVistas(leerVistas());
+          }}
+          alComentar={(f) => {
+            setHistoria(null);
+            setVistas(leerVistas());
+            abrir(f);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -203,6 +238,8 @@ export function HojaSubirFoto({ gid, subir: pedido, fotos, alCerrar }: { gid: st
   const sugerida = !!pedido?.sugerida;
   const reemplaza = fotos.some((f) => f.de === uid && f.habitId === habitId && f.dia === hoy);
   const ok = useMiCumplido(habitId, hoy);
+  const miRacha = useMiRacha(habitId, hoy);
+  const sello = { habito, racha: miRacha, cumplido: ok, dia: hoy };
   const mostrar = useAvisos((s) => s.mostrar);
   const galeria = useRef<HTMLInputElement>(null);
   const camara = useRef<HTMLInputElement>(null);
@@ -212,7 +249,7 @@ export function HojaSubirFoto({ gid, subir: pedido, fotos, alCerrar }: { gid: st
   const [diseno, setDiseno] = useState<DisenoCollage>('lado');
   const disenos = disenosPara(elegidas.length);
   const disenoValido = disenos.some((d) => d.id === diseno) ? diseno : (disenos[0]?.id ?? 'lado');
-  const vista = useVistaPrevia(elegidas, disenoValido);
+  const vista = useVistaPrevia(elegidas, disenoValido, sello);
 
   const agregar = (lista: FileList | null) => {
     const nuevas = [...(lista ?? [])].filter((f) => f.type.startsWith('image/'));
@@ -232,7 +269,8 @@ export function HojaSubirFoto({ gid, subir: pedido, fotos, alCerrar }: { gid: st
     let err: string | null;
     try {
       const archivo = elegidas.length === 1 ? elegidas[0] : await armarCollage(elegidas, disenoValido);
-      err = await subirFoto(gid, habitId, archivo, leyenda);
+      // Sello de StoaHabit (emblema, hábito, racha y dirección): la foto sale con la identidad de la app
+      err = await subirFoto(gid, habitId, await sellarFoto(archivo, sello), leyenda);
     } catch {
       err = 'No se pudo armar el collage. Probá con otras fotos.';
     }
@@ -367,7 +405,8 @@ function AccionesPublicacion({ gid, que, de, puedeBorrar, alTerminar, chico = fa
   );
 }
 
-function useVistaPrevia(fotos: File[], diseno: DisenoCollage): string {
+function useVistaPrevia(fotos: File[], diseno: DisenoCollage, sello: DatosSello): string {
+  const clave = `${sello.habito}|${sello.racha}|${sello.cumplido}|${sello.dia}`;
   const [url, setUrl] = useState('');
   useEffect(() => {
     let vivo = true;
@@ -376,7 +415,7 @@ function useVistaPrevia(fotos: File[], diseno: DisenoCollage): string {
       setUrl('');
       return;
     }
-    const hacer = fotos.length === 1 ? Promise.resolve<Blob>(fotos[0]) : armarCollage(fotos, diseno, 540);
+    const hacer = (fotos.length === 1 ? Promise.resolve<Blob>(fotos[0]) : armarCollage(fotos, diseno, 540)).then((b) => sellarFoto(b, sello, 540));
     hacer
       .then((b) => {
         if (!vivo) return;
@@ -388,7 +427,8 @@ function useVistaPrevia(fotos: File[], diseno: DisenoCollage): string {
       vivo = false;
       if (actual) URL.revokeObjectURL(actual);
     };
-  }, [fotos, diseno]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fotos, diseno, clave]);
   return url;
 }
 

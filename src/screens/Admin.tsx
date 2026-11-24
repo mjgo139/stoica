@@ -102,7 +102,7 @@ export function Admin() {
     <div className="entra">
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <CabeceraPagina etiqueta="Administración" titulo="Admin" linea="Solo datos de cuentas y totales. Los hábitos, registros y exámenes de cada persona son privados." />
+          <CabeceraPagina etiqueta="Administración" titulo="Admin" />
         </div>
         <button type="button" className="ghost" disabled={calculando} onClick={calcular}>
           {calculando ? 'Calculando…' : 'Recalcular métricas'}

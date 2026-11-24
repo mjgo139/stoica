@@ -1,3 +1,4 @@
+import { SPRITES } from './disposicion';
 import { useMemo } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useSesion } from '@/app/sesion';
@@ -57,7 +58,7 @@ export function VistaPlanta({ p, retonos, dificil, prueba, alMarcar, alRegar }: 
       <h1 className="titulo">{p.nombre}</h1>
 
       <div className="card" style={{ marginTop: 12, padding: '18px 16px 14px', background: 'radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--gold) 18%, var(--sf)) 0%, var(--sf) 75%)', border: '1px solid var(--gold2)', position: 'relative', isolation: 'isolate', overflow: 'hidden' }}>
-        <img className="planta-grande" src={`/jardin/${especie.id}-${p.a.etapa}.webp`} alt={`${especie.nombre}: ${ETAPAS_PLANTA[p.a.etapa]}`} />
+        <img className="planta-grande" style={{ maxWidth: Math.round((SPRITES[especie.id]?.[p.a.etapa]?.w ?? 200) * 1.4) }} src={`/jardin/${especie.id}-${p.a.etapa}.webp`} alt={`${especie.nombre}: ${ETAPAS_PLANTA[p.a.etapa]}`} />
         {cien && (
           <div style={{ position: 'absolute', right: 14, top: 12, textAlign: 'center' }}>
             <Medalla tipo="Oro" dias={100} tam={44} />
@@ -104,7 +105,7 @@ export function VistaPlanta({ p, retonos, dificil, prueba, alMarcar, alRegar }: 
         <div className="cap gold">Retoños</div>
         {p.retonos === 0 ? (
           <p className="mu2" style={{ fontSize: 13.5, marginTop: 6 }}>
-            Cada {DIAS_POR_RETONO} días cumplidos sin que se marchite, esta planta da un retoño. Te {proximoRetono === 1 ? 'falta 1 día' : `faltan ${proximoRetono} días`} para el primero.
+            Primer retoño en {proximoRetono === 1 ? '1 día' : `${proximoRetono} días`}.
           </p>
         ) : (
           <>

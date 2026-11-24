@@ -110,7 +110,7 @@ service cloud.firestore {
       match /habits/{hid} {
         function habitoValido() {
           let d = nuevo();
-          return d.keys().hasOnly(['nombre', 'tipo', 'virtud', 'icono', 'momento', 'dias', 'meta', 'unidad', 'variables', 'recordatorio', 'recordatorioSlot', 'recordatorios', 'avisos', 'inicio', 'archivado', 'orden', 'racha', 'mejorRacha', 'creado', 'actualizado', 'actualizadoPor'])
+          return d.keys().hasOnly(['nombre', 'tipo', 'virtud', 'icono', 'momento', 'dias', 'meta', 'unidad', 'variables', 'recordatorio', 'recordatorioSlot', 'recordatorios', 'avisos', 'inicio', 'marcarPasado', 'archivado', 'orden', 'racha', 'mejorRacha', 'creado', 'actualizado', 'actualizadoPor'])
             && texto(d.nombre, 1, 40)
             && d.tipo in ['sino', 'cantidad', 'medicion', 'lista']
             && d.virtud in ['sabiduria', 'coraje', 'justicia', 'templanza']
@@ -131,6 +131,7 @@ service cloud.firestore {
                 && (d.avisos.size() < 2 || minuto(d.avisos[1]))
                 && (d.avisos.size() < 3 || minuto(d.avisos[2]))))
             && diaCercano(d.inicio)
+            && (!('marcarPasado' in d) || d.marcarPasado is bool)
             && d.archivado is bool
             && entero(d.orden, 0, 1000)
             && entero(d.racha, 0, 100000)

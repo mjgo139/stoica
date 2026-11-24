@@ -77,7 +77,7 @@ def guardar(im, nombre, maximo=None, calidad=84):
 
 # ----- Plantas: 6 etapas por hoja, a la mitad del tamaño (como las de antes) -----
 PLANTAS = {'granada': 'granado', 'laurel': 'laurel', 'lavanda': 'lavanda', 'olivo': 'olivo', 'planta': 'lirio'}
-ESCALA_PLANTA = 0.5
+ESCALA_PLANTA = 1  # v2.8.0: al tamaño original (antes 0.5)
 medidas['plantas'] = {}
 for archivo, nombre in PLANTAS.items():
     etapas = sorted(piezas(v2 / f'{archivo}.png', 0.004), key=lambda t: t[1])

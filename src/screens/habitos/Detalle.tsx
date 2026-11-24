@@ -14,6 +14,7 @@ import {
   NOMBRE_VIRTUD,
   porcentaje,
   proyectar,
+  puedeMarcarDia,
   racha,
   serieDeVariable,
   type Habito,
@@ -26,7 +27,7 @@ import { alternarItemLista, alternarSiNo, archivarHabito, borrarHabito, guardarN
 import { useConsulta } from '@/data/hooks';
 import { IconoHabito, Trazo } from '@/ui/IconoHabito';
 import { Icono } from '@/ui/Iconos';
-import { Confirmar } from '@/ui/Hoja';
+import { Confirmar, Hoja } from '@/ui/Hoja';
 import { HojaMedir } from './HojaMedir';
 import { esMetaGrande, HojaCantidad } from './HojaCantidad';
 
@@ -47,6 +48,7 @@ export function Detalle() {
     return m;
   }, [historial, recientes]);
   const [borrando, setBorrando] = useState(false);
+  const [elegido, setElegido] = useState<string | null>(null);
 
   if (!h) return listo ? <NoExiste /> : null;
   const rHoy = regs.get(hoy);
@@ -128,7 +130,10 @@ export function Detalle() {
           <Nota n={nNota} h={h} r={rHoy} hoy={hoy} />
         </div>
         <div>
-          <Calendario h={h} regs={regs} hoy={hoy} />
+          <Calendario h={h} regs={regs} hoy={hoy} alElegir={setElegido} />
+          <Hoja titulo={elegido ? fechaLargaDeClave(elegido) : ''} abierta={!!elegido} alCerrar={() => setElegido(null)}>
+            {elegido && <CajaHoy h={h} r={regs.get(elegido)} ok={cumplido(h, regs.get(elegido))} hoy={elegido} esOtroDia />}
+          </Hoja>
           <Grupo n={nNota + 1} className="sep-grupo">Hitos · Victoria sobre ti mismo</Grupo>
           {hitos.length === 0 ? (
             <p className="vacio-mini">El primer hito llega a los 3 días seguidos.</p>
@@ -181,18 +186,21 @@ function NoExiste() {
   );
 }
 
-function CajaHoy({ h, r, ok, hoy }: { h: Habito; r: Registro | undefined; ok: boolean; hoy: string }) {
+/** Marcar un día (hoy, o un día pasado desde el calendario si el hábito lo permite). `hoy` = el día que se marca. */
+function CajaHoy({ h, r, ok, hoy, esOtroDia }: { h: Habito; r: Registro | undefined; ok: boolean; hoy: string; esOtroDia?: boolean }) {
   const [midiendo, setMidiendo] = useState(false);
   const [rebote, setRebote] = useState(0);
   const valor = r?.valor ?? 0;
   return (
     <div className={`card caja-hoy ${ok ? 'ok' : ''}`}>
-      <div className="cap gold" style={{ fontSize: 11 }}>
-        Hoy · {fechaLargaDeClave(hoy)}
-      </div>
+      {!esOtroDia && (
+        <div className="cap gold" style={{ fontSize: 11 }}>
+          Hoy · {fechaLargaDeClave(hoy)}
+        </div>
+      )}
       {h.tipo === 'sino' && (
         <>
-          <button type="button" key={rebote} className={`bigplus ${rebote ? 'rebote' : ''}`} style={{ marginTop: 18 }} aria-pressed={ok} aria-label={ok ? 'Desmarcar hoy' : 'Marcar hoy como cumplido'} onClick={() => (setRebote((n) => n + 1), alternarSiNo(h, hoy))}>
+          <button type="button" key={rebote} className={`bigplus ${rebote ? 'rebote' : ''}`} style={{ marginTop: 18 }} aria-pressed={ok} aria-label={ok ? (esOtroDia ? 'Desmarcar ese día' : 'Desmarcar hoy') : esOtroDia ? 'Marcar ese día como cumplido' : 'Marcar hoy como cumplido'} onClick={() => (setRebote((n) => n + 1), alternarSiNo(h, hoy))}>
             <Trazo d="check" tam={34} />
           </button>
           <div className="serif" style={{ fontSize: 20, marginTop: 16 }}>
@@ -294,7 +302,7 @@ function CajaHoy({ h, r, ok, hoy }: { h: Habito; r: Registro | undefined; ok: bo
   );
 }
 
-function Calendario({ h, regs, hoy }: { h: Habito; regs: Map<string, Registro>; hoy: string }) {
+function Calendario({ h, regs, hoy, alElegir }: { h: Habito; regs: Map<string, Registro>; hoy: string; alElegir: (d: string) => void }) {
   const [desfase, setDesfase] = useState(0);
   const { anio, mes } = partesDeClave(hoy);
   const fecha = new Date(Date.UTC(anio, mes - 1 + desfase, 1));
@@ -328,11 +336,14 @@ function Calendario({ h, regs, hoy }: { h: Habito; regs: Map<string, Registro>; 
         ))}
         {celdas.map((d) => {
           const e = estadoDia(h, regs, d, hoy);
+          // Tocar un día pasado lo marca (si el hábito lo permite); hoy se marca arriba.
+          const tocable = d !== hoy && e !== 'inactivo' && puedeMarcarDia(h, d, hoy);
+          const Celda = tocable ? 'button' : 'span';
           return (
-            <span key={d} className={`celda ${e} ${d === hoy ? 'hoy' : ''}`} aria-label={`${fechaLargaDeClave(d)}: ${e === 'ok' ? 'cumplido' : e === 'mal' ? 'no cumplido' : e === 'pendiente' ? 'pendiente' : e === 'inactivo' ? 'sin práctica' : 'futuro'}`}>
+            <Celda key={d} {...(tocable ? { type: 'button' as const, onClick: () => alElegir(d) } : {})} className={`celda ${e} ${d === hoy ? 'hoy' : ''} ${tocable ? 'tocable' : ''}`} aria-label={`${fechaLargaDeClave(d)}: ${e === 'ok' ? 'cumplido' : e === 'mal' ? 'no cumplido' : e === 'pendiente' ? 'pendiente' : e === 'inactivo' ? 'sin práctica' : 'futuro'}${tocable ? ' · tocá para marcar' : ''}`}>
               {partesDeClave(d).dia}
               <span className="mk">{e === 'ok' ? '✓' : (e === 'mal' || e === 'pendiente') && h.tipo === 'lista' && (regs.get(d)?.valor ?? 0) > 0 ? `${regs.get(d)!.valor}/${h.variables.length}` : e === 'mal' ? '×' : ''}</span>
-            </span>
+            </Celda>
           );
         })}
       </div>

@@ -218,3 +218,14 @@ describe('comunidad', () => {
     expect(estadoDesafio({ inicio: '2026-10-25', duracion: 7 }, '2026-10-22')).toEqual({ estado: 'proximo', dia: 0, quedan: 3 });
   });
 });
+
+import { puedeMarcarDia as puedeMarcarDiaPrueba } from './habitos';
+describe('puedeMarcarDia', () => {
+  it('hoy siempre, futuro nunca, pasado según el hábito (sin el campo = sí)', () => {
+    expect(puedeMarcarDiaPrueba({ inicio: '2026-01-01' }, '2026-11-24', '2026-11-24')).toBe(true);
+    expect(puedeMarcarDiaPrueba({ inicio: '2026-01-01' }, '2026-11-25', '2026-11-24')).toBe(false);
+    expect(puedeMarcarDiaPrueba({ inicio: '2026-01-01' }, '2026-11-20', '2026-11-24')).toBe(true);
+    expect(puedeMarcarDiaPrueba({ inicio: '2026-01-01', marcarPasado: false }, '2026-11-20', '2026-11-24')).toBe(false);
+    expect(puedeMarcarDiaPrueba({ inicio: '2026-01-01', marcarPasado: false }, '2026-11-24', '2026-11-24')).toBe(true);
+  });
+});

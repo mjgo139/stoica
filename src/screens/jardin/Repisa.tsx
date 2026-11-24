@@ -37,8 +37,8 @@ export function PaginaRepisa({ titulo, logros, porHabito, alCerrar }: Props) {
         </div>
         <p className="mu2" style={{ fontSize: 13.5, margin: '6px 0 10px' }}>
           {logros === 0
-            ? 'Todavía no hay medallas. Cada 30 días seguidos de una planta sin marchitarse es una medalla, y cada medalla pone un adorno en la repisa.'
-            : `${logros} ${logros === 1 ? 'medalla ganada' : 'medallas ganadas'}. Cada medalla pone un adorno en la repisa${proximo ? `; la próxima trae ${proximo.nombre.toLowerCase()}` : ''}.`}
+            ? 'Todavía no hay medallas.'
+            : `${logros} ${logros === 1 ? 'medalla ganada' : 'medallas ganadas'}${proximo ? ` · la próxima trae ${proximo.nombre.toLowerCase()}` : ''}.`}
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 10 }}>
           {ADORNOS.map((a) => {

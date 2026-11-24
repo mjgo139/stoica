@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vista previa: jardín chico (2×2). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_fondo" android:orientation="vertical" android:padding="12dp">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:letterSpacing="0.12" android:text="TU JARDÍN" android:textColor="@color/widget_dorado" android:textSize="11sp" android:textStyle="bold"/>
+    <ImageView android:id="@+id/j_plantas" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="4dp" android:layout_weight="1" android:scaleType="fitCenter" android:src="@drawable/jardin_chico_muestra"/>
+    <TextView android:id="@+id/j_resumen" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_horizontal" android:maxLines="1" android:text="Todo en orden" android:textColor="@color/widget_texto" android:textSize="12sp"/>
+</LinearLayout>

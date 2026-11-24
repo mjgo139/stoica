@@ -36,3 +36,7 @@
 - No se usan los fondos nuevos (`jardin.png`, `terraza.png`): sus baldosas y perspectiva no coinciden con la cuadrícula de `terreno.ts`.
 - El brasero sigue siendo el de v2 (el nuevo es igual, y su versión apagada salía con restos de llama).
 - Las plantas del widget de Android (`planta_*`) son copias de las de la web.
+
+## v2.8.0: plantas al doble
+
+- Las plantas se volvieron a cortar con la misma lógica de `actualizar_assets_v4.py` pero **sin achicar** (`ESCALA_PLANTA = 1`): los archivos son el doble de los números de `SPRITES` (que no se tocaron: la escena usa proporciones). También las `planta_*` del widget.

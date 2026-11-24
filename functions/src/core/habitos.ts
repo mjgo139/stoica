@@ -78,6 +78,8 @@ export interface Habito {
   /** Minutos del día en UTC de cada recordatorio, para que el servidor los encuentre. */
   avisos?: number[];
   inicio: string; // clave de día
+  /** Se pueden marcar días pasados (v2.8.0). Sin el campo = sí. */
+  marcarPasado?: boolean;
   archivado: boolean;
   orden: number;
   racha: number; // última racha conocida (para rachas más largas que la ventana cargada)
@@ -444,4 +446,11 @@ export function habitoParaDesafio(titulo: string, virtud: Virtud): Plantilla['da
     .trim();
   const nombre = (limpio || titulo.trim()).slice(0, LIMITES_HABITO.nombreMax);
   return { nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1), tipo: 'sino', virtud, icono: 'sun', momento: 1, meta: 1, unidad: '', variables: [] };
+}
+
+/** ¿Se puede marcar (o corregir) ese día? Hoy siempre; días pasados, si el hábito lo permite. Futuro, nunca. */
+export function puedeMarcarDia(h: Pick<Habito, 'marcarPasado' | 'inicio'>, fecha: string, hoy: string): boolean {
+  if (fecha > hoy) return false;
+  if (fecha === hoy) return true;
+  return h.marcarPasado !== false;
 }

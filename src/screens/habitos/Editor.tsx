@@ -1,3 +1,4 @@
+import { Interruptor } from '@/ui/Interruptor';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DIAS_CORTOS, MOMENTOS } from '@core/fechas';
@@ -54,10 +55,11 @@ interface Form {
   items: Array<{ id: string; nombre: string }>;
   metaLista: number;
   recordatorios: string[];
+  marcarPasado: boolean;
 }
 
 const TODOS = [0, 1, 2, 3, 4, 5, 6];
-const vacio: Form = { nombre: '', tipo: 'sino', virtud: 'sabiduria', icono: 'med', momento: 0, dias: TODOS, meta: '8', unidad: '', variables: [], items: [], metaLista: 0, recordatorios: [] };
+const vacio: Form = { nombre: '', tipo: 'sino', virtud: 'sabiduria', icono: 'med', momento: 0, dias: TODOS, meta: '8', unidad: '', variables: [], items: [], metaLista: 0, recordatorios: [], marcarPasado: true };
 const nuevaVariable = (i: number): VarForm => ({ id: `v${Date.now().toString(36)}${i}`, nombre: '', unidad: '', inicial: '', meta: '', direccion: 'bajar' });
 const nuevoItem = (i: number) => ({ id: `i${Date.now().toString(36)}${i}`, nombre: '' });
 const idDeNombre = (n: string, i: number) => n.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '').slice(0, 20) || `i${i}`;
@@ -93,6 +95,7 @@ export function Editor() {
       items: existente.tipo === 'lista' ? existente.variables.map((v) => ({ id: v.id, nombre: v.nombre })) : [],
       metaLista: existente.tipo === 'lista' && existente.meta < existente.variables.length ? existente.meta : 0,
       recordatorios: horasRecordatorio(existente),
+      marcarPasado: existente.marcarPasado !== false,
     });
     setCargado(true);
   }, [existente, cargado]);
@@ -135,6 +138,7 @@ export function Editor() {
     recordatorio: f.recordatorios.filter(Boolean).sort()[0] ?? null,
     recordatorios: [...new Set(f.recordatorios.filter(Boolean))].sort(),
     inicio: existente?.inicio ?? hoyActual(),
+    marcarPasado: f.marcarPasado,
     archivado: existente?.archivado ?? false,
     orden: existente?.orden ?? habitos.length,
     racha: existente?.racha ?? 0,
@@ -206,13 +210,11 @@ export function Editor() {
             </button>
           ))}
         </div>
-        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>
-          {f.tipo === 'sino' && 'Se marca con un rombo: lo hiciste o no.'}
-          {f.tipo === 'cantidad' && 'Sumás de a uno hasta llegar a la meta del día.'}
-          {f.tipo === 'medicion' && 'Registrás valores (peso, cintura…) y ves cómo avanzás hacia la meta.'}
-          {f.tipo === 'lista' && 'Varios sí/no dentro del mismo hábito (por ejemplo, Almuerzo, Merienda y Cena). Marcás cada uno por separado.'}
-          {existente && ' El tipo no se puede cambiar una vez creado.'}
-        </p>
+        {existente && (
+          <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>
+            El tipo no se puede cambiar una vez creado.
+          </p>
+        )}
 
         {f.tipo === 'cantidad' && (
           <div className="g2" style={{ marginTop: 16 }}>
@@ -382,9 +384,9 @@ export function Editor() {
           Recordatorios
         </div>
         <Horas idBase="h-rec" etiqueta="Hora del recordatorio" valores={f.recordatorios} alCambiar={(v) => poner({ recordatorios: v })} />
-        <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 6 }}>
-          Hasta 3 horas, a cualquier minuto. Si ya cumpliste, no te avisa.
-        </p>
+        <div style={{ marginTop: 10 }}>
+          <Interruptor etiqueta="Marcar días pasados" detalle="Si te olvidaste de anotar, podés marcarlo después." activo={f.marcarPasado} alCambiar={(v) => poner({ marcarPasado: v })} />
+        </div>
       </div>
 
       <div className="err" role="alert">

@@ -204,9 +204,6 @@ function GrillaSemanas({ vividas, anios, nacimiento }: { vividas: number; anios:
   return (
     <div className="panel" style={{ marginTop: 18 }}>
       <Grupo n={4} className="sep-grupo sin-arriba">Tu vida en semanas</Grupo>
-      <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 0 }}>
-        Cada casillero es una semana; cada fila, un año. Las doradas ya las viviste; la que brilla es esta.
-      </p>
       <div style={{ overflowX: 'auto' }}>
         <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', minWidth: 320, maxWidth: 720, display: 'block' }} role="img" aria-label={`${vividas} semanas vividas de ${anios * SEMANAS_POR_ANIO}`}>
           {filas.map((a) => (

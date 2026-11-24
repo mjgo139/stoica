@@ -43,7 +43,7 @@ export function ListaHabitos() {
         }}
       >
         <div style={{ flex: 1, minWidth: 200 }}>
-          <CabeceraPagina etiqueta="Tus prácticas" titulo="Hábitos" linea="Cada hábito cultiva una virtud." />
+          <CabeceraPagina etiqueta="Tus prácticas" titulo="Hábitos" />
         </div>
         <Link
           to="/habitos/nuevo"

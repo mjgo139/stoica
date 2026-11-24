@@ -123,7 +123,10 @@ export interface Sprite {
   base: number;
 }
 
-/** Medidas de las 6 etapas de cada planta (public/jardin/<planta>-<etapa>.webp). */
+/**
+ * Medidas de las 6 etapas de cada planta (public/jardin/<planta>-<etapa>.webp), en px a la MITAD del archivo:
+ * desde v2.8.0 los archivos van al tamaño original (el doble, más nítidos); la escena usa solo proporciones.
+ */
 export const SPRITES: Record<string, Sprite[]> = {
   olivo: [
     { w: 98, h: 42, ax: 46.5, base: 67.0 },

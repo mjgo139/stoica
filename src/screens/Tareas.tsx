@@ -343,11 +343,6 @@ export function EditorTarea({ tarea, abierta, alCerrar, hoy, proyectoFijo }: { t
             No depende de mí
           </button>
         </div>
-        {!depende && (
-          <p className="mu" style={{ fontSize: 13.5, fontWeight: 500, marginTop: 8 }}>
-            La anotamos para que la sueltes: no se marca, solo se recuerda que no está en tus manos.
-          </p>
-        )}
 
         <div className="lbl cap">Cuándo</div>
         <div className="chips">

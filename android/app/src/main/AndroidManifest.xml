@@ -85,6 +85,13 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_jardin_info" />
         </receiver>
+        <!-- Jardín chico (2×2) -->
+        <receiver android:name=".JardinChicoWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_jardin_chico_info" />
+        </receiver>
         <!-- Toques de los widgets que guardan sin abrir la app -->
         <receiver android:name=".AccionReceiver" android:exported="false" />
 
