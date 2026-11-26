@@ -103,6 +103,7 @@ export function WidgetEscritorio() {
           </li>
           <li>Tocá el botón de abajo: se baja StoaHabit.rmskin.</li>
           <li>Abrilo con doble clic y tocá <b>Install</b>. El widget aparece en tu escritorio; arrastralo a donde quieras.</li>
+          <li>Clic derecho en la tarjeta: <b>Siguiente hábito</b> o <b>Agregar otra tarjeta</b> (una por hábito, con las últimas 5 semanas).</li>
         </ol>
         <p className="mu" style={{ fontSize: 13.5, fontWeight: 500 }}>
           Se actualiza cada 15 minutos con lo que marcás en la app (en el celular o en la PC). Muestra solo los nombres de tus hábitos de hoy y tu racha.

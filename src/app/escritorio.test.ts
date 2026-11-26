@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Habito, Registro } from '@core/habitos';
-import { armarRmskin, armarTextoEscritorio, armarZip, LARGO_CODIGO, nuevoCodigoEscritorio, skinIni, skinLua, utf16le } from './escritorio';
+import { armarRmskin, armarTextoEscritorio, armarZip, inicioGrilla, LARGO_CODIGO, nuevoCodigoEscritorio, skinHabitoIni, skinHabitoLua, skinIni, skinLua, utf16le } from './escritorio';
 
 const h = (id: string, nombre: string, orden: number, extra: Partial<Habito> = {}): Habito =>
   ({ id, nombre, tipo: 'sino', virtud: 'sabiduria', icono: 'med', momento: 0, dias: [0, 1, 2, 3, 4, 5, 6], meta: 1, unidad: '', variables: [], recordatorio: null, inicio: '2026-01-01', archivado: false, orden, racha: 0, mejorRacha: 0, creado: orden, actualizado: 0, actualizadoPor: 'yo', ...extra }) as unknown as Habito;
@@ -28,8 +28,31 @@ describe('widget de escritorio', () => {
       },
       '14:05',
     );
-    expect(r.texto).toBe('1|Marco|2026-11-25|14:05~a|Meditar ya|1|2~b|Leer|0|0');
-    expect(r.clave).toBe('1|Marco|2026-11-25~a|Meditar ya|1|2~b|Leer|0|0');
+    const [cab, a, b] = r.texto.split('~');
+    expect(cab).toBe('1|Marco|2026-11-25|14:05|2026-10-26');
+    // id|nombre|hecho|racha|virtud|tipo|35 días|% 30 días (el 25/11/2026 es miércoles: casilla 31 de 35, martes 24 y miércoles 25 cumplidos)
+    const ca = a.split('|');
+    expect(ca.slice(0, 6)).toEqual(['a', 'Meditar ya', '1', '2', 'sabiduria', 'sino']);
+    expect(ca[6]).toHaveLength(35);
+    expect(ca[6].slice(28)).toBe('011ffff');
+    expect(b.split('|').slice(0, 4)).toEqual(['b', 'Leer', '0', '0']);
+    expect(b.split('|')[6].slice(28)).toBe('00pffff');
+    expect(r.clave).toBe('1|Marco|2026-11-25|2026-10-26~' + [a, b].join('~'));
+  });
+
+  it('la grilla empieza un lunes, 4 semanas antes de esta', () => {
+    expect(inicioGrilla('2026-11-25')).toBe('2026-10-26');
+    expect(inicioGrilla('2026-11-30')).toBe('2026-11-02');
+  });
+
+  it('la tarjeta de hábito trae su número, la siguiente y los colores', () => {
+    const c = { verde: '1,2,3', rojo: '4,5,6', virtudes: { sabiduria: '7,7,7', coraje: '8,8,8', justicia: '9,9,9', templanza: '10,10,10' } };
+    const ini = skinHabitoIni('stoica-app', 'COD', 2, c);
+    expect(ini).toContain('Indice=2');
+    expect(ini).toContain('[!ActivateConfig "StoaHabit\\Habito3" "Habito.ini"]');
+    expect(ini).toContain('Templanza=10,10,10');
+    expect(skinHabitoIni('stoica-app', 'COD', 8, c)).not.toContain('Agregar otra tarjeta');
+    expect(skinHabitoLua()).toContain('function Mover(paso)');
   });
 
   it('hasta 8 hábitos', () => {

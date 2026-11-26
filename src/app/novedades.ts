@@ -11,6 +11,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.10.0',
+    fecha: '2026-11-26',
+    cambios: [
+      'Widget para Windows: tarjeta de cada hábito como la del celular, con la racha, la virtud y las últimas 5 semanas (✓ cumplido, × no cumplido, hoy con borde dorado) y el % de 30 días.',
+      'Clic derecho en la tarjeta: "Siguiente hábito", "Hábito anterior" y "Agregar otra tarjeta" (hasta 8). "Marcar hoy" abre el hábito en StoaHabit.',
+      'Para tenerla: Perfil → Widget para Windows → Descargar de nuevo, y abrir el archivo.',
+    ],
+  },
+  {
     version: '2.9.0',
     fecha: '2026-11-25',
     cambios: [

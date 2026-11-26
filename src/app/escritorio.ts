@@ -11,10 +11,14 @@
  * - El paquete .rmskin lo arma la app con el código adentro: la persona no ve ni copia nada.
  *
  * Formato del resumen (`t`), pensado para leerlo fácil en Lua:
- *   "1|Nombre|AAAA-MM-DD|HH:MM~id|hábito|hecho(0/1)|racha~…"   (hasta 8 hábitos de hoy)
+ *   "1|Nombre|AAAA-MM-DD|HH:MM|lunesGrilla~id|hábito|hecho(0/1)|racha|virtud|tipo|35 días|% 30 días~…"
+ * (hasta 8 hábitos de hoy). Los 35 días (v2.10.0) son 5 semanas de lunes a domingo que terminan esta semana:
+ * 1 cumplido · 0 no cumplido · p pendiente (hoy) · f futuro · - sin práctica ese día.
+ * Los widgets de v2.9.0 leen solo los 4 primeros campos y siguen andando.
  */
 import { useEffect } from 'react';
-import { cumplido, esDiaActivo, racha, type Habito, type Registro } from '@core/habitos';
+import { cumplido, esDiaActivo, estadoDia, porcentaje, racha, type Habito, type Registro } from '@core/habitos';
+import { diaSemanaDeClave, sumarDias } from '@core/fechas';
 import { useSesion } from '@/app/sesion';
 import { registrosDe, useDatos, useHoy, VENTANA_DIAS } from '@/app/datos';
 import { obtenerDriver } from '@/data';
@@ -46,7 +50,18 @@ export interface DatosEscritorio {
 }
 
 /** Cabecera + hábitos de hoy. Devuelve el texto sin la hora (para comparar si cambió) y con la hora. */
+export const DIAS_GRILLA = 35;
+
+/** Lunes de la semana de `hoy` menos 4 semanas: la grilla del mes termina el domingo de esta semana. */
+export function inicioGrilla(hoy: string): string {
+  const desdeLunes = (diaSemanaDeClave(hoy) + 6) % 7;
+  return sumarDias(hoy, -desdeLunes - 28);
+}
+
+const LETRA: Record<ReturnType<typeof estadoDia>, string> = { ok: '1', mal: '0', pendiente: 'p', futuro: 'f', inactivo: '-' };
+
 export function armarTextoEscritorio(d: DatosEscritorio, hora: string): { clave: string; texto: string } {
+  const lunes = inicioGrilla(d.hoy);
   const deHoy = d.habitos
     .filter((h) => !h.archivado && esDiaActivo(h, d.hoy))
     .sort((a, b) => a.momento - b.momento || a.orden - b.orden)
@@ -55,11 +70,17 @@ export function armarTextoEscritorio(d: DatosEscritorio, hora: string): { clave:
     const regs = d.registros(h.id);
     const hecho = cumplido(h, regs.get(d.hoy));
     const r = Math.max(0, racha(h, regs, d.hoy, d.ventana));
-    return `${limpio(h.id, 40)}|${limpio(h.nombre, 30)}|${hecho ? 1 : 0}|${r}`;
+    let dias = '';
+    for (let i = 0; i < DIAS_GRILLA; i++) {
+      const dia = sumarDias(lunes, i);
+      dias += dia < h.inicio && dia <= d.hoy ? '-' : LETRA[estadoDia(h, regs, dia, d.hoy)];
+    }
+    const pct = porcentaje(h, regs, sumarDias(d.hoy, -29), d.hoy);
+    return `${limpio(h.id, 40)}|${limpio(h.nombre, 30)}|${hecho ? 1 : 0}|${r}|${h.virtud}|${h.tipo}|${dias}|${pct}`;
   });
   const cuerpo = [limpio(d.nombre || 'estoico', 24), d.hoy].join('|');
-  const clave = [`1|${cuerpo}`, ...filas].join('~');
-  return { clave, texto: [`1|${cuerpo}|${hora}`, ...filas].join('~') };
+  const clave = [`1|${cuerpo}|${lunes}`, ...filas].join('~');
+  return { clave, texto: [`1|${cuerpo}|${hora}|${lunes}`, ...filas].join('~') };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -160,7 +181,10 @@ export function utf16le(texto: string): Uint8Array {
 }
 
 /** Color del ícono de la familia (COLORES_ICONO) en el formato de Rainmeter: "r,g,b" o "r,g,b,a". */
-function aRainmeter(hex: string, alfa?: number): string {
+function aRainmeter(color: string, alfa?: number): string {
+  const m = color.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  if (m) return alfa === undefined ? `${m[1]},${m[2]},${m[3]}` : `${m[1]},${m[2]},${m[3]},${alfa}`;
+  const hex = color;
   const n = parseInt(hex.replace('#', ''), 16);
   const base = `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
   return alfa === undefined ? base : `${base},${alfa}`;
@@ -219,6 +243,8 @@ ContextTitle=Abrir StoaHabit
 ContextAction=["#App#"]
 ContextTitle2=Actualizar ahora
 ContextAction2=[!CommandMeasure MeasureDatos "Update"]
+ContextTitle3=Agregar tarjeta de hábito (con el mes)
+ContextAction3=[!ActivateConfig "StoaHabit\\Habito1" "Habito.ini"]
 
 [Metadata]
 Name=StoaHabit
@@ -445,12 +471,383 @@ end
 const RMSKIN_INI = `[rmskin]
 Name=StoaHabit
 Author=StoaHabit
-Version=1.0
+Version=1.1
 MinimumRainmeter=4.5.0
 MinimumWindows=10.0
 LoadType=Skin
-Load=StoaHabit\\StoaHabit.ini
+Load=StoaHabit\\Habito1\\Habito.ini
 `;
+
+// ---------------------------------------------------------------------------------------------
+// Tarjeta de un hábito con el mes (v2.10.0, pedido del dueño: "como el widget de Android, con más días")
+// ---------------------------------------------------------------------------------------------
+
+export const TARJETAS = 8;
+
+/** Colores del widget en formato Rainmeter ("r,g,b"). Los arma la app con las variables de la familia. */
+export interface ColoresWidget {
+  verde: string;
+  rojo: string;
+  virtudes: Record<'sabiduria' | 'coraje' | 'justicia' | 'templanza', string>;
+}
+
+/** Tarjeta de hábito: Habito{n}/Habito.ini. `indice` = qué hábito de la lista muestra al principio. */
+export function skinHabitoIni(proyecto: string, codigo: string, indice: number, c: ColoresWidget, app = DIRECCION): string {
+  const url = `https://firestore.googleapis.com/v1/projects/${proyecto}/databases/(default)/documents/escritorio/${codigo}`;
+  const letras = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+    .map(
+      (l, i) => `
+[MeterDia${i + 1}]
+Meter=String
+MeterStyle=EstiloChico
+X=${27 + i * 36 + 15}
+Y=82
+StringAlign=Center
+Text=${l}
+`,
+    )
+    .join('');
+  const siguiente = indice < TARJETAS ? `\nContextTitle4=Agregar otra tarjeta\nContextAction4=[!ActivateConfig "StoaHabit\\Habito${indice + 1}" "Habito.ini"]` : '';
+  return `; StoaHabit · tarjeta de un hábito con las últimas 5 semanas (lo armó la app; no hace falta tocar nada)
+; Clic derecho → "Siguiente hábito" para elegir cuál muestra esta tarjeta.
+
+[Rainmeter]
+Update=1000
+AccurateText=1
+ContextTitle=Siguiente hábito
+ContextAction=[!CommandMeasure MeasureLua "Mover(1)"]
+ContextTitle2=Hábito anterior
+ContextAction2=[!CommandMeasure MeasureLua "Mover(-1)"]
+ContextTitle3=Actualizar ahora
+ContextAction3=[!CommandMeasure MeasureDatos "Update"]${siguiente}
+
+[Metadata]
+Name=StoaHabit · hábito
+Author=StoaHabit
+Information=Un hábito con su racha y las últimas 5 semanas.
+Version=1.1
+License=Uso personal
+
+[Variables]
+Indice=${indice}
+Ancho=300
+Fondo=${aRainmeter(COLORES_ICONO.fondo, 242)}
+Oro=${aRainmeter(COLORES_ICONO.laurel)}
+Marfil=${aRainmeter(COLORES_ICONO.figura)}
+Gris=${aRainmeter(COLORES_ICONO.figura, 120)}
+Tenue=${aRainmeter(COLORES_ICONO.figura, 40)}
+Linea=${aRainmeter(COLORES_ICONO.laurel, 70)}
+Verde=${c.verde}
+Rojo=${c.rojo}
+Sabiduria=${c.virtudes.sabiduria}
+Coraje=${c.virtudes.coraje}
+Justicia=${c.virtudes.justicia}
+Templanza=${c.virtudes.templanza}
+App=${app}
+Url=${url}
+
+[EstiloChico]
+FontFace=Segoe UI
+FontSize=8
+StringStyle=Bold
+FontColor=#Gris#
+AntiAlias=1
+
+[MeasureDatos]
+Measure=WebParser
+URL=#Url#
+UpdateRate=900
+CodePage=65001
+RegExp=(?siU)"t": \\{\\s*"stringValue": "(.*)"\\s*\\}
+OnConnectErrorAction=[!CommandMeasure MeasureLua "Estado('sin-conexion')"]
+OnRegExpErrorAction=[!CommandMeasure MeasureLua "Estado('sin-datos')"]
+
+[MeasureTexto]
+Measure=WebParser
+URL=[MeasureDatos]
+StringIndex=1
+
+[MeasureLua]
+Measure=Script
+ScriptFile=#@#habito.lua
+
+[MeterFondo]
+Meter=Shape
+Shape=Rectangle 0,0,#Ancho#,326,16 | Fill Color #Fondo# | StrokeWidth 1 | Stroke Color #Linea#
+LeftMouseUpAction=["#App#"]
+
+[MeterCirculo]
+Meter=Shape
+X=16
+Y=16
+Shape=Ellipse 22,22,22 | Fill Color 0,0,0,1 | StrokeWidth 1.5 | Stroke Color #Oro#
+
+[MeterInicial]
+Meter=String
+X=38
+Y=27
+StringAlign=Center
+FontFace=Georgia
+FontSize=14
+StringStyle=Bold
+FontColor=#Oro#
+AntiAlias=1
+Text=
+
+[MeterNombre]
+Meter=String
+X=72
+Y=17
+W=150
+ClipString=1
+FontFace=Segoe UI
+FontSize=13
+StringStyle=Bold
+FontColor=#Marfil#
+AntiAlias=1
+Text=StoaHabit
+
+[MeterSub]
+Meter=String
+MeterStyle=EstiloChico
+X=72
+Y=43
+FontColor=#Oro#
+Text=CARGANDO…
+
+[MeterRacha]
+Meter=String
+X=284
+Y=10
+StringAlign=Right
+FontFace=Georgia
+FontSize=20
+StringStyle=Bold
+FontColor=#Oro#
+AntiAlias=1
+Text=
+
+[MeterRachaTexto]
+Meter=String
+MeterStyle=EstiloChico
+X=284
+Y=48
+StringAlign=Right
+Text=RACHA
+${letras}
+[MeterGrilla]
+Meter=Shape
+X=27
+Y=100
+Shape=Rectangle 0,0,246,174 | Fill Color 0,0,0,1 | StrokeWidth 0
+
+[MeterRaya]
+Meter=Shape
+X=16
+Y=286
+Shape=Line 0,0,268,0 | StrokeWidth 1 | Stroke Color #Linea#
+
+[MeterPie]
+Meter=String
+MeterStyle=EstiloChico
+X=18
+Y=297
+Text=
+
+[MeterAccion]
+Meter=String
+X=284
+Y=294
+StringAlign=Right
+FontFace=Segoe UI
+FontSize=10
+StringStyle=Bold
+FontColor=#Oro#
+AntiAlias=1
+SolidColor=0,0,0,1
+Text=Ver detalle ›
+LeftMouseUpAction=["#App#"]
+`;
+}
+
+/** Script de la tarjeta de hábito (habito.lua). Lua 5.1 de Rainmeter. */
+export function skinHabitoLua(): string {
+  return `-- StoaHabit · tarjeta de un hábito: racha y las últimas 5 semanas.
+local ultimo, dia = nil, nil
+local habitos = {}
+
+local function v(nombre) return SKIN:GetVariable(nombre) or '' end
+local function poner(meter, opcion, valor) SKIN:Bang('!SetOption', meter, opcion, valor) end
+
+local function u8(cp)
+  if cp < 128 then return string.char(cp) end
+  if cp < 2048 then return string.char(192 + math.floor(cp / 64), 128 + cp % 64) end
+  return string.char(224 + math.floor(cp / 4096), 128 + math.floor(cp / 64) % 64, 128 + cp % 64)
+end
+local function decodificar(s)
+  s = s:gsub('\\\\u(%x%x%x%x)', function(h) return u8(tonumber(h, 16)) end)
+  s = s:gsub('\\\\(.)', '%1')
+  return s
+end
+local function partir(s, sep)
+  local t = {}
+  for p in string.gmatch(s, '([^' .. sep .. ']+)') do t[#t + 1] = p end
+  return t
+end
+local function romano(n)
+  if n <= 0 then return '0' end
+  if n > 3999 then return tostring(n) end
+  local tabla = { {1000,'M'},{900,'CM'},{500,'D'},{400,'CD'},{100,'C'},{90,'XC'},{50,'L'},{40,'XL'},{10,'X'},{9,'IX'},{5,'V'},{4,'IV'},{1,'I'} }
+  local r = ''
+  for _, p in ipairs(tabla) do while n >= p[1] do r = r .. p[2]; n = n - p[1] end end
+  return r
+end
+local NOMBRE_VIRTUD = { sabiduria = 'SABIDURÍA', coraje = 'CORAJE', justicia = 'JUSTICIA', templanza = 'TEMPLANZA' }
+local VAR_VIRTUD = { sabiduria = 'Sabiduria', coraje = 'Coraje', justicia = 'Justicia', templanza = 'Templanza' }
+local NOMBRE_TIPO = { sino = 'SÍ / NO', cantidad = 'CANTIDAD', medicion = 'MEDICIÓN', lista = 'LISTA' }
+
+-- Días desde 1970 de una fecha AAAA-MM-DD (para saber qué casilla es hoy)
+local function diaNumero(f)
+  local a, m, d = f:match('(%d+)-(%d+)-(%d+)')
+  if not a then return nil end
+  return math.floor(os.time({ year = tonumber(a), month = tonumber(m), day = tonumber(d), hour = 12 }) / 86400)
+end
+
+function Initialize() end
+
+function Estado(cual)
+  poner('MeterSub', 'Text', cual == 'sin-conexion' and 'SIN CONEXIÓN' or 'ABRÍ STOAHABIT PARA ACTUALIZAR')
+  SKIN:Bang('!UpdateMeter', 'MeterSub')
+  SKIN:Bang('!Redraw')
+end
+
+local function indice()
+  local n = #habitos
+  if n == 0 then return 0 end
+  local i = tonumber(v('Indice')) or 1
+  return ((i - 1) % n) + 1
+end
+
+function Mover(paso)
+  local n = #habitos
+  if n == 0 then return end
+  local i = ((indice() - 1 + paso) % n) + 1
+  SKIN:Bang('!SetVariable', 'Indice', tostring(i))
+  SKIN:Bang('!WriteKeyValue', 'Variables', 'Indice', tostring(i))
+  ultimo = nil
+end
+
+local function celdas(dias, hoyIdx)
+  local s = {}
+  local function agregar(x) s[#s + 1] = x end
+  local verde, rojo, gris, tenue, oro, marfil = v('Verde'), v('Rojo'), v('Gris'), v('Tenue'), v('Oro'), v('Marfil')
+  for i = 1, 35 do
+    local c = dias:sub(i, i)
+    local col, fila = (i - 1) % 7, math.floor((i - 1) / 7)
+    local x, y = col * 36, fila * 36
+    if c == '1' then
+      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color ' .. verde .. ',70 | StrokeWidth 1.5 | Stroke Color ' .. verde)
+      agregar('Line ' .. (x + 8) .. ',' .. (y + 16) .. ',' .. (x + 13) .. ',' .. (y + 21) .. ' | StrokeWidth 2 | Stroke Color ' .. marfil)
+      agregar('Line ' .. (x + 13) .. ',' .. (y + 21) .. ',' .. (x + 22) .. ',' .. (y + 10) .. ' | StrokeWidth 2 | Stroke Color ' .. marfil)
+    elseif c == '0' then
+      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color ' .. rojo .. ',45 | StrokeWidth 1.5 | Stroke Color ' .. rojo)
+      agregar('Line ' .. (x + 10) .. ',' .. (y + 10) .. ',' .. (x + 20) .. ',' .. (y + 20) .. ' | StrokeWidth 1.8 | Stroke Color ' .. marfil)
+      agregar('Line ' .. (x + 20) .. ',' .. (y + 10) .. ',' .. (x + 10) .. ',' .. (y + 20) .. ' | StrokeWidth 1.8 | Stroke Color ' .. marfil)
+    elseif c == 'p' then
+      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color 0,0,0,1 | StrokeWidth 1.5 | Stroke Color ' .. gris)
+    elseif c == '-' then
+      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color ' .. tenue .. ' | StrokeWidth 0')
+    else
+      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color 0,0,0,1 | StrokeWidth 1 | Stroke Color ' .. tenue)
+    end
+    if i == hoyIdx then
+      agregar('Rectangle ' .. (x - 3) .. ',' .. (y - 3) .. ',36,36,9 | Fill Color 0,0,0,0 | StrokeWidth 2 | Stroke Color ' .. oro)
+    end
+  end
+  return s
+end
+
+local maxFormas = 0
+
+local function Pintar(texto, hoy)
+  local partes = partir(texto, '~')
+  local cab = partir(partes[1] or '', '|')
+  habitos = {}
+  for i = 2, #partes do habitos[#habitos + 1] = partir(partes[i], '|') end
+  local fecha, lunes = cab[3] or '', cab[5] or ''
+  local esHoy = (fecha == hoy)
+  local i = indice()
+  local h = habitos[i]
+  if not h then
+    poner('MeterNombre', 'Text', 'StoaHabit')
+    poner('MeterSub', 'Text', texto == '' and 'CARGANDO…' or 'HOY NO HAY PRÁCTICAS')
+    poner('MeterRacha', 'Text', '')
+    poner('MeterInicial', 'Text', '')
+    SKIN:Bang('!UpdateMeter', '*')
+    SKIN:Bang('!Redraw')
+    return
+  end
+  local virtud = h[5] or 'sabiduria'
+  local color = v(VAR_VIRTUD[virtud] or 'Oro')
+  local nombre = h[2] or ''
+  poner('MeterNombre', 'Text', nombre)
+  poner('MeterNombre', 'LeftMouseUpAction', '["' .. v('App') .. '/habitos/' .. (h[1] or '') .. '"]')
+  poner('MeterInicial', 'Text', string.upper(nombre:sub(1, 1)))
+  poner('MeterInicial', 'FontColor', color)
+  poner('MeterCirculo', 'Shape', 'Ellipse 22,22,22 | Fill Color ' .. color .. ',30 | StrokeWidth 1.5 | Stroke Color ' .. color)
+  poner('MeterSub', 'Text', (NOMBRE_VIRTUD[virtud] or '') .. ' · ' .. (NOMBRE_TIPO[h[6] or ''] or ''))
+  poner('MeterSub', 'FontColor', color)
+  poner('MeterRacha', 'Text', romano(tonumber(h[4] or '0') or 0))
+  local dias = h[7] or ''
+  local hoyIdx = 0
+  if esHoy and lunes ~= '' then
+    local a, b = diaNumero(lunes), diaNumero(hoy)
+    if a and b then hoyIdx = b - a + 1 end
+  end
+  local formas = celdas(dias, hoyIdx)
+  poner('MeterGrilla', 'Shape', 'Rectangle 0,0,246,174 | Fill Color 0,0,0,1 | StrokeWidth 0')
+  for k, f in ipairs(formas) do poner('MeterGrilla', 'Shape' .. (k + 1), f) end
+  for k = #formas + 2, maxFormas + 1 do poner('MeterGrilla', 'Shape' .. k, 'Rectangle 0,0,0,0 | StrokeWidth 0') end
+  if #formas > maxFormas then maxFormas = #formas end
+  local pie = '30 DÍAS · ' .. (h[8] or '0') .. '%'
+  if not esHoy and fecha ~= '' then pie = pie .. ' · DEL ' .. fecha:sub(9, 10) .. '/' .. fecha:sub(6, 7) end
+  poner('MeterPie', 'Text', pie)
+  local pendiente = esHoy and h[3] ~= '1'
+  poner('MeterAccion', 'Text', pendiente and 'Marcar hoy ◇' or 'Ver detalle ›')
+  poner('MeterAccion', 'LeftMouseUpAction', '["' .. v('App') .. '/habitos/' .. (h[1] or '') .. '"]')
+  SKIN:Bang('!UpdateMeter', '*')
+  SKIN:Bang('!Redraw')
+end
+
+function Update()
+  local medida = SKIN:GetMeasure('MeasureTexto')
+  local t = medida and medida:GetStringValue() or ''
+  local hoy = os.date('%Y-%m-%d')
+  if t ~= ultimo or hoy ~= dia then
+    ultimo, dia = t, hoy
+    Pintar(decodificar(t), hoy)
+  end
+  return 0
+end
+`;
+}
+
+/** Lee los colores de la familia que la página ya tiene cargados (verde, rojo ladrillo y los de cada virtud). */
+function coloresDeLaFamilia(): ColoresWidget {
+  const estilo = getComputedStyle(document.documentElement);
+  const c = document.createElement('canvas').getContext('2d')!;
+  const leer = (nombre: string, respaldo: string) => {
+    c.fillStyle = respaldo;
+    const v = estilo.getPropertyValue(nombre).trim();
+    if (v) c.fillStyle = v;
+    return aRainmeter(String(c.fillStyle));
+  };
+  return {
+    verde: leer('--verde', COLORES_ICONO.laurel),
+    rojo: leer('--miss', COLORES_ICONO.laurel),
+    virtudes: { sabiduria: leer('--serie-1', COLORES_ICONO.laurel), coraje: leer('--serie-2', COLORES_ICONO.laurel), justicia: leer('--serie-4', COLORES_ICONO.laurel), templanza: leer('--serie-6', COLORES_ICONO.laurel) },
+  };
+}
 
 /** Dibuja el emblema de la familia (laurel + check) como PNG para el widget. */
 async function emblemaPng(lado = 120): Promise<Uint8Array> {
@@ -473,7 +870,12 @@ export async function paqueteEscritorio(proyecto: string, codigo: string): Promi
     { nombre: 'Skins/StoaHabit/StoaHabit.ini', datos: utf16le(skinIni(proyecto, codigo)) },
     { nombre: 'Skins/StoaHabit/@Resources/stoahabit.lua', datos: utf16le(skinLua()) },
     { nombre: 'Skins/StoaHabit/@Resources/emblema.png', datos: await emblemaPng() },
+    { nombre: 'Skins/StoaHabit/@Resources/habito.lua', datos: utf16le(skinHabitoLua()) },
   ];
+  const colores = coloresDeLaFamilia();
+  for (let n = 1; n <= TARJETAS; n++) {
+    archivos.push({ nombre: `Skins/StoaHabit/Habito${n}/Habito.ini`, datos: utf16le(skinHabitoIni(proyecto, codigo, n, colores)) });
+  }
   return new Blob([armarRmskin(archivos)], { type: 'application/octet-stream' });
 }
 
