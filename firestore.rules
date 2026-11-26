@@ -77,7 +77,7 @@ service cloud.firestore {
     match /users/{uid} {
       function perfilValido() {
         let d = nuevo();
-        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'notifCumplidos', 'notifFotos', 'notifMensajes', 'nacimiento', 'esperanzaVida', 'contadores', 'foto', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
+        return d.keys().hasOnly(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'notificaciones', 'examenHora', 'examenSlot', 'examenMin', 'notifReacciones', 'notifCumplidos', 'notifFotos', 'notifMensajes', 'nacimiento', 'esperanzaVida', 'contadores', 'foto', 'escritorio', 'creado', 'actualizado', 'actualizadoPor', 'rol'])
           && d.keys().hasAll(['nombre', 'correo', 'tema', 'mementoMori', 'zonaHoraria', 'creado', 'actualizado', 'actualizadoPor'])
           && texto(d.nombre, 1, 40)
           && texto(d.correo, 0, 254)
@@ -97,6 +97,8 @@ service cloud.firestore {
           && (!('notifMensajes' in d) || d.notifMensajes is bool)
           // Foto de perfil (familia 1.6.0): data URL WebP/JPEG de hasta 100.000 caracteres, o null para quitarla
           && (!('foto' in d) || d.foto == null || (d.foto is string && d.foto.size() <= 100000 && d.foto.matches('data:image/(webp|jpeg);base64,.*')))
+          // Widget de escritorio (v2.9.0): código secreto de 24 letras, o null si está apagado
+          && (!('escritorio' in d) || d.escritorio == null || (d.escritorio is string && d.escritorio.matches('[a-zA-Z0-9]{24}')))
           && d.creado is int
           && firmado(uid);
       }
@@ -316,6 +318,25 @@ service cloud.firestore {
     }
 
     // ---------- Métricas diarias (las calcula el servidor) ----------
+    // ---------- Widget de escritorio (v2.9.0) ----------
+    // Un resumen corto de hoy en un documento cuyo nombre es un código secreto al azar (24 letras).
+    // Se puede leer sabiéndolo (lo lee el widget de Windows sin sesión), pero no listar.
+    // Solo su dueño lo crea, lo cambia o lo borra.
+    match /escritorio/{codigo} {
+      allow get: if codigo.matches('[a-zA-Z0-9]{24}');
+      allow list: if false;
+      allow create: if autenticado() && codigo.matches('[a-zA-Z0-9]{24}') && resumenEscritorio();
+      allow update: if autenticado() && resource.data.uid == request.auth.uid && resumenEscritorio();
+      allow delete: if autenticado() && resource.data.uid == request.auth.uid;
+      function resumenEscritorio() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['uid', 't', 'actualizado'])
+          && d.uid == request.auth.uid
+          && d.t is string && d.t.size() <= 2000
+          && d.actualizado is int;
+      }
+    }
+
     match /metrics/{fecha} {
       allow read: if esAdmin();
       allow write: if false;

@@ -366,6 +366,33 @@ test.describe('v0.5–v1.0', () => {
     await expect(page.getByText(/^Novedades de la /)).toBeVisible();
   });
 
+  test('perfil: widget para Windows (Rainmeter): activar, bajar el .rmskin, cambiar el enlace y desactivar', async ({ page }) => {
+    await entrarConEjemplo(page);
+    await ir(page, '/perfil');
+    const fila = page.locator('[data-widget-escritorio]');
+    await expect(fila).toContainText('Widget para Windows');
+    await fila.click();
+    const hoja = page.getByRole('dialog', { name: 'Widget para Windows' });
+    await expect(hoja).toContainText('Rainmeter');
+    await captura(page, '20b-widget-windows');
+    const bajada = page.waitForEvent('download');
+    await hoja.getByRole('button', { name: 'Activar y descargar' }).click();
+    const archivo = await bajada;
+    expect(archivo.suggestedFilename()).toBe('StoaHabit.rmskin');
+    const ruta = await archivo.path();
+    const datos = (await import('node:fs')).readFileSync(ruta!);
+    // Pie de Rainmeter: "\0RMSKIN\0" al final
+    expect(datos.subarray(-7).toString('latin1')).toBe('RMSKIN\0');
+    await expect(fila).toContainText('Activado');
+    // Cambiar el enlace baja otro paquete; desactivar lo apaga
+    const otra = page.waitForEvent('download');
+    await hoja.getByRole('button', { name: 'Cambiar el enlace' }).click();
+    await otra;
+    await hoja.getByRole('button', { name: 'Desactivar' }).click();
+    await expect(page.getByText('Widget de escritorio desactivado.')).toBeVisible();
+    await expect(fila).not.toContainText('Activado');
+  });
+
   test('perfil: cambiar la contraseña', async ({ page }) => {
     await entrarConEjemplo(page);
     await ir(page, '/perfil');

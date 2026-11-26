@@ -11,6 +11,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.9.0',
+    fecha: '2026-11-25',
+    cambios: [
+      'Widget para Windows: en Perfil → "Widget para Windows" se baja StoaHabit.rmskin para Rainmeter (gratis). En el escritorio quedan tus hábitos de hoy, si los cumpliste y tu racha, en negro y oro.',
+      'Se actualiza cada 15 minutos con lo que marcás en la app; tocar un hábito lo abre en StoaHabit. "Cambiar el enlace" o "Desactivar" lo cortan al instante.',
+    ],
+  },
+  {
     version: '2.8.0',
     fecha: '2026-11-24',
     cambios: [

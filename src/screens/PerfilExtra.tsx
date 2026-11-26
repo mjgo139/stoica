@@ -264,6 +264,8 @@ export function MisDatos({ n = 3 }: { n?: number }) {
     setOcupado(true);
     try {
       const d = await obtenerDriver();
+      // El resumen del widget de escritorio vive afuera de tu carpeta: se borra primero
+      if (perfil.escritorio) await d.borrar(`escritorio/${perfil.escritorio}`).catch(() => undefined);
       await d.llamar('borrarMiCuenta');
       await d.salir().catch(() => undefined);
     } catch (e) {

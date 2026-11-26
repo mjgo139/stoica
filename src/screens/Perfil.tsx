@@ -19,6 +19,7 @@ import { useAvisos } from '@/ui/avisos';
 import { BotonInstalar } from './Instalar';
 import { Accesos, MisDatos, Notificaciones } from './PerfilExtra';
 import { AppAndroid } from '@/nativo/AppAndroid';
+import { WidgetEscritorio } from './WidgetEscritorio';
 
 
 function useActualizarPerfil() {
@@ -117,6 +118,7 @@ export function Perfil() {
           </div>
           <Notificaciones n={3} />
           <AppAndroid />
+          <WidgetEscritorio />
           <Accesos n={4} />
           <MisDatos n={5} />
           {perfil.rol === 'admin' && <VersionYNovedades />}

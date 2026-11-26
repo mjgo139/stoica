@@ -1,3 +1,4 @@
+import { useResumenEscritorio } from './escritorio';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, type MouseEvent } from 'react';
 import { AvisoPrueba, Avatar, BarraLateral, Pestanas, type Seccion } from '../../familia/react';
@@ -51,6 +52,7 @@ export function Shell() {
     void prepararNativo((url) => navegar(url), mostrar);
   }, [navegar, mostrar]);
   useWidgetHoy();
+  useResumenEscritorio();
 
   const ir = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();

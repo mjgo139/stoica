@@ -149,6 +149,34 @@ describe('users/{uid} · perfil', () => {
 });
 
 // =====================================================================
+describe('escritorio/{codigo} · widget de Windows', () => {
+  const C = 'abcdEFGH2345jkmnPQRS6789';
+  const resumen = (uid: string, extra: Record<string, unknown> = {}) => ({ uid, t: '1|Ana|2026-11-25|10:00~h1|Meditar|1|3', actualizado: ahora(), ...extra });
+  it('el dueño lo crea y lo cambia; cualquiera con el código lo lee; nadie lo lista', async () => {
+    await assertSucceeds(setDoc(doc(usuario('ana'), `escritorio/${C}`), resumen('ana')));
+    await assertSucceeds(setDoc(doc(usuario('ana'), `escritorio/${C}`), resumen('ana', { t: '1|Ana|2026-11-25|11:00' })));
+    await assertSucceeds(getDoc(doc(anonimo(), `escritorio/${C}`)));
+    await assertFails(getDocs(collection(anonimo(), 'escritorio')));
+    await assertFails(getDocs(collection(usuario('ana'), 'escritorio')));
+  });
+  it('otro no lo pisa ni lo borra; código corto, sin sesión o campos extra no', async () => {
+    await sembrar(`escritorio/${C}`, resumen('ana'));
+    await assertFails(setDoc(doc(usuario('beto'), `escritorio/${C}`), resumen('beto')));
+    await assertFails(deleteDoc(doc(usuario('beto'), `escritorio/${C}`)));
+    await assertFails(setDoc(doc(usuario('ana'), 'escritorio/corto'), resumen('ana')));
+    await assertFails(setDoc(doc(anonimo(), 'escritorio/zzzzEFGH2345jkmnPQRS6789'), resumen('ana')));
+    await assertFails(setDoc(doc(usuario('ana'), 'escritorio/yyyyEFGH2345jkmnPQRS6789'), resumen('ana', { extra: 1 })));
+    await assertFails(setDoc(doc(usuario('ana'), 'escritorio/xxxxEFGH2345jkmnPQRS6789'), resumen('ana', { t: 'x'.repeat(2001) })));
+    await assertSucceeds(deleteDoc(doc(usuario('ana'), `escritorio/${C}`)));
+  });  it('el perfil guarda el código (24 letras) o null', async () => {
+    await sembrar('users/ana', perfil('ana', { rol: 'usuario' }));
+    const firma = { actualizado: ahora(), actualizadoPor: 'ana' };
+    await assertSucceeds(updateDoc(doc(usuario('ana'), 'users/ana'), { escritorio: C, ...firma }));
+    await assertSucceeds(updateDoc(doc(usuario('ana'), 'users/ana'), { escritorio: null, ...firma }));
+    await assertFails(updateDoc(doc(usuario('ana'), 'users/ana'), { escritorio: 'corto', ...firma }));
+  });
+});
+
 describe('users/{uid}/habits', () => {
   it('crea, edita y borra sus hábitos', async () => {
     const db = usuario('ana');
