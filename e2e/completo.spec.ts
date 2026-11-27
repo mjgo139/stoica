@@ -383,6 +383,11 @@ test.describe('v0.5–v1.0', () => {
     const datos = (await import('node:fs')).readFileSync(ruta!);
     // Pie de Rainmeter: "\0RMSKIN\0" al final
     expect(datos.subarray(-7).toString('latin1')).toBe('RMSKIN\0');
+    // Trae la tarjeta de hábito y el jardín completo con sus imágenes (v2.11.0)
+    const nombres = datos.toString('latin1');
+    for (const n of ['Skins/StoaHabit/Habito1/Habito.ini', 'Skins/StoaHabit/Jardin/Jardin.ini', 'Skins/StoaHabit/@Resources/jardin.lua', 'Skins/StoaHabit/@Resources/jardin/terraza.jpg', 'Skins/StoaHabit/@Resources/jardin/laurel-4.png', 'Skins/StoaHabit/@Resources/jardin/medalla.png']) {
+      expect(nombres).toContain(n);
+    }
     await expect(fila).toContainText('Activado');
     // Cambiar el enlace baja otro paquete; desactivar lo apaga
     const otra = page.waitForEvent('download');

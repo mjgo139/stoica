@@ -167,6 +167,9 @@ describe('escritorio/{codigo} · widget de Windows', () => {
     await assertFails(setDoc(doc(anonimo(), 'escritorio/zzzzEFGH2345jkmnPQRS6789'), resumen('ana')));
     await assertFails(setDoc(doc(usuario('ana'), 'escritorio/yyyyEFGH2345jkmnPQRS6789'), resumen('ana', { extra: 1 })));
     await assertFails(setDoc(doc(usuario('ana'), 'escritorio/xxxxEFGH2345jkmnPQRS6789'), resumen('ana', { t: 'x'.repeat(2001) })));
+    // Jardín completo (v2.11.0): campo j de hasta 6000
+    await assertSucceeds(setDoc(doc(usuario('ana'), 'escritorio/wwwwEFGH2345jkmnPQRS6789'), resumen('ana', { j: '1|3|0~i|maceta|1|2|3|0' })));
+    await assertFails(setDoc(doc(usuario('ana'), 'escritorio/vvvvEFGH2345jkmnPQRS6789'), resumen('ana', { j: 'x'.repeat(6001) })));
     await assertSucceeds(deleteDoc(doc(usuario('ana'), `escritorio/${C}`)));
   });  it('el perfil guarda el código (24 letras) o null', async () => {
     await sembrar('users/ana', perfil('ana', { rol: 'usuario' }));

@@ -11,6 +11,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.11.0',
+    fecha: '2026-11-26',
+    cambios: [
+      'Widget para Windows: tu jardín completo en el escritorio (terraza, repisa con adornos, braseros, macetas, plantas y medallas), igual que en la app, con la luz según la hora y fuego de noche.',
+      'Se abre con clic derecho en cualquier widget → "Mostrar el jardín". Tiene tres tamaños (chico, mediano y grande) en su clic derecho.',
+      'Para tenerlo: Perfil → Widget para Windows → Descargar de nuevo, y abrir el archivo.',
+    ],
+  },
+  {
     version: '2.10.0',
     fecha: '2026-11-26',
     cambios: [

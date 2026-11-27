@@ -51,6 +51,8 @@ describe('widget de escritorio', () => {
     expect(ini).toContain('Indice=2');
     expect(ini).toContain('[!ActivateConfig "StoaHabit\\Habito3" "Habito.ini"]');
     expect(ini).toContain('Templanza=10,10,10');
+    expect(ini).toContain('ContextTitle4=Mostrar el jardín');
+    expect(ini).toContain('ContextTitle5=Agregar otra tarjeta');
     expect(skinHabitoIni('stoica-app', 'COD', 8, c)).not.toContain('Agregar otra tarjeta');
     expect(skinHabitoLua()).toContain('function Mover(paso)');
   });

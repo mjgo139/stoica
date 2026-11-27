@@ -22,6 +22,9 @@ import { diaSemanaDeClave, sumarDias } from '@core/fechas';
 import { useSesion } from '@/app/sesion';
 import { registrosDe, useDatos, useHoy, VENTANA_DIAS } from '@/app/datos';
 import { obtenerDriver } from '@/data';
+import { armarJardinEscritorio, imagenesJardin, skinJardinIni, skinJardinLua, type ColoresJardin } from '@/app/jardinEscritorio';
+import { leerGuardado } from '@/screens/jardin/estado';
+import { tinte } from '@/screens/jardin/escena';
 import { COLORES_ICONO, FIGURAS, svgEmblemaSolo } from '../../familia/emblema.mjs';
 import { DIRECCION } from '@/ui/AvisoMudanza';
 
@@ -181,7 +184,7 @@ export function utf16le(texto: string): Uint8Array {
 }
 
 /** Color del ícono de la familia (COLORES_ICONO) en el formato de Rainmeter: "r,g,b" o "r,g,b,a". */
-function aRainmeter(color: string, alfa?: number): string {
+export function aRainmeter(color: string, alfa?: number): string {
   const m = color.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
   if (m) return alfa === undefined ? `${m[1]},${m[2]},${m[3]}` : `${m[1]},${m[2]},${m[3]},${alfa}`;
   const hex = color;
@@ -245,6 +248,8 @@ ContextTitle2=Actualizar ahora
 ContextAction2=[!CommandMeasure MeasureDatos "Update"]
 ContextTitle3=Agregar tarjeta de hábito (con el mes)
 ContextAction3=[!ActivateConfig "StoaHabit\\Habito1" "Habito.ini"]
+ContextTitle4=Mostrar el jardín
+ContextAction4=[!ActivateConfig "StoaHabit\\Jardin" "Jardin.ini"]
 
 [Metadata]
 Name=StoaHabit
@@ -507,7 +512,7 @@ Text=${l}
 `,
     )
     .join('');
-  const siguiente = indice < TARJETAS ? `\nContextTitle4=Agregar otra tarjeta\nContextAction4=[!ActivateConfig "StoaHabit\\Habito${indice + 1}" "Habito.ini"]` : '';
+  const siguiente = indice < TARJETAS ? `\nContextTitle5=Agregar otra tarjeta\nContextAction5=[!ActivateConfig "StoaHabit\\Habito${indice + 1}" "Habito.ini"]` : '';
   return `; StoaHabit · tarjeta de un hábito con las últimas 5 semanas (lo armó la app; no hace falta tocar nada)
 ; Clic derecho → "Siguiente hábito" para elegir cuál muestra esta tarjeta.
 
@@ -519,7 +524,9 @@ ContextAction=[!CommandMeasure MeasureLua "Mover(1)"]
 ContextTitle2=Hábito anterior
 ContextAction2=[!CommandMeasure MeasureLua "Mover(-1)"]
 ContextTitle3=Actualizar ahora
-ContextAction3=[!CommandMeasure MeasureDatos "Update"]${siguiente}
+ContextAction3=[!CommandMeasure MeasureDatos "Update"]
+ContextTitle4=Mostrar el jardín
+ContextAction4=[!ActivateConfig "StoaHabit\\Jardin" "Jardin.ini"]${siguiente}
 
 [Metadata]
 Name=StoaHabit · hábito
@@ -876,7 +883,55 @@ export async function paqueteEscritorio(proyecto: string, codigo: string): Promi
   for (let n = 1; n <= TARJETAS; n++) {
     archivos.push({ nombre: `Skins/StoaHabit/Habito${n}/Habito.ini`, datos: utf16le(skinHabitoIni(proyecto, codigo, n, colores)) });
   }
+  // Jardín completo (v2.11.0): su skin, su script y las imágenes pasadas a PNG/JPG (Rainmeter no lee WebP)
+  const url = `https://firestore.googleapis.com/v1/projects/${proyecto}/databases/(default)/documents/escritorio/${codigo}`;
+  const cj: ColoresJardin = {
+    fondo: aRainmeter(COLORES_ICONO.fondo),
+    oro: aRainmeter(COLORES_ICONO.laurel),
+    marfil: aRainmeter(COLORES_ICONO.figura),
+    noche: aRainmeter(tinte(22).color),
+    amanecer: aRainmeter(tinte(6).color),
+    atardecer: aRainmeter(tinte(18).color),
+    sombra: '45,28,10', // familia-ok: la sombra de las macetas, igual que en la escena del jardín
+  };
+  archivos.push(
+    { nombre: 'Skins/StoaHabit/Jardin/Jardin.ini', datos: utf16le(skinJardinIni(url, DIRECCION, cj)) },
+    { nombre: 'Skins/StoaHabit/@Resources/jardin.lua', datos: utf16le(skinJardinLua()) },
+    ...(await imagenesJardinPng()),
+  );
   return new Blob([armarRmskin(archivos)], { type: 'application/octet-stream' });
+}
+
+/** Baja cada imagen del jardín de la app, la achica y la pasa a PNG (o JPG el fondo). También la medalla de laurel. */
+async function imagenesJardinPng(): Promise<Array<{ nombre: string; datos: Uint8Array }>> {
+  const pasar = async (img: CanvasImageSource & { width: number; height: number }, ancho: number, jpg: boolean) => {
+    const w = Math.min(ancho, img.width);
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = Math.max(1, Math.round((img.height * w) / img.width));
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+    const b = await new Promise<Blob>((ok, mal) => c.toBlob((x) => (x ? ok(x) : mal(new Error('No se pudo armar una imagen del jardín.'))), jpg ? 'image/jpeg' : 'image/png', 0.86));
+    return new Uint8Array(await b.arrayBuffer());
+  };
+  const salida = await Promise.all(
+    imagenesJardin().map(async (i) => {
+      const r = await fetch(i.desde);
+      if (!r.ok) throw new Error(`Falta la imagen ${i.desde}.`);
+      const bmp = await createImageBitmap(await r.blob());
+      const datos = await pasar(bmp, i.ancho, !!i.jpg);
+      bmp.close();
+      return { nombre: `Skins/StoaHabit/@Resources/jardin/${i.nombre}.${i.jpg ? 'jpg' : 'png'}`, datos };
+    }),
+  );
+  // La medalla de laurel (es un dibujo de la app): se pasa a PNG
+  const [{ renderToStaticMarkup }, { createElement }, { Medalla }] = await Promise.all([import('react-dom/server'), import('react'), import('@/screens/jardin/Graficos')]);
+  let svg = renderToStaticMarkup(createElement(Medalla, { tipo: 'Oro', dias: 100, tam: 96 }));
+  if (!svg.includes('xmlns=')) svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  const img = new Image();
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  await img.decode();
+  salida.push({ nombre: 'Skins/StoaHabit/@Resources/jardin/medalla.png', datos: await pasar(img, 96, false) });
+  return salida;
 }
 
 /** Hora corta para el pie del widget. */
@@ -907,11 +962,11 @@ function guardarUltimo(v: string) {
 }
 
 /** Sube el resumen de hoy (solo si cambió y 3 s después del último cambio, para no gastar escrituras). */
-export async function subirResumenEscritorio(codigo: string, uid: string, texto: { clave: string; texto: string }, forzar = false) {
-  const marca = `${codigo}:${texto.clave}`;
+export async function subirResumenEscritorio(codigo: string, uid: string, texto: { clave: string; texto: string }, forzar = false, jardin = '') {
+  const marca = `${codigo}:${texto.clave}:${jardin}`;
   if (!forzar && leerUltimo() === marca) return;
   const d = await obtenerDriver();
-  await d.guardar(`escritorio/${codigo}`, { uid, t: texto.texto, actualizado: Date.now() });
+  await d.guardar(`escritorio/${codigo}`, { uid, t: texto.texto, j: jardin, actualizado: Date.now() });
   guardarUltimo(marca);
 }
 
@@ -929,7 +984,14 @@ export function useResumenEscritorio() {
       { nombre: nombre.split(' ')[0] ?? '', hoy, habitos, registros: (id) => registrosDe(registros, id), ventana: VENTANA_DIAS },
       horaCorta(),
     );
-    const t = setTimeout(() => void subirResumenEscritorio(codigo, uid, texto).catch(() => undefined), 3000);
+    // El jardín completo (v2.11.0): misma ubicación que en la app, con lo guardado en este dispositivo
+    let jardin = '';
+    try {
+      jardin = armarJardinEscritorio({ habitos, registros, hoy, g: leerGuardado(uid) });
+    } catch {
+      /* si algo falla, el widget del jardín queda como estaba */
+    }
+    const t = setTimeout(() => void subirResumenEscritorio(codigo, uid, texto, false, jardin).catch(() => undefined), 3000);
     return () => clearTimeout(t);
   }, [codigo, uid, listo, habitos, registros, hoy, nombre]);
 }
