@@ -606,9 +606,9 @@ Shape=Ellipse (22*#E#),(22*#E#),(22*#E#) | Fill Color 0,0,0,1 | StrokeWidth 1.5 
 
 [MeterInicial]
 Meter=String
-X=(38*#E#)
+X=(32*#E#)
 Y=(27*#E#)
-StringAlign=Center
+StringAlign=Left
 FontFace=Georgia
 FontSize=(14*#E#)
 StringStyle=Bold
@@ -642,7 +642,7 @@ Text=CARGANDO…
 Meter=String
 X=(264*#E#)
 Y=(10*#E#)
-StringAlign=Center
+StringAlign=Left
 FontFace=Georgia
 FontSize=(20*#E#)
 StringStyle=Bold
@@ -655,7 +655,7 @@ Meter=String
 MeterStyle=EstiloChico
 X=(264*#E#)
 Y=(48*#E#)
-StringAlign=Center
+StringAlign=Left
 Text=RACHA
 ${letras}
 [MeterGrilla]
@@ -844,7 +844,14 @@ local function Pintar(texto, hoy)
   poner('MeterNombre', 'LeftMouseUpAction', '["' .. v('App') .. '/habitos/' .. (h[1] or '') .. '"]')
   poner('MeterInicial', 'Text', string.upper(nombre:sub(1, 1)))
   poner('MeterInicial', 'FontColor', color)
-  poner('MeterCirculo', 'Shape', 'Ellipse 22,22,22 | Fill Color ' .. color .. ',30 | StrokeWidth 1.5 | Stroke Color ' .. color)
+  -- Centrada midiendo la letra ya dibujada: así no depende del tipo de letra ni de la escala de Windows (125 %, 150 %…)
+  SKIN:Bang('!UpdateMeter', 'MeterInicial')
+  local mi = SKIN:GetMeter('MeterInicial')
+  if mi then
+    poner('MeterInicial', 'X', string.format('%.1f', 38 * E() - mi:GetW() / 2))
+    poner('MeterInicial', 'Y', string.format('%.1f', 38 * E() - mi:GetH() / 2))
+  end
+  poner('MeterCirculo', 'Shape', 'Ellipse ' .. n(22) .. ',' .. n(22) .. ',' .. n(22) .. ' | Fill Color ' .. color .. ',30 | StrokeWidth 1.5 | Stroke Color ' .. color)
   poner('MeterSub', 'Text', (NOMBRE_VIRTUD[virtud] or '') .. ' · ' .. (NOMBRE_TIPO[h[6] or ''] or ''))
   poner('MeterSub', 'FontColor', color)
   local rom = romano(tonumber(h[4] or '0') or 0)
@@ -857,8 +864,8 @@ local function Pintar(texto, hoy)
   local mr, mt = SKIN:GetMeter('MeterRacha'), SKIN:GetMeter('MeterRachaTexto')
   local ancho = math.max(mr and mr:GetW() or 0, mt and mt:GetW() or 0)
   local centro = math.min(264 * E(), 284 * E() - ancho / 2)
-  poner('MeterRacha', 'X', string.format('%.1f', centro))
-  poner('MeterRachaTexto', 'X', string.format('%.1f', centro))
+  poner('MeterRacha', 'X', string.format('%.1f', centro - (mr and mr:GetW() or 0) / 2))
+  poner('MeterRachaTexto', 'X', string.format('%.1f', centro - (mt and mt:GetW() or 0) / 2))
   -- El nombre y la virtud se cortan antes de llegar a la racha
   local libre = string.format('%.1f', math.max(40 * E(), centro - ancho / 2 - 8 * E() - 72 * E()))
   poner('MeterNombre', 'W', libre)

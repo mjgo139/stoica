@@ -11,6 +11,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.12.3',
+    fecha: '2026-11-27',
+    cambios: [
+      'Widget para Windows: la inicial del hábito queda centrada en su círculo en los tres tamaños (en chico el círculo no se achicaba) y aunque Windows tenga la escala en 125 % o 150 %.',
+      'El número de la racha también se centra midiendo lo que se dibuja.',
+    ],
+  },
+  {
     version: '2.12.2',
     fecha: '2026-11-27',
     cambios: ['Widget para Windows: la inicial del hábito vuelve a quedar centrada en su círculo, en los tres tamaños.'],
