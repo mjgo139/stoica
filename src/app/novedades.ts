@@ -11,6 +11,14 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.12.1',
+    fecha: '2026-11-27',
+    cambios: [
+      'Widget para Windows: en la tarjeta de hábito, el número de la racha queda centrado sobre "RACHA" en los tres tamaños, y la inicial centrada en su círculo.',
+      'Si la racha es larga (por ejemplo XXVIII), el número se achica y el nombre del hábito se corta antes, para que no se pisen.',
+    ],
+  },
+  {
     version: '2.12.0',
     fecha: '2026-11-27',
     cambios: [

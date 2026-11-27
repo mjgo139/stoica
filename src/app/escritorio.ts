@@ -607,8 +607,8 @@ Shape=Ellipse (22*#E#),(22*#E#),(22*#E#) | Fill Color 0,0,0,1 | StrokeWidth 1.5 
 [MeterInicial]
 Meter=String
 X=(38*#E#)
-Y=(27*#E#)
-StringAlign=Center
+Y=(38*#E#)
+StringAlign=CenterCenter
 FontFace=Georgia
 FontSize=(14*#E#)
 StringStyle=Bold
@@ -634,14 +634,15 @@ Meter=String
 MeterStyle=EstiloChico
 X=(72*#E#)
 Y=(43*#E#)
+ClipString=1
 FontColor=#Oro#
 Text=CARGANDO…
 
 [MeterRacha]
 Meter=String
-X=(284*#E#)
+X=(264*#E#)
 Y=(10*#E#)
-StringAlign=Right
+StringAlign=Center
 FontFace=Georgia
 FontSize=(20*#E#)
 StringStyle=Bold
@@ -652,9 +653,9 @@ Text=
 [MeterRachaTexto]
 Meter=String
 MeterStyle=EstiloChico
-X=(284*#E#)
+X=(264*#E#)
 Y=(48*#E#)
-StringAlign=Right
+StringAlign=Center
 Text=RACHA
 ${letras}
 [MeterGrilla]
@@ -846,7 +847,22 @@ local function Pintar(texto, hoy)
   poner('MeterCirculo', 'Shape', 'Ellipse 22,22,22 | Fill Color ' .. color .. ',30 | StrokeWidth 1.5 | Stroke Color ' .. color)
   poner('MeterSub', 'Text', (NOMBRE_VIRTUD[virtud] or '') .. ' · ' .. (NOMBRE_TIPO[h[6] or ''] or ''))
   poner('MeterSub', 'FontColor', color)
-  poner('MeterRacha', 'Text', romano(tonumber(h[4] or '0') or 0))
+  local rom = romano(tonumber(h[4] or '0') or 0)
+  poner('MeterRacha', 'Text', rom)
+  poner('MeterRacha', 'FontSize', string.format('%.1f', (#rom > 4 and 15 or 20) * E()))
+  poner('MeterRacha', 'Y', string.format('%.1f', (#rom > 4 and 14 or 10) * E()))
+  -- El número de la racha va centrado sobre "RACHA"; si es largo (XXVIII) se corre a la izquierda para no salirse
+  SKIN:Bang('!UpdateMeter', 'MeterRacha')
+  SKIN:Bang('!UpdateMeter', 'MeterRachaTexto')
+  local mr, mt = SKIN:GetMeter('MeterRacha'), SKIN:GetMeter('MeterRachaTexto')
+  local ancho = math.max(mr and mr:GetW() or 0, mt and mt:GetW() or 0)
+  local centro = math.min(264 * E(), 284 * E() - ancho / 2)
+  poner('MeterRacha', 'X', string.format('%.1f', centro))
+  poner('MeterRachaTexto', 'X', string.format('%.1f', centro))
+  -- El nombre y la virtud se cortan antes de llegar a la racha
+  local libre = string.format('%.1f', math.max(40 * E(), centro - ancho / 2 - 8 * E() - 72 * E()))
+  poner('MeterNombre', 'W', libre)
+  poner('MeterSub', 'W', libre)
   local dias = h[7] or ''
   local hoyIdx = 0
   if esHoy and lunes ~= '' then
