@@ -11,6 +11,15 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.12.0',
+    fecha: '2026-11-27',
+    cambios: [
+      'Jardín: el festejo "¡Creció!" ya no sale cada vez que abrís el jardín (si lo cerrabas enseguida, no se guardaba que ya lo viste).',
+      'Widget para Windows: cada tarjeta de hábito se puede ver con la semana o con el mes (5 semanas), y en tres tamaños (chico, normal y grande). Todo con clic derecho en la tarjeta.',
+      'Para tenerlo: Perfil → Widget para Windows → Descargar de nuevo, y abrir el archivo.',
+    ],
+  },
+  {
     version: '2.11.0',
     fecha: '2026-11-26',
     cambios: [

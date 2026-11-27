@@ -51,10 +51,18 @@ describe('widget de escritorio', () => {
     expect(ini).toContain('Indice=2');
     expect(ini).toContain('[!ActivateConfig "StoaHabit\\Habito3" "Habito.ini"]');
     expect(ini).toContain('Templanza=10,10,10');
-    expect(ini).toContain('ContextTitle4=Mostrar el jardín');
-    expect(ini).toContain('ContextTitle5=Agregar otra tarjeta');
+    expect(ini).toContain('ContextTitle11=Mostrar el jardín');
+    expect(ini).toContain('ContextTitle12=Agregar otra tarjeta');
+    // Semana o mes, y tres tamaños (v2.12.0)
+    expect(ini).toContain(`ContextAction4=[!CommandMeasure MeasureLua "Vista('semana')"]`);
+    expect(ini).toContain('ContextAction8=[!WriteKeyValue Variables E 1.3][!Refresh]');
+    expect(ini).toContain('FontSize=(13*#E#)');
+    // Los números del menú van seguidos (Rainmeter deja de leer en el primero que falta)
+    const nums = [...ini.matchAll(/^ContextTitle(\d*)=/gm)].map((m) => Number(m[1] || 1));
+    expect(nums).toEqual(nums.map((_, i) => i + 1));
     expect(skinHabitoIni('stoica-app', 'COD', 8, c)).not.toContain('Agregar otra tarjeta');
     expect(skinHabitoLua()).toContain('function Mover(paso)');
+    expect(skinHabitoLua()).toContain('function Vista(cual)');
   });
 
   it('hasta 8 hábitos', () => {

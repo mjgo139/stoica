@@ -505,14 +505,14 @@ export function skinHabitoIni(proyecto: string, codigo: string, indice: number, 
 [MeterDia${i + 1}]
 Meter=String
 MeterStyle=EstiloChico
-X=${27 + i * 36 + 15}
-Y=82
+X=(${27 + i * 36 + 15}*#E#)
+Y=(82*#E#)
 StringAlign=Center
 Text=${l}
 `,
     )
     .join('');
-  const siguiente = indice < TARJETAS ? `\nContextTitle5=Agregar otra tarjeta\nContextAction5=[!ActivateConfig "StoaHabit\\Habito${indice + 1}" "Habito.ini"]` : '';
+  const siguiente = indice < TARJETAS ? `\nContextTitle12=Agregar otra tarjeta\nContextAction12=[!ActivateConfig "StoaHabit\\Habito${indice + 1}" "Habito.ini"]` : '';
   return `; StoaHabit · tarjeta de un hábito con las últimas 5 semanas (lo armó la app; no hace falta tocar nada)
 ; Clic derecho → "Siguiente hábito" para elegir cuál muestra esta tarjeta.
 
@@ -523,10 +523,22 @@ ContextTitle=Siguiente hábito
 ContextAction=[!CommandMeasure MeasureLua "Mover(1)"]
 ContextTitle2=Hábito anterior
 ContextAction2=[!CommandMeasure MeasureLua "Mover(-1)"]
-ContextTitle3=Actualizar ahora
-ContextAction3=[!CommandMeasure MeasureDatos "Update"]
-ContextTitle4=Mostrar el jardín
-ContextAction4=[!ActivateConfig "StoaHabit\\Jardin" "Jardin.ini"]${siguiente}
+ContextTitle3=---
+ContextTitle4=Ver la semana
+ContextAction4=[!CommandMeasure MeasureLua "Vista('semana')"]
+ContextTitle5=Ver el mes (5 semanas)
+ContextAction5=[!CommandMeasure MeasureLua "Vista('mes')"]
+ContextTitle6=Tamaño chico
+ContextAction6=[!WriteKeyValue Variables E 0.8][!Refresh]
+ContextTitle7=Tamaño normal
+ContextAction7=[!WriteKeyValue Variables E 1][!Refresh]
+ContextTitle8=Tamaño grande
+ContextAction8=[!WriteKeyValue Variables E 1.3][!Refresh]
+ContextTitle9=---
+ContextTitle10=Actualizar ahora
+ContextAction10=[!CommandMeasure MeasureDatos "Update"]
+ContextTitle11=Mostrar el jardín
+ContextAction11=[!ActivateConfig "StoaHabit\\Jardin" "Jardin.ini"]${siguiente}
 
 [Metadata]
 Name=StoaHabit · hábito
@@ -537,6 +549,9 @@ License=Uso personal
 
 [Variables]
 Indice=${indice}
+; Vista: mes (5 semanas) o semana · E: tamaño (0.8 chico, 1 normal, 1.3 grande)
+Vista=mes
+E=1
 Ancho=300
 Fondo=${aRainmeter(COLORES_ICONO.fondo, 242)}
 Oro=${aRainmeter(COLORES_ICONO.laurel)}
@@ -555,7 +570,7 @@ Url=${url}
 
 [EstiloChico]
 FontFace=Segoe UI
-FontSize=8
+FontSize=(8*#E#)
 StringStyle=Bold
 FontColor=#Gris#
 AntiAlias=1
@@ -580,22 +595,22 @@ ScriptFile=#@#habito.lua
 
 [MeterFondo]
 Meter=Shape
-Shape=Rectangle 0,0,#Ancho#,326,16 | Fill Color #Fondo# | StrokeWidth 1 | Stroke Color #Linea#
+Shape=Rectangle 0,0,(#Ancho#*#E#),(326*#E#),(16*#E#) | Fill Color #Fondo# | StrokeWidth 1 | Stroke Color #Linea#
 LeftMouseUpAction=["#App#"]
 
 [MeterCirculo]
 Meter=Shape
-X=16
-Y=16
-Shape=Ellipse 22,22,22 | Fill Color 0,0,0,1 | StrokeWidth 1.5 | Stroke Color #Oro#
+X=(16*#E#)
+Y=(16*#E#)
+Shape=Ellipse (22*#E#),(22*#E#),(22*#E#) | Fill Color 0,0,0,1 | StrokeWidth 1.5 | Stroke Color #Oro#
 
 [MeterInicial]
 Meter=String
-X=38
-Y=27
+X=(38*#E#)
+Y=(27*#E#)
 StringAlign=Center
 FontFace=Georgia
-FontSize=14
+FontSize=(14*#E#)
 StringStyle=Bold
 FontColor=#Oro#
 AntiAlias=1
@@ -603,12 +618,12 @@ Text=
 
 [MeterNombre]
 Meter=String
-X=72
-Y=17
-W=150
+X=(72*#E#)
+Y=(17*#E#)
+W=(150*#E#)
 ClipString=1
 FontFace=Segoe UI
-FontSize=13
+FontSize=(13*#E#)
 StringStyle=Bold
 FontColor=#Marfil#
 AntiAlias=1
@@ -617,18 +632,18 @@ Text=StoaHabit
 [MeterSub]
 Meter=String
 MeterStyle=EstiloChico
-X=72
-Y=43
+X=(72*#E#)
+Y=(43*#E#)
 FontColor=#Oro#
 Text=CARGANDO…
 
 [MeterRacha]
 Meter=String
-X=284
-Y=10
+X=(284*#E#)
+Y=(10*#E#)
 StringAlign=Right
 FontFace=Georgia
-FontSize=20
+FontSize=(20*#E#)
 StringStyle=Bold
 FontColor=#Oro#
 AntiAlias=1
@@ -637,37 +652,37 @@ Text=
 [MeterRachaTexto]
 Meter=String
 MeterStyle=EstiloChico
-X=284
-Y=48
+X=(284*#E#)
+Y=(48*#E#)
 StringAlign=Right
 Text=RACHA
 ${letras}
 [MeterGrilla]
 Meter=Shape
-X=27
-Y=100
-Shape=Rectangle 0,0,246,174 | Fill Color 0,0,0,1 | StrokeWidth 0
+X=(27*#E#)
+Y=(100*#E#)
+Shape=Rectangle 0,0,(246*#E#),(174*#E#) | Fill Color 0,0,0,1 | StrokeWidth 0
 
 [MeterRaya]
 Meter=Shape
-X=16
-Y=286
-Shape=Line 0,0,268,0 | StrokeWidth 1 | Stroke Color #Linea#
+X=(16*#E#)
+Y=(286*#E#)
+Shape=Line 0,0,(268*#E#),0 | StrokeWidth 1 | Stroke Color #Linea#
 
 [MeterPie]
 Meter=String
 MeterStyle=EstiloChico
-X=18
-Y=297
+X=(18*#E#)
+Y=(297*#E#)
 Text=
 
 [MeterAccion]
 Meter=String
-X=284
-Y=294
+X=(284*#E#)
+Y=(294*#E#)
 StringAlign=Right
 FontFace=Segoe UI
-FontSize=10
+FontSize=(10*#E#)
 StringStyle=Bold
 FontColor=#Oro#
 AntiAlias=1
@@ -744,34 +759,60 @@ function Mover(paso)
   ultimo = nil
 end
 
+-- Tamaño (E) y vista (mes = 5 semanas, semana = solo esta)
+local function E() return tonumber(v('E')) or 1 end
+local function n(x) return string.format('%.1f', x * E()) end
+local function esSemana() return v('Vista') == 'semana' end
+
 local function celdas(dias, hoyIdx)
   local s = {}
   local function agregar(x) s[#s + 1] = x end
   local verde, rojo, gris, tenue, oro, marfil = v('Verde'), v('Rojo'), v('Gris'), v('Tenue'), v('Oro'), v('Marfil')
-  for i = 1, 35 do
+  local desde = esSemana() and 29 or 1
+  local function caja(x, y, relleno, borde) return 'Rectangle ' .. n(x) .. ',' .. n(y) .. ',' .. n(30) .. ',' .. n(30) .. ',' .. n(7) .. ' | Fill Color ' .. relleno .. ' | ' .. borde end
+  local function raya(x1, y1, x2, y2, g) return 'Line ' .. n(x1) .. ',' .. n(y1) .. ',' .. n(x2) .. ',' .. n(y2) .. ' | StrokeWidth ' .. g .. ' | Stroke Color ' .. marfil end
+  for i = desde, 35 do
     local c = dias:sub(i, i)
-    local col, fila = (i - 1) % 7, math.floor((i - 1) / 7)
+    local col, fila = (i - 1) % 7, math.floor((i - desde) / 7)
     local x, y = col * 36, fila * 36
     if c == '1' then
-      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color ' .. verde .. ',70 | StrokeWidth 1.5 | Stroke Color ' .. verde)
-      agregar('Line ' .. (x + 8) .. ',' .. (y + 16) .. ',' .. (x + 13) .. ',' .. (y + 21) .. ' | StrokeWidth 2 | Stroke Color ' .. marfil)
-      agregar('Line ' .. (x + 13) .. ',' .. (y + 21) .. ',' .. (x + 22) .. ',' .. (y + 10) .. ' | StrokeWidth 2 | Stroke Color ' .. marfil)
+      agregar(caja(x, y, verde .. ',70', 'StrokeWidth 1.5 | Stroke Color ' .. verde))
+      agregar(raya(x + 8, y + 16, x + 13, y + 21, 2))
+      agregar(raya(x + 13, y + 21, x + 22, y + 10, 2))
     elseif c == '0' then
-      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color ' .. rojo .. ',45 | StrokeWidth 1.5 | Stroke Color ' .. rojo)
-      agregar('Line ' .. (x + 10) .. ',' .. (y + 10) .. ',' .. (x + 20) .. ',' .. (y + 20) .. ' | StrokeWidth 1.8 | Stroke Color ' .. marfil)
-      agregar('Line ' .. (x + 20) .. ',' .. (y + 10) .. ',' .. (x + 10) .. ',' .. (y + 20) .. ' | StrokeWidth 1.8 | Stroke Color ' .. marfil)
+      agregar(caja(x, y, rojo .. ',45', 'StrokeWidth 1.5 | Stroke Color ' .. rojo))
+      agregar(raya(x + 10, y + 10, x + 20, y + 20, 1.8))
+      agregar(raya(x + 20, y + 10, x + 10, y + 20, 1.8))
     elseif c == 'p' then
-      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color 0,0,0,1 | StrokeWidth 1.5 | Stroke Color ' .. gris)
+      agregar(caja(x, y, '0,0,0,1', 'StrokeWidth 1.5 | Stroke Color ' .. gris))
     elseif c == '-' then
-      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color ' .. tenue .. ' | StrokeWidth 0')
+      agregar(caja(x, y, tenue, 'StrokeWidth 0'))
     else
-      agregar('Rectangle ' .. x .. ',' .. y .. ',30,30,7 | Fill Color 0,0,0,1 | StrokeWidth 1 | Stroke Color ' .. tenue)
+      agregar(caja(x, y, '0,0,0,1', 'StrokeWidth 1 | Stroke Color ' .. tenue))
     end
     if i == hoyIdx then
-      agregar('Rectangle ' .. (x - 3) .. ',' .. (y - 3) .. ',36,36,9 | Fill Color 0,0,0,0 | StrokeWidth 2 | Stroke Color ' .. oro)
+      agregar('Rectangle ' .. n(x - 3) .. ',' .. n(y - 3) .. ',' .. n(36) .. ',' .. n(36) .. ',' .. n(9) .. ' | Fill Color 0,0,0,0 | StrokeWidth 2 | Stroke Color ' .. oro)
     end
   end
   return s
+end
+
+-- Acomoda el pie y el fondo según cuántas semanas se ven
+local function Acomodar()
+  local filas = esSemana() and 1 or 5
+  local alto = filas * 36 - 6
+  local raya = 100 + alto + 12
+  poner('MeterGrilla', 'Shape', 'Rectangle 0,0,' .. n(246) .. ',' .. n(alto) .. ' | Fill Color 0,0,0,1 | StrokeWidth 0')
+  poner('MeterRaya', 'Y', n(raya))
+  poner('MeterPie', 'Y', n(raya + 11))
+  poner('MeterAccion', 'Y', n(raya + 8))
+  poner('MeterFondo', 'Shape', 'Rectangle 0,0,' .. n(tonumber(v('Ancho')) or 300) .. ',' .. n(raya + 40) .. ',' .. n(16) .. ' | Fill Color ' .. v('Fondo') .. ' | StrokeWidth 1 | Stroke Color ' .. v('Linea'))
+end
+
+function Vista(cual)
+  SKIN:Bang('!SetVariable', 'Vista', cual)
+  SKIN:Bang('!WriteKeyValue', 'Variables', 'Vista', cual)
+  ultimo = nil
 end
 
 local maxFormas = 0
@@ -790,6 +831,7 @@ local function Pintar(texto, hoy)
     poner('MeterSub', 'Text', texto == '' and 'CARGANDO…' or 'HOY NO HAY PRÁCTICAS')
     poner('MeterRacha', 'Text', '')
     poner('MeterInicial', 'Text', '')
+    Acomodar()
     SKIN:Bang('!UpdateMeter', '*')
     SKIN:Bang('!Redraw')
     return
@@ -812,11 +854,16 @@ local function Pintar(texto, hoy)
     if a and b then hoyIdx = b - a + 1 end
   end
   local formas = celdas(dias, hoyIdx)
-  poner('MeterGrilla', 'Shape', 'Rectangle 0,0,246,174 | Fill Color 0,0,0,1 | StrokeWidth 0')
+  Acomodar()
   for k, f in ipairs(formas) do poner('MeterGrilla', 'Shape' .. (k + 1), f) end
   for k = #formas + 2, maxFormas + 1 do poner('MeterGrilla', 'Shape' .. k, 'Rectangle 0,0,0,0 | StrokeWidth 0') end
   if #formas > maxFormas then maxFormas = #formas end
   local pie = '30 DÍAS · ' .. (h[8] or '0') .. '%'
+  if esSemana() then
+    local hechos = 0
+    for k = 29, 35 do if dias:sub(k, k) == '1' then hechos = hechos + 1 end end
+    pie = 'ESTA SEMANA · ' .. hechos .. '/7'
+  end
   if not esHoy and fecha ~= '' then pie = pie .. ' · DEL ' .. fecha:sub(9, 10) .. '/' .. fecha:sub(6, 7) end
   poner('MeterPie', 'Text', pie)
   local pendiente = esHoy and h[3] ~= '1'

@@ -88,6 +88,24 @@ export function useGuardado(uid: string): [Guardado, (f: (g: Guardado) => Guarda
   const local = useRef(false); // el último cambio lo hizo la persona (hay que subirlo)
   const subido = useRef('');
   const nubeVista = useRef(false);
+  // Marca en el dispositivo: hay un cambio que todavía no llegó a la nube (v2.12.0). Si se cerraba el jardín
+  // antes de subirlo, al abrir de nuevo la nube traía lo viejo y el festejo "¡Creció!" salía otra vez.
+  const marca = `${clave}.pendiente`;
+  const hayPendiente = () => {
+    try {
+      return localStorage.getItem(marca) === '1';
+    } catch {
+      return false;
+    }
+  };
+  const ponerPendiente = (si: boolean) => {
+    try {
+      if (si) localStorage.setItem(marca, '1');
+      else localStorage.removeItem(marca);
+    } catch {
+      /* sin almacenamiento */
+    }
+  };
 
   // Escuchar la nube
   useEffect(() => {
@@ -102,6 +120,12 @@ export function useGuardado(uid: string): [Guardado, (f: (g: Guardado) => Guarda
           nubeVista.current = true;
           if (!doc) {
             // Primera vez: se sube lo que había en este dispositivo
+            local.current = true;
+            setG((x) => ({ ...x }));
+            return;
+          }
+          if (hayPendiente()) {
+            // Lo de este dispositivo es más nuevo que la nube: se sube en vez de pisarlo
             local.current = true;
             setG((x) => ({ ...x }));
             return;
@@ -124,6 +148,7 @@ export function useGuardado(uid: string): [Guardado, (f: (g: Guardado) => Guarda
 
   // Copia local + subir a la nube (agrupando cambios seguidos)
   const primera = useRef(true);
+  const porSubir = useRef<(() => void) | null>(null);
   useEffect(() => {
     try {
       localStorage.setItem(clave, JSON.stringify(g));
@@ -137,17 +162,29 @@ export function useGuardado(uid: string): [Guardado, (f: (g: Guardado) => Guarda
     // Regar o cambiar el riego/la dificultad cambia las plantas que ven tus grupos.
     programarResumenGrupos();
     if (!local.current || !uid) return;
-    const t = setTimeout(() => {
-      const datos = soloCampos(g);
-      const json = JSON.stringify(datos);
-      if (json === subido.current) return;
+    const datos = soloCampos(g);
+    const json = JSON.stringify(datos);
+    if (json === subido.current) return;
+    ponerPendiente(true);
+    let hecho = false;
+    const subir = () => {
+      if (hecho) return;
+      hecho = true;
       subido.current = json;
       void obtenerDriver()
         .then((d) => d.guardar(ruta, { ...datos, actualizado: Date.now(), actualizadoPor: uid }))
-        .catch(() => undefined);
-    }, 1200);
+        .then(() => {
+          if (subido.current === json) ponerPendiente(false);
+        })
+        // Si la nube lo rechaza, no se queda trabado: manda la nube
+        .catch(() => ponerPendiente(false));
+    };
+    const t = setTimeout(subir, 1200);
+    porSubir.current = subir;
     return () => clearTimeout(t);
-  }, [g, clave, ruta, uid]);
+  }, [g, clave, ruta, uid]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Al cerrar el jardín no se pierde lo último: se sube ya
+  useEffect(() => () => porSubir.current?.(), []);
 
   return [
     g,
