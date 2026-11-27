@@ -11,6 +11,11 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.12.2',
+    fecha: '2026-11-27',
+    cambios: ['Widget para Windows: la inicial del hábito vuelve a quedar centrada en su círculo, en los tres tamaños.'],
+  },
+  {
     version: '2.12.1',
     fecha: '2026-11-27',
     cambios: [

@@ -607,8 +607,8 @@ Shape=Ellipse (22*#E#),(22*#E#),(22*#E#) | Fill Color 0,0,0,1 | StrokeWidth 1.5 
 [MeterInicial]
 Meter=String
 X=(38*#E#)
-Y=(38*#E#)
-StringAlign=CenterCenter
+Y=(27*#E#)
+StringAlign=Center
 FontFace=Georgia
 FontSize=(14*#E#)
 StringStyle=Bold
