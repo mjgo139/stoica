@@ -35,6 +35,8 @@ export type Registros = Map<string, Map<string, Registro>>; // habitId -> fecha 
 
 interface Datos {
   listo: boolean;
+  /** Hábitos y registros ya llegaron del servidor (no solo lo guardado en el dispositivo). */
+  alDia: boolean;
   habitos: Array<ConId<Habito>>;
   registros: Registros;
   tareas: Array<ConId<Tarea>>;
@@ -48,6 +50,7 @@ interface Datos {
 
 export const useDatos = create<Datos>((set) => ({
   listo: false,
+  alDia: false,
   habitos: [],
   registros: new Map(),
   tareas: [],
@@ -121,6 +124,11 @@ export function Sincronizar() {
         tareas.quitar(ms.filter((m) => m.col === 'tasks').map((m) => m.docId));
         proyectos.quitar(ms.filter((m) => m.col === 'projects').map((m) => m.docId));
       }, () => undefined);
+      let faltanServidor = 2;
+      habitos.alServidor = registros.alServidor = () => {
+        faltanServidor--;
+        if (faltanServidor <= 0) poner({ alDia: true });
+      };
       colecciones.push(habitos, registros, tareas, proyectos, hechas, enfoque, examenes, marcas);
       for (const c of colecciones) {
         if (!vivo) break;

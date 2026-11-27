@@ -11,6 +11,13 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.12.4',
+    fecha: '2026-11-27',
+    cambios: [
+      'Jardín: el festejo "¡Creció!" ya no aparece cada vez que recargás la página. Ahora espera a que lleguen tus datos de la nube antes de comparar.',
+    ],
+  },
+  {
     version: '2.12.3',
     fecha: '2026-11-27',
     cambios: [

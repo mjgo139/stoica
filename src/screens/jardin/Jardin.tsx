@@ -170,9 +170,25 @@ export function Jardin() {
   const items = todosItems.filter((i) => acomodo.lugar.has(i.id));
   const enVivero = todosItems.length - items.length;
 
+  // Los datos llegan en tandas al abrir (primero lo guardado en el dispositivo, después la nube): comparar
+  // con lo ya visto recién cuando todo se quedó quieto, si no una planta "crecía" en cada recarga (v2.12.4).
+  const listo = useDatos((s) => s.listo && s.alDia);
+  const [estable, setEstable] = useState<{ items: Item[]; jardin: typeof jardin } | null>(null);
+  useEffect(() => {
+    if (prueba) {
+      setEstable({ items: todosItems, jardin });
+      return;
+    }
+    if (!listo) return;
+    const t = setTimeout(() => setEstable({ items: todosItems, jardin }), 2500);
+    return () => clearTimeout(t);
+  }, [todosItems, jardin, listo, prueba]);
+
   // Festejo cuando una planta crece (una sola vez, aunque abras el jardín en otro celular)
   const vistasPrueba = useRef<Record<string, number>>({});
   useEffect(() => {
+    if (!estable) return;
+    const todosItems = estable.items;
     const vistas = prueba ? vistasPrueba.current : g.vistas;
     const nuevas: Record<string, number> = {};
     const crecieron: typeof festejos = [];
@@ -191,7 +207,7 @@ export function Jardin() {
     if (prueba) vistasPrueba.current = nuevas;
     else if (JSON.stringify(nuevas) !== JSON.stringify(g.vistas)) setG((x) => ({ ...x, vistas: nuevas }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todosItems]);
+  }, [estable]);
   useEffect(() => {
     vistasPrueba.current = {};
     setFestejos([]);
@@ -200,6 +216,8 @@ export function Jardin() {
   // Aviso si se perdieron retoños
   const previosPrueba = useRef<Record<string, number>>({});
   useEffect(() => {
+    if (!estable) return;
+    const jardin = estable.jardin;
     const previos = prueba ? previosPrueba.current : g.retonosPrevios;
     const perdidos = jardin.plantas.filter((p) => (previos[p.id] ?? 0) > p.retonos);
     const nuevos = Object.fromEntries(jardin.plantas.map((p) => [p.id, p.retonos]));
@@ -210,7 +228,7 @@ export function Jardin() {
     if (prueba) previosPrueba.current = nuevos;
     else if (JSON.stringify(nuevos) !== JSON.stringify(g.retonosPrevios)) setG((x) => ({ ...x, retonosPrevios: nuevos }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jardin]);
+  }, [estable]);
 
   const animarRiego = useCallback((ids: string[]) => {
     if (!ids.length) return;

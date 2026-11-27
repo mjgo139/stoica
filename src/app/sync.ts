@@ -71,6 +71,9 @@ export class Coleccion<T extends { actualizado?: number }> {
     if (cambio) this.emitir();
   }
 
+  /** Se llama una vez, cuando llega la primera respuesta del servidor (no de la caché). */
+  alServidor: (() => void) | null = null;
+
   async iniciar() {
     const ruta = `users/${this.uid}/${this.col}`;
     let ultima = this.d.nombre === 'firebase' ? leerNumero(this.clave) : 0;
@@ -86,7 +89,12 @@ export class Coleccion<T extends { actualizado?: number }> {
         for (const x of docs) if (!this.quitados.has(x.id)) this.todos.set(x.id, x);
         this.emitir();
         // Solo se marca la sincronización cuando la respuesta vino del servidor (no de la caché sin conexión).
-        if (info.desdeServidor) escribirNumero(this.clave, Date.now());
+        if (info.desdeServidor) {
+          escribirNumero(this.clave, Date.now());
+          const f = this.alServidor;
+          this.alServidor = null;
+          f?.();
+        }
       },
       this.fallo,
     );
