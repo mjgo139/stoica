@@ -11,6 +11,13 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    version: '2.13.0',
+    fecha: '2026-11-28',
+    cambios: [
+      'Widget para Windows: la lista de hoy ahora también tiene tamaño chico, normal y grande (clic derecho), igual que las tarjetas. El jardín pasa a medir lo mismo que dos tarjetas (480, 600 o 780 de ancho), para que todo se acomode en columnas parejas con las otras apps. Para tenerlo: Perfil → Widget para Windows → Descargar de nuevo.',
+    ],
+  },
+  {
     version: '2.12.4',
     fecha: '2026-11-27',
     cambios: [

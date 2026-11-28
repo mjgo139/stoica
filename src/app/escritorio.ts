@@ -27,6 +27,7 @@ import { leerGuardado } from '@/screens/jardin/estado';
 import { tinte } from '@/screens/jardin/escena';
 import { COLORES_ICONO, FIGURAS, svgEmblemaSolo } from '../../familia/emblema.mjs';
 import { DIRECCION } from '@/ui/AvisoMudanza';
+import { LUA_PONER, conTamanos } from '../../familia/escritorio';
 
 export const MAX_HABITOS_ESCRITORIO = 8;
 export const LARGO_CODIGO = 24;
@@ -196,7 +197,12 @@ export function aRainmeter(color: string, alfa?: number): string {
 const FILAS = Array.from({ length: MAX_HABITOS_ESCRITORIO }, (_, i) => i + 1);
 
 /** El skin de Rainmeter (StoaHabit.ini). */
+/** Widget de hoy (lista), con tamaños chico · normal · grande como las tarjetas (familia 1.11.0) */
 export function skinIni(proyecto: string, codigo: string, app = DIRECCION): string {
+  return conTamanos(skinIniBase(proyecto, codigo, app));
+}
+
+function skinIniBase(proyecto: string, codigo: string, app = DIRECCION): string {
   const url = `https://firestore.googleapis.com/v1/projects/${proyecto}/databases/(default)/documents/escritorio/${codigo}`;
   const filas = FILAS.map(
     (i) => `
@@ -393,9 +399,7 @@ end
 
 local function v(nombre) return SKIN:GetVariable(nombre) or '' end
 
-local function poner(meter, opcion, valor)
-  SKIN:Bang('!SetOption', meter, opcion, valor)
-end
+${LUA_PONER}
 
 function Estado(cual)
   if cual == 'sin-conexion' then

@@ -158,10 +158,10 @@ ContextTitle2=Actualizar ahora
 ContextAction2=[!CommandMeasure MeasureDatos "Update"]
 ContextTitle3=Tamaño chico
 ContextAction3=[!WriteKeyValue Variables Ancho 480][!Refresh]
-ContextTitle4=Tamaño mediano
-ContextAction4=[!WriteKeyValue Variables Ancho 680][!Refresh]
+ContextTitle4=Tamaño normal
+ContextAction4=[!WriteKeyValue Variables Ancho 600][!Refresh]
 ContextTitle5=Tamaño grande
-ContextAction5=[!WriteKeyValue Variables Ancho 960][!Refresh]
+ContextAction5=[!WriteKeyValue Variables Ancho 780][!Refresh]
 
 [Metadata]
 Name=StoaHabit · jardín
@@ -171,7 +171,7 @@ Version=1.2
 License=Uso personal
 
 [Variables]
-Ancho=680
+Ancho=600
 Fondo=${colores.fondo}
 Oro=${colores.oro}
 Marfil=${colores.marfil}
@@ -281,7 +281,7 @@ local function tinte(h)
 end
 
 local function Pintar(texto, h)
-  local ancho = tonumber(v('Ancho')) or 680
+  local ancho = tonumber(v('Ancho')) or 600
   local e = ancho / 10000
   local alto = math.floor(ALTO_U * e + 0.5)
   local partes = partir(texto, '~')

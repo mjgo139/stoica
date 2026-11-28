@@ -40,6 +40,9 @@ describe('jardín completo para el escritorio', () => {
 
   it('el skin lee el campo j y el script pone las imágenes', () => {
     const ini = skinJardinIni('https://ejemplo/escritorio/X', 'https://stoahabit.web.app', { fondo: '1,1,1', oro: '2,2,2', marfil: '3,3,3', noche: '4,4,4', amanecer: '5,5,5', atardecer: '6,6,6', sombra: '7,7,7' });
+    // Jardín = dos tarjetas de ancho en cada tamaño (240 · 300 · 390 → 480 · 600 · 780)
+    expect(ini).toContain('Ancho=600');
+    for (const w of [480, 600, 780]) expect(ini).toContain(`[!WriteKeyValue Variables Ancho ${w}][!Refresh]`);
     expect(ini).toContain('"j": \\{');
     expect(ini).toContain('ImageName=#@#jardin\\terraza.jpg');
     expect(ini).toContain('[Img110]');
